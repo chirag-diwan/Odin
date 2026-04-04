@@ -1,21 +1,44 @@
+---
+Language: Cpp
 BasedOnStyle: LLVM
-IndentWidth: 2
+
+# Enforce a strict boundary to break long std::visit and lambda lines
 ColumnLimit: 80
 
-NamespaceIndentation: All
-AccessModifierOffset: -4
-IndentAccessModifiers: true
+# Indentation and Spacing
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
 
-AlignConsecutiveDeclarations: true
+# Alignment Rules (preserves your enum and variable alignment)
 AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignConsecutiveMacros: true
+AlignOperands: Align
 AlignTrailingComments: true
 
-AllowShortIfStatementsOnASingleLine: true 
+# Bracket and Brace Management
+BreakBeforeBraces: Attach
+AllowShortBlocksOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: false 
 
-PointerAlignment: Left
+# Lambda specific rules to prevent nesting blindness
+AllowShortLambdasOnASingleLine: None
+LambdaBodyIndentation: Signature
+
+# Pointer alignment (e.g., uint8_t* data instead of uint8_t *data)
 DerivePointerAlignment: false
+PointerAlignment: Left
 
+# Sorting
 SortIncludes: true
-IncludeBlocks: Regroup
+SortUsingDeclarations: true
+
+# Control Flow
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+...

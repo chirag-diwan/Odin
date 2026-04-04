@@ -20,8 +20,7 @@
 #include <variant>
 #include <vector>
 
-#define GGUF_NONE 0
-
+namespace Odin {
 // GGUF_TYPE_Q4_2 = 4, support has been removed
 // GGUF_TYPE_Q4_3 (5) support has been removed
 enum gguf_tensor_type {
@@ -159,32 +158,32 @@ enum gguf_value_type {
 };
 
 struct gguf_header {
-    // Magic number to announce that this is a GGUF file.
-    // Must be `GGUF` at the byte level: `0x47` `0x47` `0x55` `0x46`.
-    // or just compare to 119585722
-    uint32_t magic;
-    // The version of the format implemented.
-    // Must be `3` for version described in this spec.
-    uint32_t version;
-    uint64_t tensor_count;
-    uint64_t metadata_kv_count;
+  // Magic number to announce that this is a GGUF file.
+  // Must be `GGUF` at the byte level: `0x47` `0x47` `0x55` `0x46`.
+  // or just compare to 119585722
+  uint32_t magic;
+  // The version of the format implemented.
+  // Must be `3` for version described in this spec.
+  uint32_t version;
+  uint64_t tensor_count;
+  uint64_t metadata_kv_count;
 };
 
 struct gguf_array {
-    uint64_t len;
-    std::variant<std::nullptr_t, uint8_t*, int8_t*, uint16_t*, int16_t*,
-                 uint32_t*, int32_t*, float*, uint64_t*, int64_t*, double*,
-                 char*, bool*, gguf_array*, std::string_view*>
-        data = nullptr;
+  uint64_t len;
+  std::variant<std::nullptr_t, uint8_t*, int8_t*, uint16_t*, int16_t*,
+               uint32_t*, int32_t*, float*, uint64_t*, int64_t*, double*, char*,
+               bool*, gguf_array*, std::string_view*>
+      data = nullptr;
 };
 
 struct gguf_value {
-    uint64_t len;
-    std::variant<uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, float,
-                 uint64_t, int64_t, double, char, bool, gguf_array,
-                 std::string_view>
-        data;
-    ;
+  uint64_t len;
+  std::variant<uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, float,
+               uint64_t, int64_t, double, char, bool, gguf_array,
+               std::string_view>
+      data;
+  ;
 };
 
 #ifdef GGUF_DEBUG
@@ -204,338 +203,364 @@ void Print_gguf_arr(gguf_array* arr) {
                      }
                    }
                  },
-                 [](gguf_array* a) { Print_gguf_arr(a); }},
+                 [](gguf_array* a) {
+                   Print_gguf_arr(a);
+                 }},
              arr->data);
   std::cout << ']' << '\n';
 }
 
 void Print_gguf_val(gguf_value& v) {
-  std::visit(mix{[](auto& arg) { std::cout << arg; },
-                 [](gguf_array& arr) { Print_gguf_arr(&arr); }},
+  std::visit(mix{[](auto& arg) {
+                   std::cout << arg;
+                 },
+                 [](gguf_array& arr) {
+                   Print_gguf_arr(&arr);
+                 }},
              v.data);
 }
 
 #endif
 
 typedef struct {
-    const char* name;
-    size_t      namelen;
-    uint32_t    type;         // Tensor type (enum gguf_tensor_type).
-    uint32_t    ndim;         // Number of dimensions of the tensor.
-    uint64_t*   dim;          // Dimensions (Eg. [512, 1024, 1, 1]).
-    uint64_t    offset;       // Offset from start of file.
-    uint64_t    bsize;        // Total size in bytes.
-    uint64_t    num_weights;  // Total number of parameters.
-    uint8_t*    weights_data; // Pointer to the mmaped file.
+  const char* name;
+  size_t      namelen;
+  uint32_t    type;         // Tensor type (enum gguf_tensor_type).
+  uint32_t    ndim;         // Number of dimensions of the tensor.
+  uint64_t*   dim;          // Dimensions (Eg. [512, 1024, 1, 1]).
+  uint64_t    offset;       // Offset from start of file.
+  uint64_t    bsize;        // Total size in bytes.
+  uint64_t    num_weights;  // Total number of parameters.
+  uint8_t*    weights_data; // Pointer to the mmaped file.
 } gguf_tensor;
 
 class GGUF {
-  private:
-    int                fd;
-    uint8_t*           data;
-    uint64_t           size;
-    struct gguf_header header;
-    uint64_t           left_kv;
-    uint64_t           left_tensors;
-    uint64_t           off;
-    uint64_t           data_off;
-    uint64_t           alignment;
+private:
+  int                fd;
+  uint8_t*           data;
+  uint64_t           size;
+  struct gguf_header header;
+  uint64_t           left_kv;
+  uint64_t           left_tensors;
+  uint64_t           off;
+  uint64_t           data_off;
+  uint64_t           alignment;
 
-  public:
-    std::unordered_map<std::string_view, gguf_value> metadata_kv;
+public:
+  std::unordered_map<std::string_view, gguf_value> metadata_kv;
 
-  private:
-    void* pos() {
-      return &data[off];
+private:
+  void* pos() {
+    return &data[off];
+  }
+
+  inline void increment(size_t s) {
+    ERRORIF(off + s > size, "Size overflow");
+    off += s;
+  }
+
+  std::string_view parsestring() {
+    auto str_len = reinterpret_cast<uint64_t*>(pos())[0];
+    increment(sizeof(decltype(str_len)));
+    std::string_view sv(static_cast<char*>(pos()), str_len);
+    increment(sizeof(char) * str_len);
+    return sv;
+  }
+
+  // Expects gguf array at pos
+  gguf_array parsearray() {
+    auto elem_type = reinterpret_cast<uint32_t*>(pos())[0];
+    increment(sizeof(decltype(elem_type)));
+
+    auto n_elem = reinterpret_cast<uint64_t*>(pos())[0];
+    increment(sizeof(decltype(n_elem)));
+
+    gguf_array arr;
+    arr.len = n_elem;
+
+    switch (elem_type) {
+    case GGUF_VALUE_TYPE_UINT8: {
+      arr.data = reinterpret_cast<uint8_t*>(pos());
+      increment(sizeof(uint8_t) * n_elem);
+      break;
     }
-
-    inline void increment(size_t s) {
-      ERRORIF(off + s > size, "Size overflow");
-      off += s;
+    case GGUF_VALUE_TYPE_INT8: {
+      arr.data = reinterpret_cast<int8_t*>(pos());
+      increment(sizeof(int8_t) * n_elem);
+      break;
     }
-
-    std::string_view parsestring() {
-      auto str_len = reinterpret_cast<uint64_t*>(pos())[0];
-      increment(sizeof(decltype(str_len)));
-      std::string_view sv(static_cast<char*>(pos()), str_len);
-      increment(sizeof(char) * str_len);
-      return sv;
+    case GGUF_VALUE_TYPE_UINT16: {
+      arr.data = reinterpret_cast<uint16_t*>(pos());
+      increment(sizeof(uint16_t) * n_elem);
+      break;
     }
-
-    // Expects gguf array at pos
-    gguf_array parsearray() {
-      auto elem_type = reinterpret_cast<uint32_t*>(pos())[0];
-      increment(sizeof(decltype(elem_type)));
-
-      auto n_elem = reinterpret_cast<uint64_t*>(pos())[0];
-      increment(sizeof(decltype(n_elem)));
-
-      gguf_array arr;
-      arr.len = n_elem;
-
-      switch (elem_type) {
-      case GGUF_VALUE_TYPE_UINT8: {
-        arr.data = reinterpret_cast<uint8_t*>(pos());
-        increment(sizeof(uint8_t) * n_elem);
-        break;
-      }
-      case GGUF_VALUE_TYPE_INT8: {
-        arr.data = reinterpret_cast<int8_t*>(pos());
-        increment(sizeof(int8_t) * n_elem);
-        break;
-      }
-      case GGUF_VALUE_TYPE_UINT16: {
-        arr.data = reinterpret_cast<uint16_t*>(pos());
-        increment(sizeof(uint16_t) * n_elem);
-        break;
-      }
-      case GGUF_VALUE_TYPE_INT16: {
-        arr.data = reinterpret_cast<int16_t*>(pos());
-        increment(sizeof(int16_t) * n_elem);
-        break;
-      }
-      case GGUF_VALUE_TYPE_UINT32: {
-        arr.data = reinterpret_cast<uint32_t*>(pos());
-        increment(sizeof(uint32_t) * n_elem);
-        break;
-      }
-      case GGUF_VALUE_TYPE_INT32: {
-        arr.data = reinterpret_cast<int32_t*>(pos());
-        increment(sizeof(int32_t) * n_elem);
-        break;
-      }
-      case GGUF_VALUE_TYPE_FLOAT32: {
-        arr.data = reinterpret_cast<float*>(pos());
-        increment(sizeof(float) * n_elem);
-        break;
-      }
-      case GGUF_VALUE_TYPE_BOOL: {
-        arr.data = reinterpret_cast<bool*>(pos());
-        increment(sizeof(bool) * n_elem);
-        break;
-      }
-      case GGUF_VALUE_TYPE_STRING: {
-        auto strs = new std::string_view[n_elem];
-        for (size_t i = 0; i < n_elem; i++) {
-          strs[i] = parsestring();
-        }
-        arr.data = strs;
-        break;
-      }
-      case GGUF_VALUE_TYPE_ARRAY: {
-        auto ptrs = new gguf_array[n_elem];
-        for (size_t i = 0; i < n_elem; i++) {
-          ptrs[i] = parsearray();
-        }
-        arr.data = ptrs;
-        break;
-      }
-      case GGUF_VALUE_TYPE_UINT64: {
-        arr.data = reinterpret_cast<uint64_t*>(pos());
-        increment(sizeof(uint64_t) * n_elem);
-        break;
-      }
-      case GGUF_VALUE_TYPE_INT64: {
-        arr.data = reinterpret_cast<int64_t*>(pos());
-        increment(sizeof(int64_t) * n_elem);
-        break;
-      }
-      case GGUF_VALUE_TYPE_FLOAT64: {
-        arr.data = reinterpret_cast<double*>(pos());
-        increment(sizeof(double) * n_elem);
-        break;
-      }
-      default:
-        ERROR_AND_EXIT("Invalid type in array");
-      }
-      return arr;
+    case GGUF_VALUE_TYPE_INT16: {
+      arr.data = reinterpret_cast<int16_t*>(pos());
+      increment(sizeof(int16_t) * n_elem);
+      break;
     }
+    case GGUF_VALUE_TYPE_UINT32: {
+      arr.data = reinterpret_cast<uint32_t*>(pos());
+      increment(sizeof(uint32_t) * n_elem);
+      break;
+    }
+    case GGUF_VALUE_TYPE_INT32: {
+      arr.data = reinterpret_cast<int32_t*>(pos());
+      increment(sizeof(int32_t) * n_elem);
+      break;
+    }
+    case GGUF_VALUE_TYPE_FLOAT32: {
+      arr.data = reinterpret_cast<float*>(pos());
+      increment(sizeof(float) * n_elem);
+      break;
+    }
+    case GGUF_VALUE_TYPE_BOOL: {
+      arr.data = reinterpret_cast<bool*>(pos());
+      increment(sizeof(bool) * n_elem);
+      break;
+    }
+    case GGUF_VALUE_TYPE_STRING: {
+      auto strs = new std::string_view[n_elem];
+      for (size_t i = 0; i < n_elem; i++) {
+        strs[i] = parsestring();
+      }
+      arr.data = strs;
+      break;
+    }
+    case GGUF_VALUE_TYPE_ARRAY: {
+      auto ptrs = new gguf_array[n_elem];
+      for (size_t i = 0; i < n_elem; i++) {
+        ptrs[i] = parsearray();
+      }
+      arr.data = ptrs;
+      break;
+    }
+    case GGUF_VALUE_TYPE_UINT64: {
+      arr.data = reinterpret_cast<uint64_t*>(pos());
+      increment(sizeof(uint64_t) * n_elem);
+      break;
+    }
+    case GGUF_VALUE_TYPE_INT64: {
+      arr.data = reinterpret_cast<int64_t*>(pos());
+      increment(sizeof(int64_t) * n_elem);
+      break;
+    }
+    case GGUF_VALUE_TYPE_FLOAT64: {
+      arr.data = reinterpret_cast<double*>(pos());
+      increment(sizeof(double) * n_elem);
+      break;
+    }
+    default:
+      ERROR_AND_EXIT("Invalid type in array");
+    }
+    return arr;
+  }
 
-    // parses one key value pair , expects the key value pair starting to be at
-    // pos()
-    void parse_key_value() {
-      auto key  = parsestring();
+  // parses one key value pair , expects the key value pair starting to be at
+  // pos()
+  void parse_key_value() {
+    auto key  = parsestring();
+    auto type = reinterpret_cast<uint32_t*>(pos())[0];
+    increment(sizeof(decltype(type)));
+
+    gguf_value value;
+
+    switch (type) {
+    case GGUF_VALUE_TYPE_UINT8:
+      value.data = reinterpret_cast<uint8_t*>(pos())[0];
+      increment(sizeof(uint8_t));
+      break;
+
+    case GGUF_VALUE_TYPE_INT8:
+      value.data = reinterpret_cast<int8_t*>(pos())[0];
+      increment(sizeof(int8_t));
+      break;
+
+    case GGUF_VALUE_TYPE_UINT16:
+      value.data = reinterpret_cast<uint16_t*>(pos())[0];
+      increment(sizeof(uint16_t));
+      break;
+
+    case GGUF_VALUE_TYPE_INT16:
+      value.data = reinterpret_cast<int16_t*>(pos())[0];
+      increment(sizeof(int16_t));
+      break;
+
+    case GGUF_VALUE_TYPE_UINT32:
+      value.data = reinterpret_cast<uint32_t*>(pos())[0];
+      increment(sizeof(uint32_t));
+      break;
+
+    case GGUF_VALUE_TYPE_INT32:
+      value.data = reinterpret_cast<int32_t*>(pos())[0];
+      increment(sizeof(int32_t));
+      break;
+
+    case GGUF_VALUE_TYPE_FLOAT32:
+      value.data = reinterpret_cast<float*>(pos())[0];
+      increment(sizeof(float));
+      break;
+
+    case GGUF_VALUE_TYPE_BOOL:
+      value.data = reinterpret_cast<bool*>(pos())[0];
+      increment(sizeof(bool));
+      break;
+
+    case GGUF_VALUE_TYPE_STRING:
+      value.data = parsestring();
+      break;
+
+    case GGUF_VALUE_TYPE_ARRAY:
+      value.data = parsearray();
+      break;
+
+    case GGUF_VALUE_TYPE_UINT64:
+      value.data = reinterpret_cast<uint64_t*>(pos())[0];
+      increment(sizeof(uint64_t));
+      break;
+
+    case GGUF_VALUE_TYPE_INT64:
+      value.data = reinterpret_cast<int64_t*>(pos())[0];
+      increment(sizeof(int64_t));
+      break;
+
+    case GGUF_VALUE_TYPE_FLOAT64:
+      value.data = reinterpret_cast<double*>(pos())[0];
+      increment(sizeof(double));
+      break;
+
+    default:
+      ERROR_AND_EXIT("Unknown Type");
+    }
+    metadata_kv[key] = std::move(value);
+  }
+
+  inline void clean() {
+    munmap(data, size);
+    std::function<void(gguf_array&)> clean;
+    clean = [&](gguf_array& val) {
+      std::visit(mix{[](auto&) {
+                     },
+                     [](std::string_view* arg) {
+                       delete[] arg;
+                     },
+                     [&](gguf_array* arg) {
+                       for (size_t i = 0; i < val.len; ++i) {
+                         clean(arg[i]);
+                       }
+                       delete[] arg;
+                     }},
+                 val.data);
+    };
+  }
+
+public:
+  GGUF() = default;
+
+  void OpenFile(const char* filepath) {
+    int fd = open(filepath, O_RDONLY);
+    ERRORIF(fd == -1, "Not a valid file descriptor for ", filepath);
+    struct stat file_stat;
+    ERRORIF(fstat(fd, &file_stat) == -1, "Unable to get file stats for ",
+            filepath);
+    void* map_ptr =
+        mmap(NULL, file_stat.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    ERRORIF(map_ptr == MAP_FAILED, "Mapping failed for ", filepath);
+
+    this->fd        = fd;
+    this->data      = reinterpret_cast<uint8_t*>(map_ptr);
+    this->size      = file_stat.st_size;
+    this->off       = 0;
+    this->data_off  = 0;
+    this->alignment = 32;
+  }
+
+  void ParseHeader() {
+    ERRORIF(off != 0, "Offset is not zero on the first call");
+
+    header = reinterpret_cast<struct gguf_header*>(pos())[0];
+    increment(sizeof(decltype(header)));
+  }
+
+  void ParseKeyValue() {
+    for (size_t i = 0; i < header.metadata_kv_count; ++i) {
+      parse_key_value();
+    }
+    if (metadata_kv.find("general.alignment") != metadata_kv.end()) {
+      std::visit(mix{[](auto& a) {
+                       ERROR_AND_EXIT("Invalid key type for general.alignment");
+                     },
+
+                     [this](uint32_t& val) {
+                       this->alignment = val;
+                     },
+
+                     [this](uint64_t& val) {
+                       this->alignment = val;
+                     }},
+
+                 metadata_kv["general.alignment"].data);
+    }
+#ifdef GGUF_DEBUG
+    for (auto& [key, v] : metadata_kv) {
+      std::cout << "\n" << key << "   ---->   ";
+      Print_gguf_val(v);
+    }
+#endif
+  }
+
+  void ParseTensors() {
+
+#ifdef GGUF_DEBUG
+    std::cout << "Tensor -> Number of dimensions -> dimensions -> Offset \n";
+#endif
+#define DIM_ARRAY_MAX_SIZE 8
+    for (size_t i = 0; i < header.tensor_count; ++i) {
+      auto tensor_name = parsestring();
+      auto n_dim       = reinterpret_cast<uint32_t*>(pos())[0];
+      increment(sizeof(decltype(n_dim)));
+
+      std::array<int64_t, DIM_ARRAY_MAX_SIZE> dim = {0};
+
+      for (size_t j = 0; j < n_dim; j++) {
+        dim[j] = reinterpret_cast<int64_t*>(pos())[0];
+        increment(sizeof(int64_t));
+      }
+
       auto type = reinterpret_cast<uint32_t*>(pos())[0];
       increment(sizeof(decltype(type)));
 
-      gguf_value value;
-
-      switch (type) {
-      case GGUF_VALUE_TYPE_UINT8:
-        value.data = reinterpret_cast<uint8_t*>(pos())[0];
-        increment(sizeof(uint8_t));
-        break;
-
-      case GGUF_VALUE_TYPE_INT8:
-        value.data = reinterpret_cast<int8_t*>(pos())[0];
-        increment(sizeof(int8_t));
-        break;
-
-      case GGUF_VALUE_TYPE_UINT16:
-        value.data = reinterpret_cast<uint16_t*>(pos())[0];
-        increment(sizeof(uint16_t));
-        break;
-
-      case GGUF_VALUE_TYPE_INT16:
-        value.data = reinterpret_cast<int16_t*>(pos())[0];
-        increment(sizeof(int16_t));
-        break;
-
-      case GGUF_VALUE_TYPE_UINT32:
-        value.data = reinterpret_cast<uint32_t*>(pos())[0];
-        increment(sizeof(uint32_t));
-        break;
-
-      case GGUF_VALUE_TYPE_INT32:
-        value.data = reinterpret_cast<int32_t*>(pos())[0];
-        increment(sizeof(int32_t));
-        break;
-
-      case GGUF_VALUE_TYPE_FLOAT32:
-        value.data = reinterpret_cast<float*>(pos())[0];
-        increment(sizeof(float));
-        break;
-
-      case GGUF_VALUE_TYPE_BOOL:
-        value.data = reinterpret_cast<bool*>(pos())[0];
-        increment(sizeof(bool));
-        break;
-
-      case GGUF_VALUE_TYPE_STRING:
-        value.data = parsestring();
-        break;
-
-      case GGUF_VALUE_TYPE_ARRAY:
-        value.data = parsearray();
-        break;
-
-      case GGUF_VALUE_TYPE_UINT64:
-        value.data = reinterpret_cast<uint64_t*>(pos())[0];
-        increment(sizeof(uint64_t));
-        break;
-
-      case GGUF_VALUE_TYPE_INT64:
-        value.data = reinterpret_cast<int64_t*>(pos())[0];
-        increment(sizeof(int64_t));
-        break;
-
-      case GGUF_VALUE_TYPE_FLOAT64:
-        value.data = reinterpret_cast<double*>(pos())[0];
-        increment(sizeof(double));
-        break;
-
-      default:
-        ERROR_AND_EXIT("Unknown Type");
-      }
-      metadata_kv[key] = std::move(value);
-    }
-
-    inline void clean() {
-      munmap(data, size);
-      std::function<void(gguf_array&)> clean;
-      clean = [&](gguf_array& val) {
-        std::visit(mix{[](auto&) {},
-                       [](std::string_view* arg) { delete[] arg; },
-                       [&](gguf_array* arg) {
-                         for (size_t i = 0; i < val.len; ++i) {
-                           clean(arg[i]);
-                         }
-                         delete[] arg;
-                       }},
-                   val.data);
-      };
-    }
-
-  public:
-    GGUF() = default;
-
-    void OpenFile(const char* filepath) {
-      int fd = open(filepath, O_RDONLY);
-      ERRORIF(fd == -1, "Not a valid file descriptor for ", filepath);
-      struct stat file_stat;
-      ERRORIF(fstat(fd, &file_stat) == -1, "Unable to get file stats for ",
-              filepath);
-      void* map_ptr =
-          mmap(NULL, file_stat.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-      ERRORIF(map_ptr == MAP_FAILED, "Mapping failed for ", filepath);
-
-      this->fd        = fd;
-      this->data      = reinterpret_cast<uint8_t*>(map_ptr);
-      this->size      = file_stat.st_size;
-      this->off       = 0;
-      this->data_off  = 0;
-      this->alignment = 32;
-    }
-
-    void ParseHeader() {
-      ERRORIF(off != 0, "Offset is not zero on the first call");
-
-      header = reinterpret_cast<struct gguf_header*>(pos())[0];
-      increment(sizeof(decltype(header)));
-    }
-
-    void ParseKeyValue() {
-      for (size_t i = 0; i < header.metadata_kv_count; ++i) {
-        parse_key_value();
-      }
-#ifdef GGUF_DEBUG
-      for (auto& [key, v] : metadata_kv) {
-        std::cout << "\n" << key << "   ---->   ";
-        Print_gguf_val(v);
-      }
-#endif
-    }
-
-    void ParseTensors() {
+      auto offset = reinterpret_cast<uint64_t*>(pos())[0];
+      increment(sizeof(decltype(offset)));
 
 #ifdef GGUF_DEBUG
-      std::cout << "Tensor -> Number of dimensions -> dimensions -> Offset \n";
-#endif
-#define DIM_ARRAY_MAX_SIZE 8
-      for (size_t i = 0; i < header.tensor_count; ++i) {
-        auto tensor_name = parsestring();
-        auto n_dim       = reinterpret_cast<uint32_t*>(pos())[0];
-        increment(sizeof(decltype(n_dim)));
+      std::cout << "Tensor {\n";
 
-        std::array<int64_t, DIM_ARRAY_MAX_SIZE> dim = {0};
+      std::cout << "  Name   : " << tensor_name << "\n";
+      std::cout << "  NDims  : " << n_dim << "\n";
 
-        for (size_t j = 0; j < n_dim; j++) {
-          dim[j] = reinterpret_cast<int64_t*>(pos())[0];
-          increment(sizeof(int64_t));
-        }
-
-        auto type = reinterpret_cast<uint32_t*>(pos())[0];
-        increment(sizeof(decltype(type)));
-
-        auto offset = reinterpret_cast<uint64_t*>(pos())[0];
-        increment(sizeof(decltype(offset)));
-
-#ifdef GGUF_DEBUG
-        std::cout << "Tensor {\n";
-
-        std::cout << "  Name   : " << tensor_name << "\n";
-        std::cout << "  NDims  : " << n_dim << "\n";
-
-        std::cout << "  Shape  : [";
-        for (int i = 0; i < n_dim; ++i) {
-          std::cout << dim[i];
-          if (i != n_dim - 1) std::cout << ", ";
-        }
-        std::cout << "]\n";
-
-        std::cout << "  Offset : " << offset << "\n";
-
-        std::cout << "  Type   : "
-                  << gguf_tensor_type_to_string(
-                         static_cast<gguf_tensor_type>(type))
-                  << " (" << type << ")\n";
-
-        std::cout << "}\n";
-#endif
+      std::cout << "  Shape  : [";
+      for (int i = 0; i < n_dim; ++i) {
+        std::cout << dim[i];
+        if (i != n_dim - 1)
+          std::cout << ", ";
       }
-    }
+      std::cout << "]\n";
 
-    ~GGUF() {
-      clean();
+      std::cout << "  Offset : " << offset << "\n";
+
+      std::cout << "  Type   : "
+                << gguf_tensor_type_to_string(
+                       static_cast<gguf_tensor_type>(type))
+                << " (" << type << ")\n";
+
+      std::cout << "}\n";
+#endif
     }
+  }
+
+  ~GGUF() {
+    clean();
+  }
 };
+}; // namespace Odin
