@@ -1,29 +1,28 @@
-/home/chirag/Models/qwen2.5-0.5b-instruct-q4_k_m.gguf (ver 3): 26 key-value pairs, 291 tensors
-general.architecture: [string] qwen2
-general.type: [string] model
-general.name: [string] qwen2.5-0.5b-instruct
-general.version: [string] v0.1
-general.finetune: [string] qwen2.5-0.5b-instruct
-general.size_label: [string] 630M
-qwen2.block_count: [uint32] 24
-qwen2.context_length: [uint32] 32768
-qwen2.embedding_length: [uint32] 896
-qwen2.feed_forward_length: [uint32] 4864
-qwen2.attention.head_count: [uint32] 14
-qwen2.attention.head_count_kv: [uint32] 2
-qwen2.rope.freq_base: [float32] 1000000.000000
-qwen2.attention.layer_norm_rms_epsilon: [float32] 0.000001
-general.file_type: [uint32] 15
-tokenizer.ggml.model: [string] gpt2
-tokenizer.ggml.pre: [string] qwen2
-tokenizer.ggml.tokens: [array] [!, ", #, $, %, &, ', (, ), *, +, ,, -, ., /, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, :, ;, <, =, >, ... 151906 more items of 151936]
-tokenizer.ggml.token_type: [array] [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ... 151906 more items of 151936]
-tokenizer.ggml.merges: [array] [Ġ Ġ, ĠĠ ĠĠ, i n, Ġ t, ĠĠĠĠ ĠĠĠĠ, e r, ĠĠ Ġ, o n, Ġ a, r e, a t, s t, e n, o r, Ġt h, Ċ Ċ, Ġ c, l e, Ġ s, i t, a n, a r, a l, Ġth e, ; Ċ, Ġ p, Ġ f, o u, Ġ =, i s, ... 151357 more items of 151387]
-tokenizer.ggml.eos_token_id: [uint32] 151645
-tokenizer.ggml.padding_token_id: [uint32] 151643
-tokenizer.ggml.bos_token_id: [uint32] 151643
-tokenizer.ggml.add_bos_token: [bool] false
-tokenizer.chat_template: [string] {%- if tools %}
+
+tokenizer.ggml.add_bos_token   ---->   0
+tokenizer.ggml.bos_token_id   ---->   151643
+tokenizer.ggml.tokens   ---->   ( size = 151936 ) [!,",#,$,%,&,',(,),*,+,,,-,.,/,0,1,2,3,4,5,6,7,8,9,:,;,<,=,>,?,@,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,[,\,],^,_,`,a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,{,|,},~,¡,¢,£,¤,¥,¦, first 100 elements out of 151936]
+
+general.file_type   ---->   15
+qwen2.attention.layer_norm_rms_epsilon   ---->   1e-06
+general.architecture   ---->   qwen2
+tokenizer.ggml.padding_token_id   ---->   151643
+qwen2.embedding_length   ---->   896
+tokenizer.ggml.pre   ---->   qwen2
+general.name   ---->   qwen2.5-0.5b-instruct
+qwen2.block_count   ---->   24
+general.version   ---->   v0.1
+tokenizer.ggml.eos_token_id   ---->   151645
+qwen2.rope.freq_base   ---->   1e+06
+general.finetune   ---->   qwen2.5-0.5b-instruct
+tokenizer.ggml.merges   ---->   ( size = 151387 ) [Ġ Ġ,ĠĠ ĠĠ,i n,Ġ t,ĠĠĠĠ ĠĠĠĠ,e r,ĠĠ Ġ,o n,Ġ a,r e,a t,s t,e n,o r,Ġt h,Ċ Ċ,Ġ c,l e,Ġ s,i t,a n,a r,a l,Ġth e,; Ċ,Ġ p,Ġ f,o u,Ġ =,i s,ĠĠĠĠ ĠĠĠ,in g,e s,Ġ w,i on,e d,i c,Ġ b,Ġ d,e t,Ġ m,Ġ o,ĉ ĉ,r o,a s,e l,c t,n d,Ġ in,Ġ h,en t,i d,Ġ n,a m,ĠĠĠĠĠĠĠĠ ĠĠĠ,Ġt o,Ġ re,- -,Ġ {,Ġo f,o m,) ;Ċ,i m,č Ċ,Ġ (,i l,/ /,Ġa nd,u r,s e,Ġ l,e x,Ġ S,a d,Ġ ",c h,u t,i f,* *,Ġ },e m,o l,ĠĠĠĠĠĠĠĠ ĠĠĠĠĠĠĠĠ,t h,) Ċ,Ġ{ Ċ,Ġ g,i g,i v,, Ċ,c e,o d,Ġ v,at e,Ġ T,a g,a y,Ġ *,o t,u s, first 100 elements out of 151387]
+
+general.type   ---->   model
+general.size_label   ---->   630M
+tokenizer.ggml.token_type   ---->   ( size = 151936 ) [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, first 100 elements out of 151936]
+
+qwen2.context_length   ---->   32768
+tokenizer.chat_template   ---->   {%- if tools %}
     {{- '<|im_start|>system\n' }}
     {%- if messages[0]['role'] == 'system' %}
         {{- messages[0]['content'] }}
@@ -78,301 +77,2338 @@ tokenizer.chat_template: [string] {%- if tools %}
     {{- '<|im_start|>assistant\n' }}
 {%- endif %}
 
-general.quantization_version: [uint32]
-q8_0 tensor output.weight @5947744, 136134656 weights, dims [896,151936], 144643072 bytes
-q5_0 tensor token_embd.weight @150590816, 136134656 weights, dims [896,151936], 93592576 bytes
-f32 tensor blk.0.attn_norm.weight @244183392, 896 weights, dims [896], 3584 bytes
-q6_k tensor blk.0.ffn_down.weight @244186976, 4358144 weights, dims [4864,896], 3575040 bytes
-q5_0 tensor blk.0.ffn_gate.weight @247762016, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.0.ffn_up.weight @250758240, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.0.ffn_norm.weight @253754464, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.0.attn_k.bias @253758048, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.0.attn_k.weight @253758560, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.0.attn_output.weight @253837408, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.0.attn_q.bias @254389344, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.0.attn_q.weight @254392928, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.0.attn_v.bias @254944864, 128 weights, dims [128], 512 bytes
-q8_0 tensor blk.0.attn_v.weight @254945376, 114688 weights, dims [896,128], 121856 bytes
-f32 tensor blk.1.attn_norm.weight @255067232, 896 weights, dims [896], 3584 bytes
-q6_k tensor blk.1.ffn_down.weight @255070816, 4358144 weights, dims [4864,896], 3575040 bytes
-q5_0 tensor blk.1.ffn_gate.weight @258645856, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.1.ffn_up.weight @261642080, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.1.ffn_norm.weight @264638304, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.1.attn_k.bias @264641888, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.1.attn_k.weight @264642400, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.1.attn_output.weight @264721248, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.1.attn_q.bias @265273184, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.1.attn_q.weight @265276768, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.1.attn_v.bias @265828704, 128 weights, dims [128], 512 bytes
-q8_0 tensor blk.1.attn_v.weight @265829216, 114688 weights, dims [896,128], 121856 bytes
-f32 tensor blk.10.attn_norm.weight @265951072, 896 weights, dims [896], 3584 bytes
-q6_k tensor blk.10.ffn_down.weight @265954656, 4358144 weights, dims [4864,896], 3575040 bytes
-q5_0 tensor blk.10.ffn_gate.weight @269529696, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.10.ffn_up.weight @272525920, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.10.ffn_norm.weight @275522144, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.10.attn_k.bias @275525728, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.10.attn_k.weight @275526240, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.10.attn_output.weight @275605088, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.10.attn_q.bias @276157024, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.10.attn_q.weight @276160608, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.10.attn_v.bias @276712544, 128 weights, dims [128], 512 bytes
-q8_0 tensor blk.10.attn_v.weight @276713056, 114688 weights, dims [896,128], 121856 bytes
-f32 tensor blk.11.attn_norm.weight @276834912, 896 weights, dims [896], 3584 bytes
-q4_k tensor blk.11.ffn_down.weight @276838496, 4358144 weights, dims [4864,896], 2451456 bytes
-q5_0 tensor blk.11.ffn_gate.weight @279289952, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.11.ffn_up.weight @282286176, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.11.ffn_norm.weight @285282400, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.11.attn_k.bias @285285984, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.11.attn_k.weight @285286496, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.11.attn_output.weight @285365344, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.11.attn_q.bias @285917280, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.11.attn_q.weight @285920864, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.11.attn_v.bias @286472800, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.11.attn_v.weight @286473312, 114688 weights, dims [896,128], 78848 bytes
-f32 tensor blk.12.attn_norm.weight @286552160, 896 weights, dims [896], 3584 bytes
-q4_k tensor blk.12.ffn_down.weight @286555744, 4358144 weights, dims [4864,896], 2451456 bytes
-q5_0 tensor blk.12.ffn_gate.weight @289007200, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.12.ffn_up.weight @292003424, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.12.ffn_norm.weight @294999648, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.12.attn_k.bias @295003232, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.12.attn_k.weight @295003744, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.12.attn_output.weight @295082592, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.12.attn_q.bias @295634528, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.12.attn_q.weight @295638112, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.12.attn_v.bias @296190048, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.12.attn_v.weight @296190560, 114688 weights, dims [896,128], 78848 bytes
-f32 tensor blk.13.attn_norm.weight @296269408, 896 weights, dims [896], 3584 bytes
-q6_k tensor blk.13.ffn_down.weight @296272992, 4358144 weights, dims [4864,896], 3575040 bytes
-q5_0 tensor blk.13.ffn_gate.weight @299848032, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.13.ffn_up.weight @302844256, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.13.ffn_norm.weight @305840480, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.13.attn_k.bias @305844064, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.13.attn_k.weight @305844576, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.13.attn_output.weight @305923424, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.13.attn_q.bias @306475360, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.13.attn_q.weight @306478944, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.13.attn_v.bias @307030880, 128 weights, dims [128], 512 bytes
-q8_0 tensor blk.13.attn_v.weight @307031392, 114688 weights, dims [896,128], 121856 bytes
-f32 tensor blk.14.attn_norm.weight @307153248, 896 weights, dims [896], 3584 bytes
-q4_k tensor blk.14.ffn_down.weight @307156832, 4358144 weights, dims [4864,896], 2451456 bytes
-q5_0 tensor blk.14.ffn_gate.weight @309608288, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.14.ffn_up.weight @312604512, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.14.ffn_norm.weight @315600736, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.14.attn_k.bias @315604320, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.14.attn_k.weight @315604832, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.14.attn_output.weight @315683680, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.14.attn_q.bias @316235616, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.14.attn_q.weight @316239200, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.14.attn_v.bias @316791136, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.14.attn_v.weight @316791648, 114688 weights, dims [896,128], 78848 bytes
-f32 tensor blk.15.attn_norm.weight @316870496, 896 weights, dims [896], 3584 bytes
-q4_k tensor blk.15.ffn_down.weight @316874080, 4358144 weights, dims [4864,896], 2451456 bytes
-q5_0 tensor blk.15.ffn_gate.weight @319325536, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.15.ffn_up.weight @322321760, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.15.ffn_norm.weight @325317984, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.15.attn_k.bias @325321568, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.15.attn_k.weight @325322080, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.15.attn_output.weight @325400928, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.15.attn_q.bias @325952864, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.15.attn_q.weight @325956448, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.15.attn_v.bias @326508384, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.15.attn_v.weight @326508896, 114688 weights, dims [896,128], 78848 bytes
-f32 tensor blk.16.attn_norm.weight @326587744, 896 weights, dims [896], 3584 bytes
-q6_k tensor blk.16.ffn_down.weight @326591328, 4358144 weights, dims [4864,896], 3575040 bytes
-q5_0 tensor blk.16.ffn_gate.weight @330166368, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.16.ffn_up.weight @333162592, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.16.ffn_norm.weight @336158816, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.16.attn_k.bias @336162400, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.16.attn_k.weight @336162912, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.16.attn_output.weight @336241760, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.16.attn_q.bias @336793696, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.16.attn_q.weight @336797280, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.16.attn_v.bias @337349216, 128 weights, dims [128], 512 bytes
-q8_0 tensor blk.16.attn_v.weight @337349728, 114688 weights, dims [896,128], 121856 bytes
-f32 tensor blk.17.attn_norm.weight @337471584, 896 weights, dims [896], 3584 bytes
-q4_k tensor blk.17.ffn_down.weight @337475168, 4358144 weights, dims [4864,896], 2451456 bytes
-q5_0 tensor blk.17.ffn_gate.weight @339926624, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.17.ffn_up.weight @342922848, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.17.ffn_norm.weight @345919072, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.17.attn_k.bias @345922656, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.17.attn_k.weight @345923168, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.17.attn_output.weight @346002016, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.17.attn_q.bias @346553952, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.17.attn_q.weight @346557536, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.17.attn_v.bias @347109472, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.17.attn_v.weight @347109984, 114688 weights, dims [896,128], 78848 bytes
-f32 tensor blk.18.attn_norm.weight @347188832, 896 weights, dims [896], 3584 bytes
-q4_k tensor blk.18.ffn_down.weight @347192416, 4358144 weights, dims [4864,896], 2451456 bytes
-q5_0 tensor blk.18.ffn_gate.weight @349643872, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.18.ffn_up.weight @352640096, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.18.ffn_norm.weight @355636320, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.18.attn_k.bias @355639904, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.18.attn_k.weight @355640416, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.18.attn_output.weight @355719264, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.18.attn_q.bias @356271200, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.18.attn_q.weight @356274784, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.18.attn_v.bias @356826720, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.18.attn_v.weight @356827232, 114688 weights, dims [896,128], 78848 bytes
-f32 tensor blk.19.attn_norm.weight @356906080, 896 weights, dims [896], 3584 bytes
-q6_k tensor blk.19.ffn_down.weight @356909664, 4358144 weights, dims [4864,896], 3575040 bytes
-q5_0 tensor blk.19.ffn_gate.weight @360484704, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.19.ffn_up.weight @363480928, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.19.ffn_norm.weight @366477152, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.19.attn_k.bias @366480736, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.19.attn_k.weight @366481248, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.19.attn_output.weight @366560096, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.19.attn_q.bias @367112032, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.19.attn_q.weight @367115616, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.19.attn_v.bias @367667552, 128 weights, dims [128], 512 bytes
-q8_0 tensor blk.19.attn_v.weight @367668064, 114688 weights, dims [896,128], 121856 bytes
-f32 tensor blk.2.attn_norm.weight @367789920, 896 weights, dims [896], 3584 bytes
-q4_k tensor blk.2.ffn_down.weight @367793504, 4358144 weights, dims [4864,896], 2451456 bytes
-q5_0 tensor blk.2.ffn_gate.weight @370244960, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.2.ffn_up.weight @373241184, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.2.ffn_norm.weight @376237408, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.2.attn_k.bias @376240992, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.2.attn_k.weight @376241504, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.2.attn_output.weight @376320352, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.2.attn_q.bias @376872288, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.2.attn_q.weight @376875872, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.2.attn_v.bias @377427808, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.2.attn_v.weight @377428320, 114688 weights, dims [896,128], 78848 bytes
-f32 tensor blk.20.attn_norm.weight @377507168, 896 weights, dims [896], 3584 bytes
-q4_k tensor blk.20.ffn_down.weight @377510752, 4358144 weights, dims [4864,896], 2451456 bytes
-q5_0 tensor blk.20.ffn_gate.weight @379962208, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.20.ffn_up.weight @382958432, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.20.ffn_norm.weight @385954656, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.20.attn_k.bias @385958240, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.20.attn_k.weight @385958752, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.20.attn_output.weight @386037600, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.20.attn_q.bias @386589536, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.20.attn_q.weight @386593120, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.20.attn_v.bias @387145056, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.20.attn_v.weight @387145568, 114688 weights, dims [896,128], 78848 bytes
-f32 tensor blk.21.attn_norm.weight @387224416, 896 weights, dims [896], 3584 bytes
-q6_k tensor blk.21.ffn_down.weight @387228000, 4358144 weights, dims [4864,896], 3575040 bytes
-q5_0 tensor blk.21.ffn_gate.weight @390803040, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.21.ffn_up.weight @393799264, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.21.ffn_norm.weight @396795488, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.21.attn_k.bias @396799072, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.21.attn_k.weight @396799584, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.21.attn_output.weight @396878432, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.21.attn_q.bias @397430368, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.21.attn_q.weight @397433952, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.21.attn_v.bias @397985888, 128 weights, dims [128], 512 bytes
-q8_0 tensor blk.21.attn_v.weight @397986400, 114688 weights, dims [896,128], 121856 bytes
-f32 tensor blk.22.attn_norm.weight @398108256, 896 weights, dims [896], 3584 bytes
-q4_k tensor blk.22.ffn_down.weight @398111840, 4358144 weights, dims [4864,896], 2451456 bytes
-q5_0 tensor blk.22.ffn_gate.weight @400563296, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.22.ffn_up.weight @403559520, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.22.ffn_norm.weight @406555744, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.22.attn_k.bias @406559328, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.22.attn_k.weight @406559840, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.22.attn_output.weight @406638688, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.22.attn_q.bias @407190624, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.22.attn_q.weight @407194208, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.22.attn_v.bias @407746144, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.22.attn_v.weight @407746656, 114688 weights, dims [896,128], 78848 bytes
-f32 tensor blk.23.attn_norm.weight @407825504, 896 weights, dims [896], 3584 bytes
-q4_k tensor blk.23.ffn_down.weight @407829088, 4358144 weights, dims [4864,896], 2451456 bytes
-q5_0 tensor blk.23.ffn_gate.weight @410280544, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.23.ffn_up.weight @413276768, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.23.ffn_norm.weight @416272992, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.23.attn_k.bias @416276576, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.23.attn_k.weight @416277088, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.23.attn_output.weight @416355936, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.23.attn_q.bias @416907872, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.23.attn_q.weight @416911456, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.23.attn_v.bias @417463392, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.23.attn_v.weight @417463904, 114688 weights, dims [896,128], 78848 bytes
-f32 tensor blk.3.attn_norm.weight @417542752, 896 weights, dims [896], 3584 bytes
-q6_k tensor blk.3.ffn_down.weight @417546336, 4358144 weights, dims [4864,896], 3575040 bytes
-q5_0 tensor blk.3.ffn_gate.weight @421121376, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.3.ffn_up.weight @424117600, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.3.ffn_norm.weight @427113824, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.3.attn_k.bias @427117408, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.3.attn_k.weight @427117920, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.3.attn_output.weight @427196768, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.3.attn_q.bias @427748704, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.3.attn_q.weight @427752288, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.3.attn_v.bias @428304224, 128 weights, dims [128], 512 bytes
-q8_0 tensor blk.3.attn_v.weight @428304736, 114688 weights, dims [896,128], 121856 bytes
-f32 tensor blk.4.attn_norm.weight @428426592, 896 weights, dims [896], 3584 bytes
-q4_k tensor blk.4.ffn_down.weight @428430176, 4358144 weights, dims [4864,896], 2451456 bytes
-q5_0 tensor blk.4.ffn_gate.weight @430881632, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.4.ffn_up.weight @433877856, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.4.ffn_norm.weight @436874080, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.4.attn_k.bias @436877664, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.4.attn_k.weight @436878176, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.4.attn_output.weight @436957024, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.4.attn_q.bias @437508960, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.4.attn_q.weight @437512544, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.4.attn_v.bias @438064480, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.4.attn_v.weight @438064992, 114688 weights, dims [896,128], 78848 bytes
-f32 tensor blk.5.attn_norm.weight @438143840, 896 weights, dims [896], 3584 bytes
-q4_k tensor blk.5.ffn_down.weight @438147424, 4358144 weights, dims [4864,896], 2451456 bytes
-q5_0 tensor blk.5.ffn_gate.weight @440598880, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.5.ffn_up.weight @443595104, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.5.ffn_norm.weight @446591328, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.5.attn_k.bias @446594912, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.5.attn_k.weight @446595424, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.5.attn_output.weight @446674272, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.5.attn_q.bias @447226208, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.5.attn_q.weight @447229792, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.5.attn_v.bias @447781728, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.5.attn_v.weight @447782240, 114688 weights, dims [896,128], 78848 bytes
-f32 tensor blk.6.attn_norm.weight @447861088, 896 weights, dims [896], 3584 bytes
-q6_k tensor blk.6.ffn_down.weight @447864672, 4358144 weights, dims [4864,896], 3575040 bytes
-q5_0 tensor blk.6.ffn_gate.weight @451439712, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.6.ffn_up.weight @454435936, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.6.ffn_norm.weight @457432160, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.6.attn_k.bias @457435744, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.6.attn_k.weight @457436256, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.6.attn_output.weight @457515104, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.6.attn_q.bias @458067040, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.6.attn_q.weight @458070624, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.6.attn_v.bias @458622560, 128 weights, dims [128], 512 bytes
-q8_0 tensor blk.6.attn_v.weight @458623072, 114688 weights, dims [896,128], 121856 bytes
-f32 tensor blk.7.attn_norm.weight @458744928, 896 weights, dims [896], 3584 bytes
-q6_k tensor blk.7.ffn_down.weight @458748512, 4358144 weights, dims [4864,896], 3575040 bytes
-q5_0 tensor blk.7.ffn_gate.weight @462323552, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.7.ffn_up.weight @465319776, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.7.ffn_norm.weight @468316000, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.7.attn_k.bias @468319584, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.7.attn_k.weight @468320096, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.7.attn_output.weight @468398944, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.7.attn_q.bias @468950880, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.7.attn_q.weight @468954464, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.7.attn_v.bias @469506400, 128 weights, dims [128], 512 bytes
-q8_0 tensor blk.7.attn_v.weight @469506912, 114688 weights, dims [896,128], 121856 bytes
-f32 tensor blk.8.attn_norm.weight @469628768, 896 weights, dims [896], 3584 bytes
-q6_k tensor blk.8.ffn_down.weight @469632352, 4358144 weights, dims [4864,896], 3575040 bytes
-q5_0 tensor blk.8.ffn_gate.weight @473207392, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.8.ffn_up.weight @476203616, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.8.ffn_norm.weight @479199840, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.8.attn_k.bias @479203424, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.8.attn_k.weight @479203936, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.8.attn_output.weight @479282784, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.8.attn_q.bias @479834720, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.8.attn_q.weight @479838304, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.8.attn_v.bias @480390240, 128 weights, dims [128], 512 bytes
-q8_0 tensor blk.8.attn_v.weight @480390752, 114688 weights, dims [896,128], 121856 bytes
-f32 tensor blk.9.attn_norm.weight @480512608, 896 weights, dims [896], 3584 bytes
-q6_k tensor blk.9.ffn_down.weight @480516192, 4358144 weights, dims [4864,896], 3575040 bytes
-q5_0 tensor blk.9.ffn_gate.weight @484091232, 4358144 weights, dims [896,4864], 2996224 bytes
-q5_0 tensor blk.9.ffn_up.weight @487087456, 4358144 weights, dims [896,4864], 2996224 bytes
-f32 tensor blk.9.ffn_norm.weight @490083680, 896 weights, dims [896], 3584 bytes
-f32 tensor blk.9.attn_k.bias @490087264, 128 weights, dims [128], 512 bytes
-q5_0 tensor blk.9.attn_k.weight @490087776, 114688 weights, dims [896,128], 78848 bytes
-q5_0 tensor blk.9.attn_output.weight @490166624, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.9.attn_q.bias @490718560, 896 weights, dims [896], 3584 bytes
-q5_0 tensor blk.9.attn_q.weight @490722144, 802816 weights, dims [896,896], 551936 bytes
-f32 tensor blk.9.attn_v.bias @491274080, 128 weights, dims [128], 512 bytes
-q8_0 tensor blk.9.attn_v.weight @491274592, 114688 weights, dims [896,128], 121856 bytes
-f32 tensor output_norm.weight @491396448, 896 weights, dims [896], 3584 bytes
-gguf-tools.info.parameters: 0.63B
-
-
-
-
-q8_0 q5_0 q6_k q4_k
+qwen2.attention.head_count_kv   ---->   2
+general.quantization_version   ---->   2
+tokenizer.ggml.model   ---->   gpt2
+qwen2.feed_forward_length   ---->   4864
+qwen2.attention.head_count   ---->   14
+Tensor {
+  Name   : output.weight
+  NDims  : 2
+  Shape  : [896, 151936]
+  Offset : 0
+  Size(in bytes) : 144643072
+  Type   : q8_0 (8)
+}
+Tensor {
+  Name   : token_embd.weight
+  NDims  : 2
+  Shape  : [896, 151936]
+  Offset : 144643072
+  Size(in bytes) : 93592576
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.0.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 238235648
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.0.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 238239232
+  Size(in bytes) : 3575040
+  Type   : q6_K (14)
+}
+Tensor {
+  Name   : blk.0.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 241814272
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.0.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 244810496
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.0.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 247806720
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.0.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 247810304
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.0.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 247810816
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.0.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 247889664
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.0.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 248441600
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.0.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 248445184
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.0.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 248997120
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.0.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 248997632
+  Size(in bytes) : 121856
+  Type   : q8_0 (8)
+}
+Tensor {
+  Name   : blk.1.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 249119488
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.1.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 249123072
+  Size(in bytes) : 3575040
+  Type   : q6_K (14)
+}
+Tensor {
+  Name   : blk.1.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 252698112
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.1.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 255694336
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.1.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 258690560
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.1.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 258694144
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.1.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 258694656
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.1.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 258773504
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.1.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 259325440
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.1.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 259329024
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.1.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 259880960
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.1.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 259881472
+  Size(in bytes) : 121856
+  Type   : q8_0 (8)
+}
+Tensor {
+  Name   : blk.10.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 260003328
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.10.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 260006912
+  Size(in bytes) : 3575040
+  Type   : q6_K (14)
+}
+Tensor {
+  Name   : blk.10.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 263581952
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.10.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 266578176
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.10.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 269574400
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.10.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 269577984
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.10.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 269578496
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.10.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 269657344
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.10.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 270209280
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.10.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 270212864
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.10.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 270764800
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.10.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 270765312
+  Size(in bytes) : 121856
+  Type   : q8_0 (8)
+}
+Tensor {
+  Name   : blk.11.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 270887168
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.11.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 270890752
+  Size(in bytes) : 2451456
+  Type   : q4_K (12)
+}
+Tensor {
+  Name   : blk.11.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 273342208
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.11.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 276338432
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.11.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 279334656
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.11.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 279338240
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.11.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 279338752
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.11.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 279417600
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.11.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 279969536
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.11.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 279973120
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.11.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 280525056
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.11.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 280525568
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.12.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 280604416
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.12.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 280608000
+  Size(in bytes) : 2451456
+  Type   : q4_K (12)
+}
+Tensor {
+  Name   : blk.12.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 283059456
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.12.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 286055680
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.12.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 289051904
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.12.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 289055488
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.12.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 289056000
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.12.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 289134848
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.12.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 289686784
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.12.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 289690368
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.12.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 290242304
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.12.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 290242816
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.13.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 290321664
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.13.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 290325248
+  Size(in bytes) : 3575040
+  Type   : q6_K (14)
+}
+Tensor {
+  Name   : blk.13.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 293900288
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.13.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 296896512
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.13.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 299892736
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.13.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 299896320
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.13.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 299896832
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.13.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 299975680
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.13.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 300527616
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.13.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 300531200
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.13.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 301083136
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.13.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 301083648
+  Size(in bytes) : 121856
+  Type   : q8_0 (8)
+}
+Tensor {
+  Name   : blk.14.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 301205504
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.14.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 301209088
+  Size(in bytes) : 2451456
+  Type   : q4_K (12)
+}
+Tensor {
+  Name   : blk.14.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 303660544
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.14.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 306656768
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.14.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 309652992
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.14.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 309656576
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.14.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 309657088
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.14.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 309735936
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.14.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 310287872
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.14.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 310291456
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.14.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 310843392
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.14.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 310843904
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.15.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 310922752
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.15.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 310926336
+  Size(in bytes) : 2451456
+  Type   : q4_K (12)
+}
+Tensor {
+  Name   : blk.15.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 313377792
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.15.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 316374016
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.15.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 319370240
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.15.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 319373824
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.15.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 319374336
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.15.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 319453184
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.15.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 320005120
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.15.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 320008704
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.15.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 320560640
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.15.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 320561152
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.16.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 320640000
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.16.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 320643584
+  Size(in bytes) : 3575040
+  Type   : q6_K (14)
+}
+Tensor {
+  Name   : blk.16.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 324218624
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.16.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 327214848
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.16.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 330211072
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.16.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 330214656
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.16.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 330215168
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.16.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 330294016
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.16.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 330845952
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.16.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 330849536
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.16.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 331401472
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.16.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 331401984
+  Size(in bytes) : 121856
+  Type   : q8_0 (8)
+}
+Tensor {
+  Name   : blk.17.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 331523840
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.17.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 331527424
+  Size(in bytes) : 2451456
+  Type   : q4_K (12)
+}
+Tensor {
+  Name   : blk.17.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 333978880
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.17.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 336975104
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.17.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 339971328
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.17.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 339974912
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.17.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 339975424
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.17.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 340054272
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.17.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 340606208
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.17.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 340609792
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.17.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 341161728
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.17.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 341162240
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.18.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 341241088
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.18.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 341244672
+  Size(in bytes) : 2451456
+  Type   : q4_K (12)
+}
+Tensor {
+  Name   : blk.18.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 343696128
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.18.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 346692352
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.18.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 349688576
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.18.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 349692160
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.18.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 349692672
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.18.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 349771520
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.18.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 350323456
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.18.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 350327040
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.18.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 350878976
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.18.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 350879488
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.19.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 350958336
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.19.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 350961920
+  Size(in bytes) : 3575040
+  Type   : q6_K (14)
+}
+Tensor {
+  Name   : blk.19.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 354536960
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.19.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 357533184
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.19.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 360529408
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.19.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 360532992
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.19.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 360533504
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.19.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 360612352
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.19.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 361164288
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.19.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 361167872
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.19.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 361719808
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.19.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 361720320
+  Size(in bytes) : 121856
+  Type   : q8_0 (8)
+}
+Tensor {
+  Name   : blk.2.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 361842176
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.2.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 361845760
+  Size(in bytes) : 2451456
+  Type   : q4_K (12)
+}
+Tensor {
+  Name   : blk.2.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 364297216
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.2.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 367293440
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.2.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 370289664
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.2.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 370293248
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.2.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 370293760
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.2.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 370372608
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.2.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 370924544
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.2.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 370928128
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.2.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 371480064
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.2.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 371480576
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.20.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 371559424
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.20.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 371563008
+  Size(in bytes) : 2451456
+  Type   : q4_K (12)
+}
+Tensor {
+  Name   : blk.20.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 374014464
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.20.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 377010688
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.20.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 380006912
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.20.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 380010496
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.20.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 380011008
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.20.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 380089856
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.20.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 380641792
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.20.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 380645376
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.20.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 381197312
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.20.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 381197824
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.21.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 381276672
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.21.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 381280256
+  Size(in bytes) : 3575040
+  Type   : q6_K (14)
+}
+Tensor {
+  Name   : blk.21.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 384855296
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.21.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 387851520
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.21.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 390847744
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.21.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 390851328
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.21.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 390851840
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.21.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 390930688
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.21.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 391482624
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.21.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 391486208
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.21.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 392038144
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.21.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 392038656
+  Size(in bytes) : 121856
+  Type   : q8_0 (8)
+}
+Tensor {
+  Name   : blk.22.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 392160512
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.22.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 392164096
+  Size(in bytes) : 2451456
+  Type   : q4_K (12)
+}
+Tensor {
+  Name   : blk.22.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 394615552
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.22.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 397611776
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.22.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 400608000
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.22.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 400611584
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.22.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 400612096
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.22.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 400690944
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.22.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 401242880
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.22.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 401246464
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.22.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 401798400
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.22.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 401798912
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.23.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 401877760
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.23.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 401881344
+  Size(in bytes) : 2451456
+  Type   : q4_K (12)
+}
+Tensor {
+  Name   : blk.23.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 404332800
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.23.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 407329024
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.23.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 410325248
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.23.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 410328832
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.23.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 410329344
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.23.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 410408192
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.23.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 410960128
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.23.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 410963712
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.23.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 411515648
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.23.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 411516160
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.3.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 411595008
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.3.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 411598592
+  Size(in bytes) : 3575040
+  Type   : q6_K (14)
+}
+Tensor {
+  Name   : blk.3.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 415173632
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.3.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 418169856
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.3.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 421166080
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.3.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 421169664
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.3.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 421170176
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.3.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 421249024
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.3.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 421800960
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.3.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 421804544
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.3.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 422356480
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.3.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 422356992
+  Size(in bytes) : 121856
+  Type   : q8_0 (8)
+}
+Tensor {
+  Name   : blk.4.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 422478848
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.4.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 422482432
+  Size(in bytes) : 2451456
+  Type   : q4_K (12)
+}
+Tensor {
+  Name   : blk.4.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 424933888
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.4.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 427930112
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.4.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 430926336
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.4.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 430929920
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.4.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 430930432
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.4.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 431009280
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.4.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 431561216
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.4.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 431564800
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.4.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 432116736
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.4.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 432117248
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.5.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 432196096
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.5.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 432199680
+  Size(in bytes) : 2451456
+  Type   : q4_K (12)
+}
+Tensor {
+  Name   : blk.5.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 434651136
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.5.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 437647360
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.5.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 440643584
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.5.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 440647168
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.5.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 440647680
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.5.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 440726528
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.5.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 441278464
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.5.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 441282048
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.5.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 441833984
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.5.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 441834496
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.6.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 441913344
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.6.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 441916928
+  Size(in bytes) : 3575040
+  Type   : q6_K (14)
+}
+Tensor {
+  Name   : blk.6.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 445491968
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.6.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 448488192
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.6.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 451484416
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.6.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 451488000
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.6.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 451488512
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.6.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 451567360
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.6.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 452119296
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.6.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 452122880
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.6.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 452674816
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.6.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 452675328
+  Size(in bytes) : 121856
+  Type   : q8_0 (8)
+}
+Tensor {
+  Name   : blk.7.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 452797184
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.7.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 452800768
+  Size(in bytes) : 3575040
+  Type   : q6_K (14)
+}
+Tensor {
+  Name   : blk.7.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 456375808
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.7.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 459372032
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.7.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 462368256
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.7.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 462371840
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.7.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 462372352
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.7.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 462451200
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.7.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 463003136
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.7.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 463006720
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.7.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 463558656
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.7.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 463559168
+  Size(in bytes) : 121856
+  Type   : q8_0 (8)
+}
+Tensor {
+  Name   : blk.8.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 463681024
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.8.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 463684608
+  Size(in bytes) : 3575040
+  Type   : q6_K (14)
+}
+Tensor {
+  Name   : blk.8.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 467259648
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.8.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 470255872
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.8.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 473252096
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.8.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 473255680
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.8.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 473256192
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.8.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 473335040
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.8.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 473886976
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.8.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 473890560
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.8.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 474442496
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.8.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 474443008
+  Size(in bytes) : 121856
+  Type   : q8_0 (8)
+}
+Tensor {
+  Name   : blk.9.attn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 474564864
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.9.ffn_down.weight
+  NDims  : 2
+  Shape  : [4864, 896]
+  Offset : 474568448
+  Size(in bytes) : 3575040
+  Type   : q6_K (14)
+}
+Tensor {
+  Name   : blk.9.ffn_gate.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 478143488
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.9.ffn_up.weight
+  NDims  : 2
+  Shape  : [896, 4864]
+  Offset : 481139712
+  Size(in bytes) : 2996224
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.9.ffn_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 484135936
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.9.attn_k.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 484139520
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.9.attn_k.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 484140032
+  Size(in bytes) : 78848
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.9.attn_output.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 484218880
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.9.attn_q.bias
+  NDims  : 1
+  Shape  : [896]
+  Offset : 484770816
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.9.attn_q.weight
+  NDims  : 2
+  Shape  : [896, 896]
+  Offset : 484774400
+  Size(in bytes) : 551936
+  Type   : q5_0 (6)
+}
+Tensor {
+  Name   : blk.9.attn_v.bias
+  NDims  : 1
+  Shape  : [128]
+  Offset : 485326336
+  Size(in bytes) : 512
+  Type   : f32 (0)
+}
+Tensor {
+  Name   : blk.9.attn_v.weight
+  NDims  : 2
+  Shape  : [896, 128]
+  Offset : 485326848
+  Size(in bytes) : 121856
+  Type   : q8_0 (8)
+}
+Tensor {
+  Name   : output_norm.weight
+  NDims  : 1
+  Shape  : [896]
+  Offset : 485448704
+  Size(in bytes) : 3584
+  Type   : f32 (0)
+}
+GLOBAL DATA OFFSET 
+5947712

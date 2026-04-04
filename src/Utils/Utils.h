@@ -8,6 +8,20 @@ template <class... lambdas> struct mix : lambdas... {
 };
 template <class... lambdas> mix(lambdas...) -> mix<lambdas...>;
 
+template <typename... Args> inline void WARNIF(bool condition, Args... args) {
+  if (condition) {
+    std::cout << __LINE__ << " WARN :: ";
+    ((std::cout << args), ...);
+    std::cout << '\n';
+  }
+}
+
+template <typename... Args> inline void WARN(Args... args) {
+  std::cout << __LINE__ << " WARN :: ";
+  ((std::cout << args), ...);
+  std::cout << '\n';
+}
+
 template <typename... Args> inline void ERROR(Args... args) {
   std::cout << __LINE__ << " ERROR :: ";
   ((std::cout << args), ...);

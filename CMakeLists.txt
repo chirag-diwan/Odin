@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(Odin LANGUAGES C CXX)
+project(Odin LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -30,6 +30,12 @@ option(GGUF_DEBUG "Enable GGUF debug printing" OFF)
 if(GGUF_DEBUG)
   target_compile_definitions(Odin PRIVATE GGUF_DEBUG)
 endif()
+
+option(MODEL_DEBUG "Enable Model debug" OFF)
+if(MODEL_DEBUG)
+  target_compile_definitions(Odin PRIVATE MODEL_DEBUG)
+endif()
+
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${GGML_INCLUDE_DIR} src)
 target_link_libraries(${PROJECT_NAME} PRIVATE 

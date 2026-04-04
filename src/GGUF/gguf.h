@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -10,7 +11,10 @@
 #include <cstring>
 #include <fcntl.h>
 #include <functional>
+#include <ggml-cpu.h>
+#include <ggml.h>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <string_view>
 #include <sys/mman.h>
@@ -21,107 +25,6 @@
 #include <vector>
 
 namespace Odin {
-// GGUF_TYPE_Q4_2 = 4, support has been removed
-// GGUF_TYPE_Q4_3 (5) support has been removed
-enum gguf_tensor_type {
-  GGUF_TYPE_F32     = 0,
-  GGUF_TYPE_F16     = 1,
-  GGUF_TYPE_Q4_0    = 2,
-  GGUF_TYPE_Q4_1    = 3,
-  GGUF_TYPE_Q5_0    = 6,
-  GGUF_TYPE_Q5_1    = 7,
-  GGUF_TYPE_Q8_0    = 8,
-  GGUF_TYPE_Q8_1    = 9,
-  GGUF_TYPE_Q2_K    = 10,
-  GGUF_TYPE_Q3_K    = 11,
-  GGUF_TYPE_Q4_K    = 12,
-  GGUF_TYPE_Q5_K    = 13,
-  GGUF_TYPE_Q6_K    = 14,
-  GGUF_TYPE_Q8_K    = 15,
-  GGUF_TYPE_IQ2_XXS = 16,
-  GGUF_TYPE_IQ2_XS  = 17,
-  GGUF_TYPE_IQ3_XXS = 18,
-  GGUF_TYPE_IQ1_S   = 19,
-  GGUF_TYPE_IQ4_NL  = 20,
-  GGUF_TYPE_IQ3_S   = 21,
-  GGUF_TYPE_IQ2_S   = 22,
-  GGUF_TYPE_IQ4_XS  = 23,
-  GGUF_TYPE_I8      = 24,
-  GGUF_TYPE_I16     = 25,
-  GGUF_TYPE_I32     = 26,
-  GGUF_TYPE_I64     = 27,
-  GGUF_TYPE_F64     = 28,
-  GGUF_TYPE_IQ1_M   = 29,
-  GGUF_TYPE_BF16    = 30,
-  GGUF_TYPE_COUNT,
-};
-
-#ifdef GGUF_DEBUG
-const char* gguf_tensor_type_to_string(gguf_tensor_type type) {
-  switch (type) {
-  case GGUF_TYPE_F32:
-    return "F32";
-  case GGUF_TYPE_F16:
-    return "F16";
-  case GGUF_TYPE_Q4_0:
-    return "Q4_0";
-  case GGUF_TYPE_Q4_1:
-    return "Q4_1";
-  case GGUF_TYPE_Q5_0:
-    return "Q5_0";
-  case GGUF_TYPE_Q5_1:
-    return "Q5_1";
-  case GGUF_TYPE_Q8_0:
-    return "Q8_0";
-  case GGUF_TYPE_Q8_1:
-    return "Q8_1";
-  case GGUF_TYPE_Q2_K:
-    return "Q2_K";
-  case GGUF_TYPE_Q3_K:
-    return "Q3_K";
-  case GGUF_TYPE_Q4_K:
-    return "Q4_K";
-  case GGUF_TYPE_Q5_K:
-    return "Q5_K";
-  case GGUF_TYPE_Q6_K:
-    return "Q6_K";
-  case GGUF_TYPE_Q8_K:
-    return "Q8_K";
-  case GGUF_TYPE_IQ2_XXS:
-    return "IQ2_XXS";
-  case GGUF_TYPE_IQ2_XS:
-    return "IQ2_XS";
-  case GGUF_TYPE_IQ3_XXS:
-    return "IQ3_XXS";
-  case GGUF_TYPE_IQ1_S:
-    return "IQ1_S";
-  case GGUF_TYPE_IQ4_NL:
-    return "IQ4_NL";
-  case GGUF_TYPE_IQ3_S:
-    return "IQ3_S";
-  case GGUF_TYPE_IQ2_S:
-    return "IQ2_S";
-  case GGUF_TYPE_IQ4_XS:
-    return "IQ4_XS";
-  case GGUF_TYPE_I8:
-    return "I8";
-  case GGUF_TYPE_I16:
-    return "I16";
-  case GGUF_TYPE_I32:
-    return "I32";
-  case GGUF_TYPE_I64:
-    return "I64";
-  case GGUF_TYPE_F64:
-    return "F64";
-  case GGUF_TYPE_IQ1_M:
-    return "IQ1_M";
-  case GGUF_TYPE_BF16:
-    return "BF16";
-  default:
-    return "UNKNOWN";
-  }
-}
-#endif
 
 enum gguf_value_type {
   // The value is a 8-bit unsigned integer.
@@ -222,32 +125,39 @@ void Print_gguf_val(gguf_value& v) {
 
 #endif
 
-typedef struct {
-  const char* name;
-  size_t      namelen;
-  uint32_t    type;         // Tensor type (enum gguf_tensor_type).
-  uint32_t    ndim;         // Number of dimensions of the tensor.
-  uint64_t*   dim;          // Dimensions (Eg. [512, 1024, 1, 1]).
-  uint64_t    offset;       // Offset from start of file.
-  uint64_t    bsize;        // Total size in bytes.
-  uint64_t    num_weights;  // Total number of parameters.
-  uint8_t*    weights_data; // Pointer to the mmaped file.
-} gguf_tensor;
+#define DIM_ARRAY_MAX_SIZE 8
+struct gguf_tensor {
+  std::string_view name;
+  ggml_type        type;                // Tensor type (enum gguf_tensor_type).
+  uint32_t         ndim;                // Number of dimensions of the tensor.
+  int64_t      dim[DIM_ARRAY_MAX_SIZE]; // Dimensions (Eg. [512, 1024, 1, 1]).
+  uint64_t     offset;                  // Offset from start of file.
+  uint64_t     bsize;                   // Total size in bytes.
+  gguf_tensor* weights_data;            // Pointer to the mmaped file.
+};
+
+class Model;
 
 class GGUF {
+  friend Model;
+
 private:
-  int                fd;
-  uint8_t*           data;
-  uint64_t           size;
+  int      fd;
+  uint8_t* data;
+  uint64_t size;
+  uint64_t left_kv;
+  uint64_t left_tensors;
+  uint64_t off;
+  uint64_t data_off;
+  uint64_t alignment;
+  uint64_t global_data_offset;
+
+public:
   struct gguf_header header;
-  uint64_t           left_kv;
-  uint64_t           left_tensors;
-  uint64_t           off;
-  uint64_t           data_off;
-  uint64_t           alignment;
 
 public:
   std::unordered_map<std::string_view, gguf_value> metadata_kv;
+  std::vector<gguf_tensor>                         tensor_data;
 
 private:
   void* pos() {
@@ -467,12 +377,13 @@ public:
         mmap(NULL, file_stat.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
     ERRORIF(map_ptr == MAP_FAILED, "Mapping failed for ", filepath);
 
-    this->fd        = fd;
-    this->data      = reinterpret_cast<uint8_t*>(map_ptr);
-    this->size      = file_stat.st_size;
-    this->off       = 0;
-    this->data_off  = 0;
-    this->alignment = 32;
+    this->fd                 = fd;
+    this->data               = reinterpret_cast<uint8_t*>(map_ptr);
+    this->size               = file_stat.st_size;
+    this->off                = 0;
+    this->data_off           = 0;
+    this->alignment          = 32;
+    this->global_data_offset = 0;
   }
 
   void ParseHeader() {
@@ -486,6 +397,7 @@ public:
     for (size_t i = 0; i < header.metadata_kv_count; ++i) {
       parse_key_value();
     }
+
     if (metadata_kv.find("general.alignment") != metadata_kv.end()) {
       std::visit(mix{[](auto& a) {
                        ERROR_AND_EXIT("Invalid key type for general.alignment");
@@ -509,18 +421,14 @@ public:
 #endif
   }
 
-  void ParseTensors() {
-
-#ifdef GGUF_DEBUG
-    std::cout << "Tensor -> Number of dimensions -> dimensions -> Offset \n";
-#endif
-#define DIM_ARRAY_MAX_SIZE 8
+  void ParseTensors(ggml_context* weight_context = nullptr) {
     for (size_t i = 0; i < header.tensor_count; ++i) {
-      auto tensor_name = parsestring();
-      auto n_dim       = reinterpret_cast<uint32_t*>(pos())[0];
+      gguf_tensor t;
+      auto        tensor_name = parsestring();
+      auto        n_dim       = reinterpret_cast<uint32_t*>(pos())[0];
       increment(sizeof(decltype(n_dim)));
 
-      std::array<int64_t, DIM_ARRAY_MAX_SIZE> dim = {0};
+      std::array<int64_t, DIM_ARRAY_MAX_SIZE> dim = {1};
 
       for (size_t j = 0; j < n_dim; j++) {
         dim[j] = reinterpret_cast<int64_t*>(pos())[0];
@@ -533,30 +441,53 @@ public:
       auto offset = reinterpret_cast<uint64_t*>(pos())[0];
       increment(sizeof(decltype(offset)));
 
-#ifdef GGUF_DEBUG
-      std::cout << "Tensor {\n";
+      t.name   = tensor_name;
+      t.offset = offset;
+      t.type   = static_cast<ggml_type>(type);
+      t.ndim   = n_dim;
 
-      std::cout << "  Name   : " << tensor_name << "\n";
-      std::cout << "  NDims  : " << n_dim << "\n";
+      for (int i = 0; i < DIM_ARRAY_MAX_SIZE; i++) {
+        t.dim[i] = dim[i];
+      }
+
+      // Get the frkn size
+      t.bsize = 1;
+      for (uint8_t i = 0; i < t.ndim; ++i) {
+        t.bsize *= t.dim[i];
+      }
+      const auto block_size = ggml_blck_size(t.type);
+      ERRORIF(t.bsize % block_size != 0, "Number of elements in tensor ",
+              t.name, " is not a multiple of block size ", block_size);
+      t.bsize = t.bsize * ggml_type_size(t.type) / block_size;
+      tensor_data.emplace_back(t);
+    }
+#ifdef GGUF_DEBUG
+    for (const auto& t : tensor_data) {
+      std::cout << "\nTensor {\n";
+
+      std::cout << "  Name   : " << t.name << "\n";
+      std::cout << "  NDims  : " << t.ndim << "\n";
 
       std::cout << "  Shape  : [";
-      for (int i = 0; i < n_dim; ++i) {
-        std::cout << dim[i];
-        if (i != n_dim - 1)
+      for (int i = 0; i < t.ndim; ++i) {
+        std::cout << t.dim[i];
+        if (i != t.ndim - 1)
           std::cout << ", ";
       }
       std::cout << "]\n";
 
-      std::cout << "  Offset : " << offset << "\n";
+      std::cout << "  Offset : " << t.offset << "\n";
+      std::cout << "  Size(in bytes) : " << t.bsize << "\n";
 
-      std::cout << "  Type   : "
-                << gguf_tensor_type_to_string(
-                       static_cast<gguf_tensor_type>(type))
-                << " (" << type << ")\n";
+      std::cout << "  Type   : " << ggml_type_name(t.type) << " (" << t.type
+                << ")\n";
 
-      std::cout << "}\n";
-#endif
+      std::cout << "}";
     }
+#endif
+    this->global_data_offset =
+        (this->off + this->alignment - 1) & ~(this->alignment - 1);
+    std::cout << "\nGLOBAL DATA OFFSET " << this->global_data_offset;
   }
 
   ~GGUF() {
