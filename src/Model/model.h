@@ -1,7 +1,10 @@
 #include "../GGUF/gguf.h"
+#include <cstdint>
 #include <ggml.h>
+#include <iostream>
 #include <string_view>
 #include <unordered_map>
+#include <variant>
 
 namespace Odin {
 class Model {
@@ -10,6 +13,22 @@ private:
   ggml_context* weight_context;
 
   std::unordered_map<std::string_view, struct ggml_tensor*> tensors;
+
+  uint64_t KV_CacheSize() {
+    gguf_value v = gguf_file.metadata_kv["qwen2.block_count"];
+    uint64_t   block_count =
+        std::visit(mix{[](auto& v) {
+                         ERROR_AND_EXIT("Unknown type for block_count");
+                         return static_cast<uint64_t>(-1);
+                       },
+                       [](uint64_t& v) {
+                         return static_cast<uint64_t>(v);
+                       },
+                       [](uint32_t& v) {
+                         return static_cast<uint64_t>(v);
+                       }},
+                   v.data);
+  }
 
 public:
   Model(GGUF& parsed_file) : gguf_file(parsed_file) {
