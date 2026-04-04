@@ -27,12 +27,6 @@
 
 namespace Odin {
 
-bool isValidLayerName(std::string_view tensor_name) {
-  std::string_view layer_prefix = "blk";
-  return tensor_name.size() >= layer_prefix.size() &&
-         tensor_name.substr(0, layer_prefix.size()) == layer_prefix;
-}
-
 uint32_t getLayerIndex(std::string_view tensor_name) {
   auto start_index = tensor_name.find(".") + 1;
   auto end_index   = tensor_name.find(".", start_index);
@@ -40,7 +34,7 @@ uint32_t getLayerIndex(std::string_view tensor_name) {
       tensor_name.substr(start_index, end_index - start_index).data());
 }
 
-enum GgufValueType {
+enum GGufValueType {
   GGUF_VALUE_TYPE_UINT8   = 0,
   GGUF_VALUE_TYPE_INT8    = 1,
   GGUF_VALUE_TYPE_UINT16  = 2,
@@ -56,32 +50,32 @@ enum GgufValueType {
   GGUF_VALUE_TYPE_FLOAT64 = 12,
 };
 
-struct GgufHeader {
+struct GGufHeader {
   uint32_t magic;
   uint32_t version;
   uint64_t tensor_count;
   uint64_t metadata_kv_count;
 };
 
-struct GgufArray {
+struct GGufArray {
   uint64_t length;
   std::variant<std::nullptr_t, uint8_t*, int8_t*, uint16_t*, int16_t*,
                uint32_t*, int32_t*, float*, uint64_t*, int64_t*, double*, char*,
-               bool*, GgufArray*, std::string_view*>
+               bool*, GGufArray*, std::string_view*>
       data = nullptr;
 };
 
 struct GgufValue {
   uint64_t length;
   std::variant<uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, float,
-               uint64_t, int64_t, double, char, bool, GgufArray,
+               uint64_t, int64_t, double, char, bool, GGufArray,
                std::string_view>
       data;
 };
 
 #ifdef GGUF_DEBUG
 
-void printGgufArray(GgufArray* array_ptr) {
+void printGgufArray(GGufArray* array_ptr) {
   std::cout << "( size = " << array_ptr->length << " )";
   std::cout << " [";
   std::visit(mix{[&](auto* argument) {
@@ -97,7 +91,7 @@ void printGgufArray(GgufArray* array_ptr) {
                      }
                    }
                  },
-                 [](GgufArray* nested_array) {
+                 [](GGufArray* nested_array) {
                    printGgufArray(nested_array);
                  }},
              array_ptr->data);
@@ -108,7 +102,7 @@ void printGgufValue(GgufValue& value_reference) {
   std::visit(mix{[](auto& argument) {
                    std::cout << argument;
                  },
-                 [](GgufArray& array_reference) {
+                 [](GGufArray& array_reference) {
                    printGgufArray(&array_reference);
                  }},
              value_reference.data);
@@ -129,7 +123,7 @@ struct GgufTensor {
 
 class Model;
 
-class GgufReader {
+class GGufReader {
   friend Model;
 
 private:
@@ -142,10 +136,9 @@ private:
   uint64_t data_offset;
   uint64_t byte_alignment;
   uint64_t global_data_offset;
-  uint32_t layer_count;
 
 public:
-  struct GgufHeader header;
+  struct GGufHeader header;
 
 public:
   std::unordered_map<std::string_view, GgufValue> metadata_key_values;
@@ -171,7 +164,7 @@ private:
     return parsed_string_view;
   }
 
-  GgufArray parseArray() {
+  GGufArray parseArray() {
     auto element_type =
         reinterpret_cast<uint32_t*>(getCurrentPositionPointer())[0];
     advanceOffset(sizeof(decltype(element_type)));
@@ -180,7 +173,7 @@ private:
         reinterpret_cast<uint64_t*>(getCurrentPositionPointer())[0];
     advanceOffset(sizeof(decltype(element_count)));
 
-    GgufArray parsed_array;
+    GGufArray parsed_array;
     parsed_array.length = element_count;
 
     switch (element_type) {
@@ -239,7 +232,7 @@ private:
       break;
     }
     case GGUF_VALUE_TYPE_ARRAY: {
-      auto array_pointers = new GgufArray[element_count];
+      auto array_pointers = new GGufArray[element_count];
       for (size_t i = 0; i < element_count; i++) {
         array_pointers[i] = parseArray();
       }
@@ -361,14 +354,14 @@ private:
 
   inline void cleanupResources() {
     munmap(mapped_data, total_size);
-    std::function<void(GgufArray&)> recursive_clean;
-    recursive_clean = [&](GgufArray& current_array) {
+    std::function<void(GGufArray&)> recursive_clean;
+    recursive_clean = [&](GGufArray& current_array) {
       std::visit(mix{[](auto&) {
                      },
                      [](std::string_view* string_argument) {
                        delete[] string_argument;
                      },
-                     [&](GgufArray* array_argument) {
+                     [&](GGufArray* array_argument) {
                        for (size_t i = 0; i < current_array.length; ++i) {
                          recursive_clean(array_argument[i]);
                        }
@@ -379,7 +372,7 @@ private:
   }
 
 public:
-  GgufReader() = default;
+  GGufReader() = default;
 
   void openFile(const char* filepath) {
     int opened_descriptor = open(filepath, O_RDONLY);
@@ -400,14 +393,13 @@ public:
     this->data_offset     = 0;
     this->byte_alignment  = 32;
     this->global_data_offset = 0;
-    this->layer_count        = 0;
   }
 
   void parseHeader() {
     ERRORIF(current_offset != 0, "Offset is not zero on the first call");
 
     header =
-        reinterpret_cast<struct GgufHeader*>(getCurrentPositionPointer())[0];
+        reinterpret_cast<struct GGufHeader*>(getCurrentPositionPointer())[0];
     advanceOffset(sizeof(decltype(header)));
   }
 
@@ -447,15 +439,6 @@ public:
     for (size_t i = 0; i < header.tensor_count; ++i) {
       GgufTensor current_tensor;
       auto       tensor_name = parseString();
-
-      if (isValidLayerName(tensor_name)) {
-        auto layer_index = getLayerIndex(tensor_name);
-        if (std::find(layer_indices.begin(), layer_indices.end(),
-                      layer_index) == layer_indices.end()) {
-          layer_indices.push_back(layer_index);
-          layer_count++;
-        }
-      }
 
       auto dimension_count =
           reinterpret_cast<uint32_t*>(getCurrentPositionPointer())[0];
@@ -529,7 +512,7 @@ public:
 #endif
   }
 
-  ~GgufReader() {
+  ~GGufReader() {
     cleanupResources();
   }
 };
