@@ -1,0 +1,378 @@
+/home/chirag/Models/qwen2.5-0.5b-instruct-q4_k_m.gguf (ver 3): 26 key-value pairs, 291 tensors
+general.architecture: [string] qwen2
+general.type: [string] model
+general.name: [string] qwen2.5-0.5b-instruct
+general.version: [string] v0.1
+general.finetune: [string] qwen2.5-0.5b-instruct
+general.size_label: [string] 630M
+qwen2.block_count: [uint32] 24
+qwen2.context_length: [uint32] 32768
+qwen2.embedding_length: [uint32] 896
+qwen2.feed_forward_length: [uint32] 4864
+qwen2.attention.head_count: [uint32] 14
+qwen2.attention.head_count_kv: [uint32] 2
+qwen2.rope.freq_base: [float32] 1000000.000000
+qwen2.attention.layer_norm_rms_epsilon: [float32] 0.000001
+general.file_type: [uint32] 15
+tokenizer.ggml.model: [string] gpt2
+tokenizer.ggml.pre: [string] qwen2
+tokenizer.ggml.tokens: [array] [!, ", #, $, %, &, ', (, ), *, +, ,, -, ., /, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, :, ;, <, =, >, ... 151906 more items of 151936]
+tokenizer.ggml.token_type: [array] [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ... 151906 more items of 151936]
+tokenizer.ggml.merges: [array] [Ġ Ġ, ĠĠ ĠĠ, i n, Ġ t, ĠĠĠĠ ĠĠĠĠ, e r, ĠĠ Ġ, o n, Ġ a, r e, a t, s t, e n, o r, Ġt h, Ċ Ċ, Ġ c, l e, Ġ s, i t, a n, a r, a l, Ġth e, ; Ċ, Ġ p, Ġ f, o u, Ġ =, i s, ... 151357 more items of 151387]
+tokenizer.ggml.eos_token_id: [uint32] 151645
+tokenizer.ggml.padding_token_id: [uint32] 151643
+tokenizer.ggml.bos_token_id: [uint32] 151643
+tokenizer.ggml.add_bos_token: [bool] false
+tokenizer.chat_template: [string] {%- if tools %}
+    {{- '<|im_start|>system\n' }}
+    {%- if messages[0]['role'] == 'system' %}
+        {{- messages[0]['content'] }}
+    {%- else %}
+        {{- 'You are Qwen, created by Alibaba Cloud. You are a helpful assistant.' }}
+    {%- endif %}
+    {{- "\n\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>" }}
+    {%- for tool in tools %}
+        {{- "\n" }}
+        {{- tool | tojson }}
+    {%- endfor %}
+    {{- "\n</tools>\n\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\n<tool_call>\n{{\"name\": <function-name>, \"arguments\": <args-json-object>}}\n</tool_call><|im_end|>\n" }}
+{%- else %}
+    {%- if messages[0]['role'] == 'system' %}
+        {{- '<|im_start|>system\n' + messages[0]['content'] + '<|im_end|>\n' }}
+    {%- else %}
+        {{- '<|im_start|>system\nYou are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>\n' }}
+    {%- endif %}
+{%- endif %}
+{%- for message in messages %}
+    {%- if (message.role == "user") or (message.role == "system" and not loop.first) or (message.role == "assistant" and not message.tool_calls) %}
+        {{- '<|im_start|>' + message.role + '\n' + message.content + '<|im_end|>' + '\n' }}
+    {%- elif message.role == "assistant" %}
+        {{- '<|im_start|>' + message.role }}
+        {%- if message.content %}
+            {{- '\n' + message.content }}
+        {%- endif %}
+        {%- for tool_call in message.tool_calls %}
+            {%- if tool_call.function is defined %}
+                {%- set tool_call = tool_call.function %}
+            {%- endif %}
+            {{- '\n<tool_call>\n{"name": "' }}
+            {{- tool_call.name }}
+            {{- '", "arguments": ' }}
+            {{- tool_call.arguments | tojson }}
+            {{- '}\n</tool_call>' }}
+        {%- endfor %}
+        {{- '<|im_end|>\n' }}
+    {%- elif message.role == "tool" %}
+        {%- if (loop.index0 == 0) or (messages[loop.index0 - 1].role != "tool") %}
+            {{- '<|im_start|>user' }}
+        {%- endif %}
+        {{- '\n<tool_response>\n' }}
+        {{- message.content }}
+        {{- '\n</tool_response>' }}
+        {%- if loop.last or (messages[loop.index0 + 1].role != "tool") %}
+            {{- '<|im_end|>\n' }}
+        {%- endif %}
+    {%- endif %}
+{%- endfor %}
+{%- if add_generation_prompt %}
+    {{- '<|im_start|>assistant\n' }}
+{%- endif %}
+
+general.quantization_version: [uint32]
+q8_0 tensor output.weight @5947744, 136134656 weights, dims [896,151936], 144643072 bytes
+q5_0 tensor token_embd.weight @150590816, 136134656 weights, dims [896,151936], 93592576 bytes
+f32 tensor blk.0.attn_norm.weight @244183392, 896 weights, dims [896], 3584 bytes
+q6_k tensor blk.0.ffn_down.weight @244186976, 4358144 weights, dims [4864,896], 3575040 bytes
+q5_0 tensor blk.0.ffn_gate.weight @247762016, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.0.ffn_up.weight @250758240, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.0.ffn_norm.weight @253754464, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.0.attn_k.bias @253758048, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.0.attn_k.weight @253758560, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.0.attn_output.weight @253837408, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.0.attn_q.bias @254389344, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.0.attn_q.weight @254392928, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.0.attn_v.bias @254944864, 128 weights, dims [128], 512 bytes
+q8_0 tensor blk.0.attn_v.weight @254945376, 114688 weights, dims [896,128], 121856 bytes
+f32 tensor blk.1.attn_norm.weight @255067232, 896 weights, dims [896], 3584 bytes
+q6_k tensor blk.1.ffn_down.weight @255070816, 4358144 weights, dims [4864,896], 3575040 bytes
+q5_0 tensor blk.1.ffn_gate.weight @258645856, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.1.ffn_up.weight @261642080, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.1.ffn_norm.weight @264638304, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.1.attn_k.bias @264641888, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.1.attn_k.weight @264642400, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.1.attn_output.weight @264721248, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.1.attn_q.bias @265273184, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.1.attn_q.weight @265276768, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.1.attn_v.bias @265828704, 128 weights, dims [128], 512 bytes
+q8_0 tensor blk.1.attn_v.weight @265829216, 114688 weights, dims [896,128], 121856 bytes
+f32 tensor blk.10.attn_norm.weight @265951072, 896 weights, dims [896], 3584 bytes
+q6_k tensor blk.10.ffn_down.weight @265954656, 4358144 weights, dims [4864,896], 3575040 bytes
+q5_0 tensor blk.10.ffn_gate.weight @269529696, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.10.ffn_up.weight @272525920, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.10.ffn_norm.weight @275522144, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.10.attn_k.bias @275525728, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.10.attn_k.weight @275526240, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.10.attn_output.weight @275605088, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.10.attn_q.bias @276157024, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.10.attn_q.weight @276160608, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.10.attn_v.bias @276712544, 128 weights, dims [128], 512 bytes
+q8_0 tensor blk.10.attn_v.weight @276713056, 114688 weights, dims [896,128], 121856 bytes
+f32 tensor blk.11.attn_norm.weight @276834912, 896 weights, dims [896], 3584 bytes
+q4_k tensor blk.11.ffn_down.weight @276838496, 4358144 weights, dims [4864,896], 2451456 bytes
+q5_0 tensor blk.11.ffn_gate.weight @279289952, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.11.ffn_up.weight @282286176, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.11.ffn_norm.weight @285282400, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.11.attn_k.bias @285285984, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.11.attn_k.weight @285286496, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.11.attn_output.weight @285365344, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.11.attn_q.bias @285917280, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.11.attn_q.weight @285920864, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.11.attn_v.bias @286472800, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.11.attn_v.weight @286473312, 114688 weights, dims [896,128], 78848 bytes
+f32 tensor blk.12.attn_norm.weight @286552160, 896 weights, dims [896], 3584 bytes
+q4_k tensor blk.12.ffn_down.weight @286555744, 4358144 weights, dims [4864,896], 2451456 bytes
+q5_0 tensor blk.12.ffn_gate.weight @289007200, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.12.ffn_up.weight @292003424, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.12.ffn_norm.weight @294999648, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.12.attn_k.bias @295003232, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.12.attn_k.weight @295003744, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.12.attn_output.weight @295082592, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.12.attn_q.bias @295634528, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.12.attn_q.weight @295638112, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.12.attn_v.bias @296190048, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.12.attn_v.weight @296190560, 114688 weights, dims [896,128], 78848 bytes
+f32 tensor blk.13.attn_norm.weight @296269408, 896 weights, dims [896], 3584 bytes
+q6_k tensor blk.13.ffn_down.weight @296272992, 4358144 weights, dims [4864,896], 3575040 bytes
+q5_0 tensor blk.13.ffn_gate.weight @299848032, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.13.ffn_up.weight @302844256, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.13.ffn_norm.weight @305840480, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.13.attn_k.bias @305844064, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.13.attn_k.weight @305844576, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.13.attn_output.weight @305923424, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.13.attn_q.bias @306475360, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.13.attn_q.weight @306478944, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.13.attn_v.bias @307030880, 128 weights, dims [128], 512 bytes
+q8_0 tensor blk.13.attn_v.weight @307031392, 114688 weights, dims [896,128], 121856 bytes
+f32 tensor blk.14.attn_norm.weight @307153248, 896 weights, dims [896], 3584 bytes
+q4_k tensor blk.14.ffn_down.weight @307156832, 4358144 weights, dims [4864,896], 2451456 bytes
+q5_0 tensor blk.14.ffn_gate.weight @309608288, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.14.ffn_up.weight @312604512, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.14.ffn_norm.weight @315600736, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.14.attn_k.bias @315604320, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.14.attn_k.weight @315604832, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.14.attn_output.weight @315683680, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.14.attn_q.bias @316235616, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.14.attn_q.weight @316239200, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.14.attn_v.bias @316791136, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.14.attn_v.weight @316791648, 114688 weights, dims [896,128], 78848 bytes
+f32 tensor blk.15.attn_norm.weight @316870496, 896 weights, dims [896], 3584 bytes
+q4_k tensor blk.15.ffn_down.weight @316874080, 4358144 weights, dims [4864,896], 2451456 bytes
+q5_0 tensor blk.15.ffn_gate.weight @319325536, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.15.ffn_up.weight @322321760, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.15.ffn_norm.weight @325317984, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.15.attn_k.bias @325321568, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.15.attn_k.weight @325322080, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.15.attn_output.weight @325400928, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.15.attn_q.bias @325952864, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.15.attn_q.weight @325956448, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.15.attn_v.bias @326508384, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.15.attn_v.weight @326508896, 114688 weights, dims [896,128], 78848 bytes
+f32 tensor blk.16.attn_norm.weight @326587744, 896 weights, dims [896], 3584 bytes
+q6_k tensor blk.16.ffn_down.weight @326591328, 4358144 weights, dims [4864,896], 3575040 bytes
+q5_0 tensor blk.16.ffn_gate.weight @330166368, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.16.ffn_up.weight @333162592, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.16.ffn_norm.weight @336158816, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.16.attn_k.bias @336162400, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.16.attn_k.weight @336162912, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.16.attn_output.weight @336241760, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.16.attn_q.bias @336793696, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.16.attn_q.weight @336797280, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.16.attn_v.bias @337349216, 128 weights, dims [128], 512 bytes
+q8_0 tensor blk.16.attn_v.weight @337349728, 114688 weights, dims [896,128], 121856 bytes
+f32 tensor blk.17.attn_norm.weight @337471584, 896 weights, dims [896], 3584 bytes
+q4_k tensor blk.17.ffn_down.weight @337475168, 4358144 weights, dims [4864,896], 2451456 bytes
+q5_0 tensor blk.17.ffn_gate.weight @339926624, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.17.ffn_up.weight @342922848, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.17.ffn_norm.weight @345919072, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.17.attn_k.bias @345922656, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.17.attn_k.weight @345923168, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.17.attn_output.weight @346002016, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.17.attn_q.bias @346553952, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.17.attn_q.weight @346557536, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.17.attn_v.bias @347109472, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.17.attn_v.weight @347109984, 114688 weights, dims [896,128], 78848 bytes
+f32 tensor blk.18.attn_norm.weight @347188832, 896 weights, dims [896], 3584 bytes
+q4_k tensor blk.18.ffn_down.weight @347192416, 4358144 weights, dims [4864,896], 2451456 bytes
+q5_0 tensor blk.18.ffn_gate.weight @349643872, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.18.ffn_up.weight @352640096, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.18.ffn_norm.weight @355636320, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.18.attn_k.bias @355639904, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.18.attn_k.weight @355640416, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.18.attn_output.weight @355719264, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.18.attn_q.bias @356271200, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.18.attn_q.weight @356274784, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.18.attn_v.bias @356826720, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.18.attn_v.weight @356827232, 114688 weights, dims [896,128], 78848 bytes
+f32 tensor blk.19.attn_norm.weight @356906080, 896 weights, dims [896], 3584 bytes
+q6_k tensor blk.19.ffn_down.weight @356909664, 4358144 weights, dims [4864,896], 3575040 bytes
+q5_0 tensor blk.19.ffn_gate.weight @360484704, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.19.ffn_up.weight @363480928, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.19.ffn_norm.weight @366477152, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.19.attn_k.bias @366480736, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.19.attn_k.weight @366481248, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.19.attn_output.weight @366560096, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.19.attn_q.bias @367112032, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.19.attn_q.weight @367115616, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.19.attn_v.bias @367667552, 128 weights, dims [128], 512 bytes
+q8_0 tensor blk.19.attn_v.weight @367668064, 114688 weights, dims [896,128], 121856 bytes
+f32 tensor blk.2.attn_norm.weight @367789920, 896 weights, dims [896], 3584 bytes
+q4_k tensor blk.2.ffn_down.weight @367793504, 4358144 weights, dims [4864,896], 2451456 bytes
+q5_0 tensor blk.2.ffn_gate.weight @370244960, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.2.ffn_up.weight @373241184, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.2.ffn_norm.weight @376237408, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.2.attn_k.bias @376240992, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.2.attn_k.weight @376241504, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.2.attn_output.weight @376320352, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.2.attn_q.bias @376872288, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.2.attn_q.weight @376875872, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.2.attn_v.bias @377427808, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.2.attn_v.weight @377428320, 114688 weights, dims [896,128], 78848 bytes
+f32 tensor blk.20.attn_norm.weight @377507168, 896 weights, dims [896], 3584 bytes
+q4_k tensor blk.20.ffn_down.weight @377510752, 4358144 weights, dims [4864,896], 2451456 bytes
+q5_0 tensor blk.20.ffn_gate.weight @379962208, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.20.ffn_up.weight @382958432, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.20.ffn_norm.weight @385954656, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.20.attn_k.bias @385958240, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.20.attn_k.weight @385958752, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.20.attn_output.weight @386037600, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.20.attn_q.bias @386589536, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.20.attn_q.weight @386593120, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.20.attn_v.bias @387145056, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.20.attn_v.weight @387145568, 114688 weights, dims [896,128], 78848 bytes
+f32 tensor blk.21.attn_norm.weight @387224416, 896 weights, dims [896], 3584 bytes
+q6_k tensor blk.21.ffn_down.weight @387228000, 4358144 weights, dims [4864,896], 3575040 bytes
+q5_0 tensor blk.21.ffn_gate.weight @390803040, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.21.ffn_up.weight @393799264, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.21.ffn_norm.weight @396795488, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.21.attn_k.bias @396799072, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.21.attn_k.weight @396799584, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.21.attn_output.weight @396878432, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.21.attn_q.bias @397430368, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.21.attn_q.weight @397433952, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.21.attn_v.bias @397985888, 128 weights, dims [128], 512 bytes
+q8_0 tensor blk.21.attn_v.weight @397986400, 114688 weights, dims [896,128], 121856 bytes
+f32 tensor blk.22.attn_norm.weight @398108256, 896 weights, dims [896], 3584 bytes
+q4_k tensor blk.22.ffn_down.weight @398111840, 4358144 weights, dims [4864,896], 2451456 bytes
+q5_0 tensor blk.22.ffn_gate.weight @400563296, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.22.ffn_up.weight @403559520, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.22.ffn_norm.weight @406555744, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.22.attn_k.bias @406559328, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.22.attn_k.weight @406559840, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.22.attn_output.weight @406638688, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.22.attn_q.bias @407190624, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.22.attn_q.weight @407194208, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.22.attn_v.bias @407746144, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.22.attn_v.weight @407746656, 114688 weights, dims [896,128], 78848 bytes
+f32 tensor blk.23.attn_norm.weight @407825504, 896 weights, dims [896], 3584 bytes
+q4_k tensor blk.23.ffn_down.weight @407829088, 4358144 weights, dims [4864,896], 2451456 bytes
+q5_0 tensor blk.23.ffn_gate.weight @410280544, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.23.ffn_up.weight @413276768, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.23.ffn_norm.weight @416272992, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.23.attn_k.bias @416276576, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.23.attn_k.weight @416277088, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.23.attn_output.weight @416355936, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.23.attn_q.bias @416907872, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.23.attn_q.weight @416911456, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.23.attn_v.bias @417463392, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.23.attn_v.weight @417463904, 114688 weights, dims [896,128], 78848 bytes
+f32 tensor blk.3.attn_norm.weight @417542752, 896 weights, dims [896], 3584 bytes
+q6_k tensor blk.3.ffn_down.weight @417546336, 4358144 weights, dims [4864,896], 3575040 bytes
+q5_0 tensor blk.3.ffn_gate.weight @421121376, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.3.ffn_up.weight @424117600, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.3.ffn_norm.weight @427113824, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.3.attn_k.bias @427117408, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.3.attn_k.weight @427117920, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.3.attn_output.weight @427196768, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.3.attn_q.bias @427748704, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.3.attn_q.weight @427752288, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.3.attn_v.bias @428304224, 128 weights, dims [128], 512 bytes
+q8_0 tensor blk.3.attn_v.weight @428304736, 114688 weights, dims [896,128], 121856 bytes
+f32 tensor blk.4.attn_norm.weight @428426592, 896 weights, dims [896], 3584 bytes
+q4_k tensor blk.4.ffn_down.weight @428430176, 4358144 weights, dims [4864,896], 2451456 bytes
+q5_0 tensor blk.4.ffn_gate.weight @430881632, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.4.ffn_up.weight @433877856, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.4.ffn_norm.weight @436874080, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.4.attn_k.bias @436877664, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.4.attn_k.weight @436878176, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.4.attn_output.weight @436957024, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.4.attn_q.bias @437508960, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.4.attn_q.weight @437512544, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.4.attn_v.bias @438064480, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.4.attn_v.weight @438064992, 114688 weights, dims [896,128], 78848 bytes
+f32 tensor blk.5.attn_norm.weight @438143840, 896 weights, dims [896], 3584 bytes
+q4_k tensor blk.5.ffn_down.weight @438147424, 4358144 weights, dims [4864,896], 2451456 bytes
+q5_0 tensor blk.5.ffn_gate.weight @440598880, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.5.ffn_up.weight @443595104, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.5.ffn_norm.weight @446591328, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.5.attn_k.bias @446594912, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.5.attn_k.weight @446595424, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.5.attn_output.weight @446674272, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.5.attn_q.bias @447226208, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.5.attn_q.weight @447229792, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.5.attn_v.bias @447781728, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.5.attn_v.weight @447782240, 114688 weights, dims [896,128], 78848 bytes
+f32 tensor blk.6.attn_norm.weight @447861088, 896 weights, dims [896], 3584 bytes
+q6_k tensor blk.6.ffn_down.weight @447864672, 4358144 weights, dims [4864,896], 3575040 bytes
+q5_0 tensor blk.6.ffn_gate.weight @451439712, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.6.ffn_up.weight @454435936, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.6.ffn_norm.weight @457432160, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.6.attn_k.bias @457435744, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.6.attn_k.weight @457436256, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.6.attn_output.weight @457515104, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.6.attn_q.bias @458067040, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.6.attn_q.weight @458070624, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.6.attn_v.bias @458622560, 128 weights, dims [128], 512 bytes
+q8_0 tensor blk.6.attn_v.weight @458623072, 114688 weights, dims [896,128], 121856 bytes
+f32 tensor blk.7.attn_norm.weight @458744928, 896 weights, dims [896], 3584 bytes
+q6_k tensor blk.7.ffn_down.weight @458748512, 4358144 weights, dims [4864,896], 3575040 bytes
+q5_0 tensor blk.7.ffn_gate.weight @462323552, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.7.ffn_up.weight @465319776, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.7.ffn_norm.weight @468316000, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.7.attn_k.bias @468319584, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.7.attn_k.weight @468320096, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.7.attn_output.weight @468398944, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.7.attn_q.bias @468950880, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.7.attn_q.weight @468954464, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.7.attn_v.bias @469506400, 128 weights, dims [128], 512 bytes
+q8_0 tensor blk.7.attn_v.weight @469506912, 114688 weights, dims [896,128], 121856 bytes
+f32 tensor blk.8.attn_norm.weight @469628768, 896 weights, dims [896], 3584 bytes
+q6_k tensor blk.8.ffn_down.weight @469632352, 4358144 weights, dims [4864,896], 3575040 bytes
+q5_0 tensor blk.8.ffn_gate.weight @473207392, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.8.ffn_up.weight @476203616, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.8.ffn_norm.weight @479199840, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.8.attn_k.bias @479203424, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.8.attn_k.weight @479203936, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.8.attn_output.weight @479282784, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.8.attn_q.bias @479834720, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.8.attn_q.weight @479838304, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.8.attn_v.bias @480390240, 128 weights, dims [128], 512 bytes
+q8_0 tensor blk.8.attn_v.weight @480390752, 114688 weights, dims [896,128], 121856 bytes
+f32 tensor blk.9.attn_norm.weight @480512608, 896 weights, dims [896], 3584 bytes
+q6_k tensor blk.9.ffn_down.weight @480516192, 4358144 weights, dims [4864,896], 3575040 bytes
+q5_0 tensor blk.9.ffn_gate.weight @484091232, 4358144 weights, dims [896,4864], 2996224 bytes
+q5_0 tensor blk.9.ffn_up.weight @487087456, 4358144 weights, dims [896,4864], 2996224 bytes
+f32 tensor blk.9.ffn_norm.weight @490083680, 896 weights, dims [896], 3584 bytes
+f32 tensor blk.9.attn_k.bias @490087264, 128 weights, dims [128], 512 bytes
+q5_0 tensor blk.9.attn_k.weight @490087776, 114688 weights, dims [896,128], 78848 bytes
+q5_0 tensor blk.9.attn_output.weight @490166624, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.9.attn_q.bias @490718560, 896 weights, dims [896], 3584 bytes
+q5_0 tensor blk.9.attn_q.weight @490722144, 802816 weights, dims [896,896], 551936 bytes
+f32 tensor blk.9.attn_v.bias @491274080, 128 weights, dims [128], 512 bytes
+q8_0 tensor blk.9.attn_v.weight @491274592, 114688 weights, dims [896,128], 121856 bytes
+f32 tensor output_norm.weight @491396448, 896 weights, dims [896], 3584 bytes
+gguf-tools.info.parameters: 0.63B
+
+
+
+
+q8_0 q5_0 q6_k q4_k

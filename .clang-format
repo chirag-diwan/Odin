@@ -1,0 +1,21 @@
+BasedOnStyle: LLVM
+IndentWidth: 2
+ColumnLimit: 80
+
+NamespaceIndentation: All
+AccessModifierOffset: -4
+IndentAccessModifiers: true
+
+AlignConsecutiveDeclarations: true
+AlignConsecutiveAssignments: true
+AlignTrailingComments: true
+
+AllowShortIfStatementsOnASingleLine: true 
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: false 
+
+PointerAlignment: Left
+DerivePointerAlignment: false
+
+SortIncludes: true
+IncludeBlocks: Regroup
