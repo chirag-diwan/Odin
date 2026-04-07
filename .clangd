@@ -1,0 +1,5 @@
+CompileFlags:
+  Add: [-Wall, -Wextra]
+
+Diagnostics:
+  UnusedIncludes: Strict

@@ -7,17 +7,36 @@
 #include <variant>
 
 namespace Odin {
+enum ModelKeyQueryValueArch { HQA, MHA, GQA };
+
 class Model {
 private:
-  GGufReader&   gguf_file;
-  ggml_context* weight_context;
+  GGufReader& gguf_reader;
 
-  std::unordered_map<std::string_view, struct ggml_tensor*> tensors;
+  struct ggml_context*     weight_context;
+  struct ggml_context*     key_value_context;
+  std::unique_ptr<uint8_t> key_value_buffer;
+  struct ggml_tensor*      key_cache_tensor;
+  struct ggml_tensor*      value_cache_tensor;
 
-  uint64_t KvCacheSize() {
-    GgufValue v = gguf_file.metadata_key_values.at("qwen2.block_count");
-    uint64_t  layer_count =
-        std::visit(mix{[](auto& unhandled_type) {
+  uint64_t layer_count;
+  uint64_t sequence_length;
+  uint64_t key_value_head_count;
+  uint64_t head_dimension;
+
+  uint8_t current_token_id;
+
+  std::vector<Odin::ModelBlock>& blocks;
+  ModelGlobalTensors&            global_tensors;
+
+  ModelKeyQueryValueArch KQVArch;
+
+private:
+  uint64_t calculateKeyValueCacheByteSize() {
+    GgufValue metadata_value =
+        gguf_reader.metadata_key_values.at("qwen2.block_count");
+    layer_count =
+        std::visit(mix{[](auto&) {
                          ERROR_AND_EXIT("Unknown type for block_count");
                          return static_cast<uint64_t>(-1);
                        },
@@ -27,13 +46,13 @@ private:
                        [](uint32_t& count) {
                          return static_cast<uint64_t>(count);
                        }},
-                   v.data);
+                   metadata_value.data);
 
     uint32_t batch_size = 1;
 
-    v = gguf_file.metadata_key_values.at("qwen2.context_length");
-    uint32_t sequence_length =
-        std::visit(mix{[](auto& unhandled_type) {
+    metadata_value = gguf_reader.metadata_key_values.at("qwen2.context_length");
+    sequence_length =
+        std::visit(mix{[](auto&) {
                          ERROR_AND_EXIT("Unknown type for block_count");
                          return static_cast<uint64_t>(-1);
                        },
@@ -43,11 +62,12 @@ private:
                        [](uint32_t& count) {
                          return static_cast<uint64_t>(count);
                        }},
-                   v.data);
+                   metadata_value.data);
 
-    v = gguf_file.metadata_key_values.at("qwen2.attention.head_count_kv");
-    uint32_t kv_heads =
-        std::visit(mix{[](auto& unhandled_type) {
+    metadata_value =
+        gguf_reader.metadata_key_values.at("qwen2.attention.head_count_kv");
+    key_value_head_count =
+        std::visit(mix{[](auto&) {
                          ERROR_AND_EXIT("Unknown type for block_count");
                          return static_cast<uint64_t>(-1);
                        },
@@ -57,11 +77,12 @@ private:
                        [](uint32_t& count) {
                          return static_cast<uint64_t>(count);
                        }},
-                   v.data);
+                   metadata_value.data);
 
-    v = gguf_file.metadata_key_values.at("qwen2.embedding_length");
+    metadata_value =
+        gguf_reader.metadata_key_values.at("qwen2.embedding_length");
     uint32_t embedding_length =
-        std::visit(mix{[](auto& unhandled_type) {
+        std::visit(mix{[](auto&) {
                          ERROR_AND_EXIT("Unknown type for block_count");
                          return static_cast<uint64_t>(-1);
                        },
@@ -71,11 +92,12 @@ private:
                        [](uint32_t& count) {
                          return static_cast<uint64_t>(count);
                        }},
-                   v.data);
+                   metadata_value.data);
 
-    v = gguf_file.metadata_key_values.at("qwen2.attention.head_count");
-    uint32_t head_count =
-        std::visit(mix{[](auto& unhandled_type) {
+    metadata_value =
+        gguf_reader.metadata_key_values.at("qwen2.attention.head_count");
+    uint32_t attention_head_count =
+        std::visit(mix{[](auto&) {
                          ERROR_AND_EXIT("Unknown type for block_count");
                          return static_cast<uint64_t>(-1);
                        },
@@ -85,68 +107,85 @@ private:
                        [](uint32_t& count) {
                          return static_cast<uint64_t>(count);
                        }},
-                   v.data);
-    uint32_t head_dimension = embedding_length / head_count;
-    uint8_t  bytes          = 1;
+                   metadata_value.data);
+    head_dimension            = embedding_length / attention_head_count;
+    uint8_t bytes_per_element = 1;
 
-    return layer_count * batch_size * sequence_length * kv_heads *
-           head_dimension * bytes;
+    return 2 * layer_count * batch_size * sequence_length *
+           key_value_head_count * head_dimension * bytes_per_element;
   }
 
 public:
-  Model(GGufReader& parsed_file) : gguf_file(parsed_file) {
-    struct ggml_init_params init_param = {
-        .mem_size   = ggml_tensor_overhead() * gguf_file.header.tensor_count +
+  Model(GGufReader& parsed_file, std::vector<ModelBlock>& blocks,
+        ModelGlobalTensors& global_tensors)
+      : gguf_reader(parsed_file), blocks(blocks),
+        global_tensors(global_tensors) {
+    struct ggml_init_params weight_initialization_parameters = {
+        .mem_size   = ggml_tensor_overhead() * gguf_reader.header.tensor_count +
                       1024 * 1024,
         .mem_buffer = NULL,
-        .no_alloc   = false
+        .no_alloc   = true
 
     };
 
-    weight_context = ggml_init(init_param);
+    weight_context = ggml_init(weight_initialization_parameters);
     ERRORIF(weight_context == NULL, "Error initializing ggml weight context");
-    for (const auto& bp : parsed_file.tensors) {
-      struct ggml_tensor* tensor = nullptr;
 
-      if (bp.dimension_count == 1) {
-        tensor = ggml_new_tensor_1d(weight_context, bp.tensor_type,
-                                    bp.dimensions[0]);
-      } else if (bp.dimension_count == 2) {
-        tensor = ggml_new_tensor_2d(weight_context, bp.tensor_type,
-                                    bp.dimensions[0], bp.dimensions[1]);
-      } else if (bp.dimension_count == 3) {
-        tensor =
-            ggml_new_tensor_3d(weight_context, bp.tensor_type, bp.dimensions[0],
-                               bp.dimensions[1], bp.dimensions[2]);
-      } else if (bp.dimension_count == 4) {
-        tensor = ggml_new_tensor_4d(weight_context, bp.tensor_type,
-                                    bp.dimensions[0], bp.dimensions[1],
-                                    bp.dimensions[2], bp.dimensions[3]);
-      } else {
-        ERROR_AND_EXIT("Unsupported tensor dimensions");
-      }
-
-      tensor->data = (void*)(parsed_file.mapped_data +
-                             parsed_file.global_data_offset + bp.file_offset);
-
-#ifdef MODEL_DEBUG
-      ggml_set_name(tensor, std::string(bp.name).c_str());
-#endif
-
-      tensors[bp.name] = tensor;
+    if (gguf_reader.head_count > gguf_reader.head_count_kv) {
+      KQVArch = ModelKeyQueryValueArch::GQA;
+    } else if (gguf_reader.head_count == gguf_reader.head_count_kv) {
+      KQVArch = ModelKeyQueryValueArch::HQA;
+    } else if (gguf_reader.head_count < gguf_reader.head_count_kv) {
+      KQVArch = ModelKeyQueryValueArch::MHA;
     }
   }
 
-  void scratch() {
-    size_t                  kv_size   = KvCacheSize();
-    void*                   kv_buffer = new float[kv_size];
-    struct ggml_init_params kv_params = {
-        .mem_size = kv_size, .mem_buffer = kv_buffer, .no_alloc = false};
-    ggml_context* ctx_kv = ggml_init(kv_params);
+  void initializeComputeAndCache() {
+    size_t cache_byte_size = calculateKeyValueCacheByteSize();
+
+    key_value_buffer = std::unique_ptr<uint8_t>(new uint8_t[cache_byte_size]);
+
+    struct ggml_init_params cache_initialization_parameters = {
+        .mem_size   = cache_byte_size,
+        .mem_buffer = key_value_buffer.get(),
+        .no_alloc   = false,
+    };
+
+    key_value_context = ggml_init(cache_initialization_parameters);
+
+    key_cache_tensor =
+        ggml_new_tensor_4d(key_value_context, GGML_TYPE_F32, head_dimension,
+                           key_value_head_count, sequence_length, layer_count);
+    value_cache_tensor =
+        ggml_new_tensor_4d(key_value_context, GGML_TYPE_F32, head_dimension,
+                           key_value_head_count, sequence_length, layer_count);
+
+    size_t                   compute_byte_size = 256ull * 1024 * 1024;
+    std::unique_ptr<uint8_t> compute_memory_buffer(
+        new uint8_t[compute_byte_size]);
+
+    struct ggml_init_params compute_initialization_parameters = {
+        .mem_size   = compute_byte_size,
+        .mem_buffer = compute_memory_buffer.get(),
+        .no_alloc   = false};
+
+    struct ggml_context* compute_context =
+        ggml_init(compute_initialization_parameters);
+
+    struct ggml_tensor* token_tensor =
+        ggml_new_tensor_1d(compute_context, GGML_TYPE_I32, 1);
+
+    static_cast<int32_t*>(token_tensor->data)[0] = current_token_id;
+  }
+
+  void Inference(uint32_t TokenID) {
+    for (const auto& block : blocks) {
+    }
   }
 
   ~Model() {
     ggml_free(weight_context);
+    ggml_free(key_value_context);
   }
 };
 } // namespace Odin

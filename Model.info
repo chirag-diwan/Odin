@@ -1,28 +1,32 @@
+Magic 1179993927
+Version 3
+Tensor count 291
+Key Value count 26
 
-tokenizer.ggml.add_bos_token   ---->   0
-tokenizer.ggml.bos_token_id   ---->   151643
-tokenizer.ggml.tokens   ---->   ( size = 151936 ) [!,",#,$,%,&,',(,),*,+,,,-,.,/,0,1,2,3,4,5,6,7,8,9,:,;,<,=,>,?,@,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,[,\,],^,_,`,a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,{,|,},~,¡,¢,£,¤,¥,¦, first 100 elements out of 151936]
+tokenizer.ggml.add_bos_token    ---->   0
+tokenizer.ggml.bos_token_id    ---->   151643
+tokenizer.ggml.tokens    ---->   ( size = 151936 ) [!,",#,$,%,&,',(,),*,+,,,-,.,/,0,1,2,3,4,5,6,7,8,9,:,;,<,=,>,?,@,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,[,\,],^,_,`,a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,{,|,},~,¡,¢,£,¤,¥,¦, first 100 elements out of 151936]
 
-general.file_type   ---->   15
-qwen2.attention.layer_norm_rms_epsilon   ---->   1e-06
-general.architecture   ---->   qwen2
-tokenizer.ggml.padding_token_id   ---->   151643
-qwen2.embedding_length   ---->   896
-tokenizer.ggml.pre   ---->   qwen2
-general.name   ---->   qwen2.5-0.5b-instruct
-qwen2.block_count   ---->   24
-general.version   ---->   v0.1
-tokenizer.ggml.eos_token_id   ---->   151645
-qwen2.rope.freq_base   ---->   1e+06
-general.finetune   ---->   qwen2.5-0.5b-instruct
-tokenizer.ggml.merges   ---->   ( size = 151387 ) [Ġ Ġ,ĠĠ ĠĠ,i n,Ġ t,ĠĠĠĠ ĠĠĠĠ,e r,ĠĠ Ġ,o n,Ġ a,r e,a t,s t,e n,o r,Ġt h,Ċ Ċ,Ġ c,l e,Ġ s,i t,a n,a r,a l,Ġth e,; Ċ,Ġ p,Ġ f,o u,Ġ =,i s,ĠĠĠĠ ĠĠĠ,in g,e s,Ġ w,i on,e d,i c,Ġ b,Ġ d,e t,Ġ m,Ġ o,ĉ ĉ,r o,a s,e l,c t,n d,Ġ in,Ġ h,en t,i d,Ġ n,a m,ĠĠĠĠĠĠĠĠ ĠĠĠ,Ġt o,Ġ re,- -,Ġ {,Ġo f,o m,) ;Ċ,i m,č Ċ,Ġ (,i l,/ /,Ġa nd,u r,s e,Ġ l,e x,Ġ S,a d,Ġ ",c h,u t,i f,* *,Ġ },e m,o l,ĠĠĠĠĠĠĠĠ ĠĠĠĠĠĠĠĠ,t h,) Ċ,Ġ{ Ċ,Ġ g,i g,i v,, Ċ,c e,o d,Ġ v,at e,Ġ T,a g,a y,Ġ *,o t,u s, first 100 elements out of 151387]
+general.file_type    ---->   15
+qwen2.attention.layer_norm_rms_epsilon    ---->   1e-06
+general.architecture    ---->   qwen2
+tokenizer.ggml.padding_token_id    ---->   151643
+qwen2.embedding_length    ---->   896
+tokenizer.ggml.pre    ---->   qwen2
+general.name    ---->   qwen2.5-0.5b-instruct
+qwen2.block_count    ---->   24
+general.version    ---->   v0.1
+tokenizer.ggml.eos_token_id    ---->   151645
+qwen2.rope.freq_base    ---->   1e+06
+general.finetune    ---->   qwen2.5-0.5b-instruct
+tokenizer.ggml.merges    ---->   ( size = 151387 ) [Ġ Ġ,ĠĠ ĠĠ,i n,Ġ t,ĠĠĠĠ ĠĠĠĠ,e r,ĠĠ Ġ,o n,Ġ a,r e,a t,s t,e n,o r,Ġt h,Ċ Ċ,Ġ c,l e,Ġ s,i t,a n,a r,a l,Ġth e,; Ċ,Ġ p,Ġ f,o u,Ġ =,i s,ĠĠĠĠ ĠĠĠ,in g,e s,Ġ w,i on,e d,i c,Ġ b,Ġ d,e t,Ġ m,Ġ o,ĉ ĉ,r o,a s,e l,c t,n d,Ġ in,Ġ h,en t,i d,Ġ n,a m,ĠĠĠĠĠĠĠĠ ĠĠĠ,Ġt o,Ġ re,- -,Ġ {,Ġo f,o m,) ;Ċ,i m,č Ċ,Ġ (,i l,/ /,Ġa nd,u r,s e,Ġ l,e x,Ġ S,a d,Ġ ",c h,u t,i f,* *,Ġ },e m,o l,ĠĠĠĠĠĠĠĠ ĠĠĠĠĠĠĠĠ,t h,) Ċ,Ġ{ Ċ,Ġ g,i g,i v,, Ċ,c e,o d,Ġ v,at e,Ġ T,a g,a y,Ġ *,o t,u s, first 100 elements out of 151387]
 
-general.type   ---->   model
-general.size_label   ---->   630M
-tokenizer.ggml.token_type   ---->   ( size = 151936 ) [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, first 100 elements out of 151936]
+general.type    ---->   model
+general.size_label    ---->   630M
+tokenizer.ggml.token_type    ---->   ( size = 151936 ) [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, first 100 elements out of 151936]
 
-qwen2.context_length   ---->   32768
-tokenizer.chat_template   ---->   {%- if tools %}
+qwen2.context_length    ---->   32768
+tokenizer.chat_template    ---->   {%- if tools %}
     {{- '<|im_start|>system\n' }}
     {%- if messages[0]['role'] == 'system' %}
         {{- messages[0]['content'] }}
@@ -77,11 +81,11 @@ tokenizer.chat_template   ---->   {%- if tools %}
     {{- '<|im_start|>assistant\n' }}
 {%- endif %}
 
-qwen2.attention.head_count_kv   ---->   2
-general.quantization_version   ---->   2
-tokenizer.ggml.model   ---->   gpt2
-qwen2.feed_forward_length   ---->   4864
-qwen2.attention.head_count   ---->   14
+qwen2.attention.head_count_kv    ---->   2
+general.quantization_version    ---->   2
+tokenizer.ggml.model    ---->   gpt2
+qwen2.feed_forward_length    ---->   4864
+qwen2.attention.head_count    ---->   14
 Tensor {
   Name   : output.weight
   NDims  : 2
@@ -2410,5 +2414,3 @@ Tensor {
   Size(in bytes) : 3584
   Type   : f32 (0)
 }
-GLOBAL DATA OFFSET 
-5947712

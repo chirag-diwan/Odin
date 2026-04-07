@@ -1,10 +1,7 @@
 #pragma once
 #include "../Utils/Utils.h"
 
-#include <algorithm>
 #include <array>
-#include <charconv>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -17,6 +14,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <string>
 #include <string_view>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -27,12 +25,66 @@
 
 namespace Odin {
 
-uint32_t getLayerIndex(std::string_view tensor_name) {
-  auto start_index = tensor_name.find(".") + 1;
-  auto end_index   = tensor_name.find(".", start_index);
-  return std::stoi(
-      tensor_name.substr(start_index, end_index - start_index).data());
-}
+struct ModelBlock {
+  // Exists in: PreNorm, PostNorm.
+  // Bias exists if: NormalizationType == LayerNorm
+  struct ggml_tensor* attn_norm_w = nullptr;
+  struct ggml_tensor* attn_norm_b = nullptr;
+
+  // Exists in: PreNorm, PostNorm. Does NOT exist in Parallel (reuses
+  // attn_norm).
+  struct ggml_tensor* ffn_norm_w = nullptr;
+  struct ggml_tensor* ffn_norm_b = nullptr;
+
+  // Biases exist if: BiasTopology == Biased OR AttentionOnly
+  // Layout: Separated (Llama, Qwen)
+  struct ggml_tensor* attn_q_w = nullptr;
+  struct ggml_tensor* attn_q_b = nullptr;
+  struct ggml_tensor* attn_k_w = nullptr;
+  struct ggml_tensor* attn_k_b = nullptr;
+  struct ggml_tensor* attn_v_w = nullptr;
+  struct ggml_tensor* attn_v_b = nullptr;
+
+  // Layout: PackedQKV (Falcon, Bloom)
+  struct ggml_tensor* attn_qkv_w          = nullptr;
+  struct ggml_tensor* attn_qkv_b          = nullptr;
+  struct ggml_tensor* token_embd_weight   = nullptr;
+  struct ggml_tensor* output_norm_weights = nullptr;
+  struct ggml_tensor* output_weights      = nullptr;
+
+  // Layout: PackedKV (Some MQA variants)
+  // Uses attn_q_w above, plus these combined KV weights
+  struct ggml_tensor* attn_kv_w = nullptr;
+  struct ggml_tensor* attn_kv_b = nullptr;
+
+  // Always exists. Bias depends on BiasTopology.
+  struct ggml_tensor* attn_output_w = nullptr;
+  struct ggml_tensor* attn_output_b = nullptr;
+
+  // Topology: Standard (GPT-2, Bloom)
+  // ffn_up expands the dimension, ffn_down reduces it back.
+  // Bias depends on BiasTopology.
+  struct ggml_tensor* ffn_up_w   = nullptr;
+  struct ggml_tensor* ffn_up_b   = nullptr;
+  struct ggml_tensor* ffn_down_w = nullptr;
+  struct ggml_tensor* ffn_down_b = nullptr;
+
+  // Topology: Gated / SwiGLU (Llama, Qwen, Mistral)
+  // Gate is the activation branch, Up is the linear branch. Down is the output.
+  // Modern architectures rarely use biases here, but the engine must support
+  // the possibility.
+  struct ggml_tensor* ffn_gate_w = nullptr;
+  struct ggml_tensor* ffn_gate_b = nullptr;
+  // Uses ffn_up_w and ffn_down_w from above.
+
+  ModelBlock() = default;
+};
+
+struct ModelGlobalTensors {
+  struct ggml_tensor* token_embd_weights  = nullptr;
+  struct ggml_tensor* output_norm_weights = nullptr;
+  struct ggml_tensor* output_weights      = nullptr;
+};
 
 enum GGufValueType {
   GGUF_VALUE_TYPE_UINT8   = 0,
@@ -49,6 +101,56 @@ enum GGufValueType {
   GGUF_VALUE_TYPE_INT64   = 11,
   GGUF_VALUE_TYPE_FLOAT64 = 12,
 };
+
+void MapTensorToBlock(std::string_view& tensor_name, ggml_tensor* tensor,
+                      ModelBlock& block) {
+
+  // --- Normalization ---
+  if (tensor_name.find(".attn_norm.weight") != std::string::npos)
+    block.attn_norm_w = tensor;
+  else if (tensor_name.find(".ffn_norm.weight") != std::string::npos)
+    block.ffn_norm_w = tensor;
+
+  // --- Attention QKV ---
+  else if (tensor_name.find(".attn_q.weight") != std::string::npos)
+    block.attn_q_w = tensor;
+  else if (tensor_name.find(".attn_q.bias") != std::string::npos)
+    block.attn_q_b = tensor;
+  else if (tensor_name.find(".attn_k.weight") != std::string::npos)
+    block.attn_k_w = tensor;
+  else if (tensor_name.find(".attn_k.bias") != std::string::npos)
+    block.attn_k_b = tensor;
+  else if (tensor_name.find(".attn_v.weight") != std::string::npos)
+    block.attn_v_w = tensor;
+  else if (tensor_name.find(".attn_v.bias") != std::string::npos)
+    block.attn_v_b = tensor;
+  else if (tensor_name.find(".attn_qkv.weight") != std::string::npos)
+    block.attn_qkv_w = tensor;
+
+  // --- Attention Output ---
+  else if (tensor_name.find(".attn_output.weight") != std::string::npos)
+    block.attn_output_w = tensor;
+
+  // --- FFN (SwiGLU specific to Qwen/Llama) ---
+  else if (tensor_name.find(".ffn_gate.weight") != std::string::npos)
+    block.ffn_gate_w = tensor;
+  else if (tensor_name.find(".ffn_up.weight") != std::string::npos)
+    block.ffn_up_w = tensor;
+  else if (tensor_name.find(".ffn_down.weight") != std::string::npos)
+    block.ffn_down_w = tensor;
+}
+
+uint32_t LayerIndex(std::string_view tensor_name) {
+  std::string_view prefix = "blk";
+  if (tensor_name.size() >= prefix.size() &&
+      tensor_name.substr(0, prefix.size()) == prefix) {
+    auto start = tensor_name.find(".") + 1;
+    auto end   = tensor_name.find(".", start);
+    return std::stoi(tensor_name.substr(start, end - start).data());
+  }
+  ERROR_AND_EXIT("Invalid tensor name ", tensor_name);
+  return -1; // not gonna reach here
+}
 
 struct GGufHeader {
   uint32_t magic;
@@ -111,6 +213,7 @@ void printGgufValue(GgufValue& value_reference) {
 #endif
 
 #define DIM_ARRAY_MAX_SIZE 8
+
 struct GgufTensor {
   std::string_view name;
   ggml_type        tensor_type;
@@ -136,6 +239,10 @@ private:
   uint64_t data_offset;
   uint64_t byte_alignment;
   uint64_t global_data_offset;
+
+  uint32_t model_block_count;
+  uint32_t head_count_kv;
+  uint32_t head_count;
 
 public:
   struct GGufHeader header;
@@ -369,6 +476,16 @@ private:
                      }},
                  current_array.data);
     };
+    for (auto& [metadata_key, metadata_value] : metadata_key_values) {
+      std::visit(mix{
+                     [](auto&) {
+                     },
+                     [&](GGufArray& gguf_array) {
+                       recursive_clean(gguf_array);
+                     },
+                 },
+                 metadata_value.data);
+    }
   }
 
 public:
@@ -401,6 +518,12 @@ public:
     header =
         reinterpret_cast<struct GGufHeader*>(getCurrentPositionPointer())[0];
     advanceOffset(sizeof(decltype(header)));
+#ifdef GGUF_DEBUG
+    std::cout << "Magic " << header.magic << '\n';
+    std::cout << "Version " << header.version << '\n';
+    std::cout << "Tensor count " << header.tensor_count << '\n';
+    std::cout << "Key Value count " << header.metadata_kv_count << '\n';
+#endif
   }
 
   void parseAllKeyValues() {
@@ -410,7 +533,7 @@ public:
 
     if (metadata_key_values.find("general.alignment") !=
         metadata_key_values.end()) {
-      std::visit(mix{[](auto& unhandled_type) {
+      std::visit(mix{[](auto&) {
                        ERROR_AND_EXIT("Invalid key type for general.alignment");
                      },
 
@@ -424,6 +547,52 @@ public:
 
                  metadata_key_values["general.alignment"].data);
     }
+
+    for (auto& [metadata_key, metadata_value] : metadata_key_values) {
+      if (metadata_key.find("block_count") != static_cast<size_t>(-1)) {
+        std::visit(mix{[](auto&) {
+                         ERROR_AND_EXIT(
+                             "Invalid key type for general.alignment");
+                       },
+
+                       [this](uint32_t& alignment_value) {
+                         this->model_block_count = alignment_value;
+                       },
+
+                       [this](uint64_t& alignment_value) {
+                         this->model_block_count = alignment_value;
+                       }},
+                   metadata_value.data);
+      } else if (metadata_key.find("head_count_kv") !=
+                 static_cast<size_t>(-1)) {
+        std::visit(mix{[](auto&) {
+                         ERROR_AND_EXIT("Invalid key type for head_count_kv");
+                       },
+
+                       [this](uint32_t& alignment_value) {
+                         this->head_count_kv = alignment_value;
+                       },
+
+                       [this](uint64_t& alignment_value) {
+                         this->head_count_kv = alignment_value;
+                       }},
+                   metadata_value.data);
+      } else if (metadata_key.find("head_count") != static_cast<size_t>(-1)) {
+        std::visit(mix{[](auto&) {
+                         ERROR_AND_EXIT("Invalid key type for head_count");
+                       },
+
+                       [this](uint32_t& alignment_value) {
+                         this->head_count = alignment_value;
+                       },
+
+                       [this](uint64_t& alignment_value) {
+                         this->head_count = alignment_value;
+                       }},
+                   metadata_value.data);
+      }
+    }
+
 #ifdef GGUF_DEBUG
     for (auto& [metadata_key, metadata_value] : metadata_key_values) {
       std::cout << "\n" << metadata_key << "    ---->   ";
@@ -432,86 +601,106 @@ public:
 #endif
   }
 
-  void parseAllTensors(ggml_context* weight_context = nullptr) {
-
-    std::vector<uint32_t> layer_indices(32);
+  void parseAllTensors(std::vector<ModelBlock>& blocks,
+                       ModelGlobalTensors&      global_tensor,
+                       ggml_context*            weight_context = nullptr) {
+    blocks.resize(model_block_count); // initialize empty blocks
 
     for (size_t i = 0; i < header.tensor_count; ++i) {
-      GgufTensor current_tensor;
-      auto       tensor_name = parseString();
+      auto tensor_name = parseString();
 
       auto dimension_count =
           reinterpret_cast<uint32_t*>(getCurrentPositionPointer())[0];
       advanceOffset(sizeof(decltype(dimension_count)));
 
       std::array<int64_t, DIM_ARRAY_MAX_SIZE> tensor_dimensions = {1};
-
       for (size_t j = 0; j < dimension_count; j++) {
         tensor_dimensions[j] =
             reinterpret_cast<int64_t*>(getCurrentPositionPointer())[0];
         advanceOffset(sizeof(int64_t));
       }
 
-      auto ggml_data_type =
-          reinterpret_cast<uint32_t*>(getCurrentPositionPointer())[0];
+      auto ggml_data_type = static_cast<ggml_type>(
+          reinterpret_cast<uint32_t*>(getCurrentPositionPointer())[0]);
       advanceOffset(sizeof(decltype(ggml_data_type)));
 
       auto tensor_offset =
           reinterpret_cast<uint64_t*>(getCurrentPositionPointer())[0];
       advanceOffset(sizeof(decltype(tensor_offset)));
 
-      current_tensor.name            = tensor_name;
-      current_tensor.file_offset     = tensor_offset;
-      current_tensor.tensor_type     = static_cast<ggml_type>(ggml_data_type);
-      current_tensor.dimension_count = dimension_count;
-
-      for (int i = 0; i < DIM_ARRAY_MAX_SIZE; i++) {
-        current_tensor.dimensions[i] = tensor_dimensions[i];
+      ggml_tensor* t = nullptr;
+      switch (dimension_count) {
+      case 1:
+        t = ggml_new_tensor_1d(weight_context, ggml_data_type,
+                               tensor_dimensions[0]);
+        break;
+      case 2:
+        t = ggml_new_tensor_2d(weight_context, ggml_data_type,
+                               tensor_dimensions[0], tensor_dimensions[1]);
+        break;
+      case 3:
+        t = ggml_new_tensor_3d(weight_context, ggml_data_type,
+                               tensor_dimensions[0], tensor_dimensions[1],
+                               tensor_dimensions[2]);
+        break;
+      case 4:
+        t = ggml_new_tensor_4d(weight_context, ggml_data_type,
+                               tensor_dimensions[0], tensor_dimensions[1],
+                               tensor_dimensions[2], tensor_dimensions[3]);
+        break;
+      default:
+        ERROR_AND_EXIT("Unsupported dimension count ", dimension_count);
       }
 
-      current_tensor.byte_size = 1;
-      for (uint8_t i = 0; i < current_tensor.dimension_count; ++i) {
-        current_tensor.byte_size *= current_tensor.dimensions[i];
+      if (tensor_name.find("token_embd.weight") != std::string::npos) {
+        global_tensor.token_embd_weights = t;
+      } else if (tensor_name.find("output_norm.weight") != std::string::npos) {
+        global_tensor.output_norm_weights = t;
+      } else if (tensor_name.find("output.weight") != std::string::npos) {
+        global_tensor.output_weights = t;
+      } else {
+        auto layer_index = LayerIndex(tensor_name);
+        ERRORIF(layer_index > model_block_count,
+                "Layer Index Greater than the actualy block count ",
+                layer_index);
+        auto& block = blocks[layer_index];
+        MapTensorToBlock(tensor_name, t, block);
       }
-      const auto block_size = ggml_blck_size(current_tensor.tensor_type);
-      ERRORIF(current_tensor.byte_size % block_size != 0,
-              "Number of elements in tensor ", current_tensor.name,
-              " is not a multiple of block size ", block_size);
-      current_tensor.byte_size = current_tensor.byte_size *
-                                 ggml_type_size(current_tensor.tensor_type) /
-                                 block_size;
-      tensors.emplace_back(current_tensor);
+
+      uint32_t byte_size = 1;
+      for (uint8_t i = 0; i < dimension_count; ++i) {
+        byte_size *= tensor_dimensions[i];
+      }
+
+      const auto block_size = ggml_blck_size(ggml_data_type);
+      ERRORIF(byte_size % block_size != 0, "Number of elements in tensor ",
+              tensor_name, " is not a multiple of block size ", block_size);
+      byte_size = byte_size * ggml_type_size(ggml_data_type) / block_size;
+
+#ifdef GGUF_DEBUG
+      std::cout << "\nTensor {\n";
+
+      std::cout << "  Name   : " << tensor_name << "\n";
+      std::cout << "  NDims  : " << dimension_count << "\n";
+
+      std::cout << "  Shape  : [";
+      for (size_t i = 0; i < dimension_count; ++i) {
+        std::cout << tensor_dimensions[i];
+        if (i != dimension_count - 1)
+          std::cout << ", ";
+      }
+      std::cout << "]\n";
+      std::cout << "  Offset : " << tensor_offset << "\n";
+      std::cout << "  Size(in bytes) : " << byte_size << "\n";
+      std::cout << "  Type   : " << ggml_type_name(ggml_data_type) << " ("
+                << ggml_data_type << ")\n";
+      std::cout << "}";
+#endif
     }
     this->global_data_offset =
         (this->current_offset + this->byte_alignment - 1) &
         ~(this->byte_alignment - 1);
-
-#ifdef GGUF_DEBUG
-    for (const auto& tensor_item : tensors) {
-      std::cout << "\nTensor {\n";
-
-      std::cout << "  Name   : " << tensor_item.name << "\n";
-      std::cout << "  NDims  : " << tensor_item.dimension_count << "\n";
-
-      std::cout << "  Shape  : [";
-      for (int i = 0; i < tensor_item.dimension_count; ++i) {
-        std::cout << tensor_item.dimensions[i];
-        if (i != tensor_item.dimension_count - 1)
-          std::cout << ", ";
-      }
-      std::cout << "]\n";
-
-      std::cout << "  Offset : " << tensor_item.file_offset << "\n";
-      std::cout << "  Size(in bytes) : " << tensor_item.byte_size << "\n";
-
-      std::cout << "  Type   : " << ggml_type_name(tensor_item.tensor_type)
-                << " (" << tensor_item.tensor_type << ")\n";
-
-      std::cout << "}";
-    }
-#endif
   }
-
   ~GGufReader() {
     cleanupResources();
   }

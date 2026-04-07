@@ -6,7 +6,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_compile_options(-g)
 
 find_library(GGML_LIB ggml PATHS /usr/local/lib)
 find_library(GGML_BASE_LIB ggml-base PATHS /usr/local/lib)
@@ -28,12 +27,18 @@ add_executable(${PROJECT_NAME}
 
 option(GGUF_DEBUG "Enable GGUF debug printing" OFF)
 if(GGUF_DEBUG)
+  add_compile_options(-g)
   target_compile_definitions(Odin PRIVATE GGUF_DEBUG)
+else()
+  add_compile_options(-O3)
 endif()
 
 option(MODEL_DEBUG "Enable Model debug" OFF)
 if(MODEL_DEBUG)
+  add_compile_options(-g)
   target_compile_definitions(Odin PRIVATE MODEL_DEBUG)
+else()
+  add_compile_options(-O3)
 endif()
 
 
