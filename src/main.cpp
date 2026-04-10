@@ -26,5 +26,17 @@ int main() {
   reader_ctx.parseAllTensors(blocks, global_tensors, weight_ctx);
 
   Model model(reader_ctx, blocks, global_tensors);
+  model.initializeComputeAndCache();
+
+  struct ggml_init_params compute_params = {
+      .mem_size   = 512 * 1024 * 1024,
+      .mem_buffer = NULL,
+      .no_alloc   = false,
+
+  };
+  struct ggml_context* compute_context = ggml_init(compute_params);
+
+  std::vector<int32_t> Tokens = {112, 1231};
+  model.Start(compute_context, Tokens);
   return 0;
 }

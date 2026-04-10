@@ -12,6 +12,7 @@
 #include <ggml-cpu.h>
 #include <ggml.h>
 #include <iostream>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <string>
@@ -46,11 +47,8 @@ struct ModelBlock {
   struct ggml_tensor* attn_v_b = nullptr;
 
   // Layout: PackedQKV (Falcon, Bloom)
-  struct ggml_tensor* attn_qkv_w          = nullptr;
-  struct ggml_tensor* attn_qkv_b          = nullptr;
-  struct ggml_tensor* token_embd_weight   = nullptr;
-  struct ggml_tensor* output_norm_weights = nullptr;
-  struct ggml_tensor* output_weights      = nullptr;
+  struct ggml_tensor* attn_qkv_w = nullptr;
+  struct ggml_tensor* attn_qkv_b = nullptr;
 
   // Layout: PackedKV (Some MQA variants)
   // Uses attn_q_w above, plus these combined KV weights
@@ -176,7 +174,6 @@ struct GgufValue {
 };
 
 #ifdef GGUF_DEBUG
-
 void printGgufArray(GGufArray* array_ptr) {
   std::cout << "( size = " << array_ptr->length << " )";
   std::cout << " [";
@@ -210,6 +207,37 @@ void printGgufValue(GgufValue& value_reference) {
              value_reference.data);
 }
 
+const char* GetTypeName(GGufValueType t) {
+  switch (t) {
+  case GGUF_VALUE_TYPE_UINT8:
+    return "UINT8";
+  case GGUF_VALUE_TYPE_INT8:
+    return "INT8";
+  case GGUF_VALUE_TYPE_UINT16:
+    return "UINT16";
+  case GGUF_VALUE_TYPE_INT16:
+    return "INT16";
+  case GGUF_VALUE_TYPE_UINT32:
+    return "UINT32";
+  case GGUF_VALUE_TYPE_INT32:
+    return "INT32";
+  case GGUF_VALUE_TYPE_FLOAT32:
+    return "FLOAT32";
+  case GGUF_VALUE_TYPE_BOOL:
+    return "BOOL";
+  case GGUF_VALUE_TYPE_STRING:
+    return "STRING";
+  case GGUF_VALUE_TYPE_ARRAY:
+    return "ARRAY";
+  case GGUF_VALUE_TYPE_UINT64:
+    return "UINT64";
+  case GGUF_VALUE_TYPE_INT64:
+    return "INT64";
+  case GGUF_VALUE_TYPE_FLOAT64:
+    return "FLOAT64";
+  }
+}
+
 #endif
 
 #define DIM_ARRAY_MAX_SIZE 8
@@ -241,8 +269,10 @@ private:
   uint64_t global_data_offset;
 
   uint32_t model_block_count;
-  uint32_t head_count_kv;
-  uint32_t head_count;
+  uint32_t model_head_count_kv;
+  uint32_t model_head_count;
+  uint32_t model_embedding_length;
+  float    model_rope_freq_base;
 
 public:
   struct GGufHeader header;
@@ -531,6 +561,7 @@ public:
       parseKeyValue();
     }
 
+    // Extract some important key value pair
     if (metadata_key_values.find("general.alignment") !=
         metadata_key_values.end()) {
       std::visit(mix{[](auto&) {
@@ -570,11 +601,11 @@ public:
                        },
 
                        [this](uint32_t& alignment_value) {
-                         this->head_count_kv = alignment_value;
+                         this->model_head_count_kv = alignment_value;
                        },
 
                        [this](uint64_t& alignment_value) {
-                         this->head_count_kv = alignment_value;
+                         this->model_head_count_kv = alignment_value;
                        }},
                    metadata_value.data);
       } else if (metadata_key.find("head_count") != static_cast<size_t>(-1)) {
@@ -583,14 +614,45 @@ public:
                        },
 
                        [this](uint32_t& alignment_value) {
-                         this->head_count = alignment_value;
+                         this->model_head_count = alignment_value;
                        },
 
                        [this](uint64_t& alignment_value) {
-                         this->head_count = alignment_value;
+                         this->model_head_count = alignment_value;
+                       }},
+
+                   metadata_value.data);
+      } else if (metadata_key.find("embedding_length") !=
+                 static_cast<size_t>(-1)) {
+        std::visit(mix{[](auto&) {
+                         ERROR_AND_EXIT(
+                             "Invalid key type for embedding_length");
+                       },
+
+                       [this](uint32_t& alignment_value) {
+                         this->model_embedding_length = alignment_value;
+                       },
+
+                       [this](uint64_t& alignment_value) {
+                         this->model_embedding_length = alignment_value;
                        }},
                    metadata_value.data);
+      } else if (metadata_key.find("rope.freq_base") !=
+                 static_cast<size_t>(-1)) {
+        std::visit(mix{
+                       [](auto&) {
+                         ERROR_AND_EXIT("Invalid key type for rope.freq_base");
+                       },
+
+                       [this](float& alignment_value) {
+                         this->model_rope_freq_base = alignment_value;
+                       },
+
+                   },
+                   metadata_value.data);
       }
+
+      // rope.freq_base
     }
 
 #ifdef GGUF_DEBUG
