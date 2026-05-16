@@ -1,3 +1,4 @@
 build/
-./Model.info
-./external
+Model.info
+/external/*
+perf.data

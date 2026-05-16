@@ -41,7 +41,7 @@ namespace Odin {
 
 
   template <typename ret_type , GGufValueType ...valid_pack>
-    ret_type Extract(GGufValue& val){
+    ret_type Extract(const GGufValue& val){
       if(!((val.type == valid_pack) || ...)){
         Log(ERROR , "Unsupported type encountered , the value is" , GGufValueName(val.type) , "wanted" , (GGufValueName(valid_pack),...));
         std::exit(-1);

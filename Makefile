@@ -1,0 +1,11 @@
+test:
+	cd build && \
+	cmake .. && \
+	make -j$(nproc) && \
+	perf record ./odin && \
+	perf report
+
+report:
+	cd build && \
+	perf report
+

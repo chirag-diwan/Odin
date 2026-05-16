@@ -7,7 +7,7 @@ enum LogLevel {
 };
 
 template<typename ...Pack>
-void Log(LogLevel l , Pack ...args){
+__attribute__((always_inline)) inline void Log(LogLevel l , Pack ...args){
   if(l == WARN){
     std::cout << "[WARN]";
   }else if(l == ERROR) {
@@ -21,7 +21,7 @@ void Log(LogLevel l , Pack ...args){
 
 
 template<typename ...Pack>
-void Log(Pack ...args){
+__attribute__((always_inline)) inline void Log(Pack ...args){
   ((std::cout << args << ' '), ...);
   std::cout << '\n';
 }

@@ -31,24 +31,22 @@ struct ModelGlobalTensors {
 void SetModelGlobals(MetadataKV_t& metadata_key_values , ModelGlobals& global_struct){
   GGufValue metadata_value ;
 
-  metadata_value = metadata_key_values.at("qwen2.block_count");
-  global_struct.block_count =
-    Odin::Extract<uint64_t, GGUF_VALUE_TYPE_UINT32, GGUF_VALUE_TYPE_UINT64>(metadata_value);
-
-  metadata_value = metadata_key_values.at("qwen2.context_length");
-  global_struct.sequence_length =
-    Odin::Extract<uint64_t, GGUF_VALUE_TYPE_UINT32, GGUF_VALUE_TYPE_UINT64>(metadata_value);
-
-  metadata_value = metadata_key_values.at("qwen2.attention.head_count_kv");
-  global_struct. head_count_kv =
-    Odin::Extract<uint64_t, GGUF_VALUE_TYPE_UINT32, GGUF_VALUE_TYPE_UINT64>(metadata_value);
-
-  metadata_value = metadata_key_values.at("qwen2.embedding_length");
-  global_struct. embedding_length =
-    Odin::Extract<uint64_t, GGUF_VALUE_TYPE_UINT32, GGUF_VALUE_TYPE_UINT64>(metadata_value);
-
-  metadata_value = metadata_key_values.at("qwen2.attention.head_count");
-  global_struct. attention_head_count =
-    Odin::Extract<uint64_t, GGUF_VALUE_TYPE_UINT32, GGUF_VALUE_TYPE_UINT64>(metadata_value);
-
+  for(const auto& kv : metadata_key_values){
+    if(kv.name == "qwen2.block_count"){
+      global_struct.block_count =
+        Odin::Extract<uint64_t, GGUF_VALUE_TYPE_UINT32, GGUF_VALUE_TYPE_UINT64>(kv.value);
+    }else if(kv.name == "qwen2.context_length"){
+      global_struct.sequence_length =
+        Odin::Extract<uint64_t, GGUF_VALUE_TYPE_UINT32, GGUF_VALUE_TYPE_UINT64>(kv.value);
+    }else if(kv.name == "qwen2.attention.head_count_kv"){
+      global_struct. head_count_kv =
+        Odin::Extract<uint64_t, GGUF_VALUE_TYPE_UINT32, GGUF_VALUE_TYPE_UINT64>(kv.value);
+    }else if(kv.name == "qwen2.embedding_length"){
+      global_struct. embedding_length =
+        Odin::Extract<uint64_t, GGUF_VALUE_TYPE_UINT32, GGUF_VALUE_TYPE_UINT64>(kv.value);
+    }else if(kv.name == "qwen2.attention.head_count"){
+      global_struct. attention_head_count =
+        Odin::Extract<uint64_t, GGUF_VALUE_TYPE_UINT32, GGUF_VALUE_TYPE_UINT64>(kv.value);
+    }
+  }
 }

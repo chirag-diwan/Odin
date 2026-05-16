@@ -2,7 +2,7 @@
 #include "ggml.h"
 #include <cstdint>
 #include <string_view>
-#include <unordered_map>
+#include <vector>
 
 
 #define DIM_ARRAY_MAX_SIZE 8
@@ -60,7 +60,12 @@ struct GGufValue {
   }
 };
 
-using MetadataKV_t = std::unordered_map<std::string_view, GGufValue>;
+struct metadata_keyvalue{
+  std::string_view name;
+  GGufValue value;
+};
+
+using MetadataKV_t = std::vector<metadata_keyvalue>;
 
 
 struct GGufTensor {

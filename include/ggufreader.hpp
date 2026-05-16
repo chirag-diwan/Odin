@@ -33,11 +33,11 @@ namespace Odin {
 
 
     private:
-      inline void* getCurrentPositionPointer() {
+      __attribute__((always_inline)) inline void* getCurrentPositionPointer() {
         return &mapped_data[current_offset];
       }
 
-      inline void advanceOffset(size_t step_size) {
+      __attribute__((always_inline)) inline void advanceOffset(size_t step_size) {
         Errorif(current_offset + step_size > total_size, "Size overflow");
         current_offset += step_size;
       }
@@ -96,8 +96,10 @@ namespace Odin {
         }else{
           advanceOffset(GGufValueSize(value_type));
         }
-
-        metadata_key_values[metadata_key] = std::move(parsed_value);
+        metadata_key_values.push_back({
+            metadata_key ,
+            parsed_value
+        });
       }
 
     public:
@@ -149,12 +151,12 @@ namespace Odin {
         for (size_t i = 0; i < header.metadata_kv_count; ++i) {
           parseKeyValue();
         }
-
-        // Extract some important key value pair
-        if (metadata_key_values.find("general.alignment") !=
-            metadata_key_values.end()) {
+  
+        for(const auto& kv : metadata_key_values){
+          if (kv.name == "general.alignment") {
           this->byte_alignment = Extract<uint64_t,GGUF_VALUE_TYPE_UINT32 ,GGUF_VALUE_TYPE_UINT64 >(
-              metadata_key_values["general.alignment"]);
+              kv.value);
+          }
         }
       }
 
