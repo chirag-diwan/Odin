@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include "gguf.hpp"
-#include "logging.hpp"
 #include "types.hpp"
 
 
@@ -44,5 +43,13 @@ void SetModelGlobals(MetadataKV_t& metadata_key_values , ModelGlobals& global_st
       global_struct.attention_layer_norm_rms_epsilon = Extract<float, GGUF_VALUE_TYPE_FLOAT32, GGUF_VALUE_TYPE_FLOAT64>(kv.value);
     }
   }
+  Log(INFO ,"attention_layer_norm_rms_epsilon", global_struct.attention_layer_norm_rms_epsilon);
+  Log(INFO ,"embedding_length", global_struct.embedding_length);
+  Log(INFO ,"attention_head_count_kv", global_struct.attention_head_count_kv);
+  Log(INFO ,"attention_head_count", global_struct.attention_head_count);
+  Log(INFO ,"rope_freq_base", global_struct.rope_freq_base);
+  Log(INFO ,"block_count", global_struct.block_count);
+  Log(INFO ,"context_length", global_struct.context_length);
+  Log(INFO ,"feed_forward_length", global_struct.feed_forward_length);
 }
 

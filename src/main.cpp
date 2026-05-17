@@ -31,6 +31,7 @@ int main() {
   model.PopulateBlocks(reader_ctx.tensors,weight_ctx);
   model.PopulateKVCache(weight_ctx);
   model.Prefill(tokens,compute_ctx);
+  model.Infer(compute_ctx);
 
 
   ggml_free(weight_ctx);

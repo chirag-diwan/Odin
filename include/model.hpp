@@ -103,27 +103,7 @@ class Model{
        [INFO]ffn_down_w OK 0x7fdc2ae0deb0
        [INFO]ffn_gate_w OK 0x7fdc2b064820
        */
-
-
-    void Prefill(std::vector<uint16_t>& tokens , ggml_context* compute_ctx){
-      Errorif(K_cache == nullptr || V_cache == nullptr, "Cache not populated");
-
-      auto d = globals.embedding_length / globals.attention_head_count;
-      float scale_factor = 1.0f / sqrt((float)d);
-      auto s = tokens.size();
-
-      ggml_tensor* pos = ggml_new_tensor_1d(compute_ctx, GGML_TYPE_I32, s);
-      for (size_t i = 0; i < s; i++) {
-        static_cast<int32_t*>(pos->data)[i] = i; 
-      }
-
-      ggml_tensor* indices = ggml_new_tensor_1d(compute_ctx,GGML_TYPE_I32, s);
-      for(size_t i = 0 ; i < tokens.size() ; i++){
-        static_cast<int32_t*>(indices->data)[i] = tokens[i];
-      }
-
-      ggml_tensor* embeddings = ggml_get_rows(compute_ctx,global_tensors.token_embd_weights, indices); // What i understood it should be seq_len x model_d(embedding_length)
-
+    ggml_tensor* forward(ggml_context* compute_ctx , ggml_tensor* embeddings , ggml_tensor* pos , size_t s , size_t d , float scale_factor){
       for(const auto& block : blocks){
         ggml_tensor* normed = ggml_rms_norm(compute_ctx, embeddings, globals.attention_layer_norm_rms_epsilon);
         normed = ggml_mul(compute_ctx, normed, block.attn_norm_w);
@@ -162,23 +142,58 @@ class Model{
         ggml_tensor* proj = ggml_mul_mat(compute_ctx, block.attn_output_w, attention_out);
         embeddings = ggml_add_inplace(compute_ctx, embeddings, proj);
 
-//        ggml_tensor* ffn_expand = ggml_mul_mat(compute_ctx, block.ffn_up_w, embeddings);
-//        ggml_swiglu(compute_ctx, ffn_expand);
-//
-//        ggml_tensor* ffn_gate = ggml_mul_mat(compute_ctx,block.ffn_gate_w, embeddings);
-//        ggml_tensor* ffn_out = ggml_mul(compute_ctx,ffn_gate,ffn_expand);
-//      
-//        ggml_tensor* ffn_down = ggml_mul_mat(compute_ctx, block.ffn_down_w,ffn_out );
-//        ggml_rms_norm_inplace(compute_ctx, ffn_down, 0);
-//
-//        ggml_mul_mat(compute_ctx, block.ffn_norm_w, ffn_down);
-//        embeddings = ggml_add_inplace(compute_ctx, embeddings, ffn_down);
+        ggml_tensor* ffn_expand = ggml_mul_mat(compute_ctx, block.ffn_up_w, embeddings);
+        ggml_swiglu(compute_ctx, ffn_expand);
+
+        ggml_tensor* ffn_gate = ggml_mul_mat(compute_ctx,block.ffn_gate_w, embeddings);
+        ggml_tensor* ffn_out = ggml_mul(compute_ctx,ffn_gate,ffn_expand);
+
+        ggml_tensor* ffn_down = ggml_mul_mat(compute_ctx, block.ffn_down_w,ffn_out );
+        ggml_rms_norm_inplace(compute_ctx, ffn_down, 0);
+
+        ggml_mul_mat(compute_ctx, block.ffn_norm_w, ffn_down);
+        embeddings = ggml_add_inplace(compute_ctx, embeddings, ffn_down);
       }
+      return embeddings;
+    }
+
+    void Prefill(std::vector<uint16_t>& tokens , ggml_context* compute_ctx){
+      Errorif(K_cache == nullptr || V_cache == nullptr, "Cache not populated");
+      Log(INFO , "Prefill start");
+
+      auto d = globals.embedding_length / globals.attention_head_count;
+      float scale_factor = 1.0f / sqrt((float)d);
+      auto s = tokens.size();
+
+      ggml_tensor* pos = ggml_new_tensor_1d(compute_ctx, GGML_TYPE_I32, s);
+      for (size_t i = 0; i < s; i++) {
+        static_cast<int32_t*>(pos->data)[i] = i; 
+      }
+
+      ggml_tensor* indices = ggml_new_tensor_1d(compute_ctx,GGML_TYPE_I32, s);
+      for(size_t i = 0 ; i < tokens.size() ; i++){
+        static_cast<int32_t*>(indices->data)[i] = tokens[i];
+      }
+
+      ggml_tensor* embeddings = ggml_get_rows(compute_ctx,global_tensors.token_embd_weights, indices); // What i understood it should be seq_len x model_d(embedding_length)
+      embeddings = forward(compute_ctx, embeddings,pos, s,d,  scale_factor);
+
       ggml_cgraph* gf = ggml_new_graph(compute_ctx);
 
       ggml_build_forward_expand(gf, embeddings);
       int n_threads = 4; // Set to your CPU core count for testing
 
       ggml_graph_compute_with_ctx(compute_ctx, gf, n_threads);
+
+      Log(INFO , "Prefill completed successfully");
+    }
+
+    void Infer(ggml_context* compute_ctx){
+      Log(INFO , "Inference start");
+      while (true) {
+      
+      }
+
+      Log(INFO , "Inference completed successfully");
     }
 };
