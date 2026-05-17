@@ -77,3 +77,22 @@ struct GGufTensor {
   uint64_t         byte_size;
   uint8_t*         weights_data;
 };
+
+
+struct ModelGlobals{
+  uint32_t block_count;//
+  uint32_t embedding_length;//
+  uint32_t feed_forward_length;//
+  uint32_t attention_head_count;//
+  uint32_t attention_head_count_kv;//
+  uint32_t context_length ; //
+  float rope_freq_base ;
+  float attention_layer_norm_rms_epsilon ;
+};
+
+struct ModelGlobalTensors {
+  struct ggml_tensor* token_embd_weights  = nullptr;
+  struct ggml_tensor* output_norm_weights = nullptr;
+  struct ggml_tensor* output_weights      = nullptr;
+};
+
