@@ -5,6 +5,7 @@
 #include "types.hpp"
 #include <cstdint>
 #include <fcntl.h>
+#include <string_view>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <vector>
@@ -41,19 +42,19 @@ class GGufReader {
     }
 
 
-    GGufString parseString(){
-      GGufString str;
-      str.length =
+    std::string_view parseString(){
+      auto length =
         reinterpret_cast<uint64_t*>(getCurrentPositionPointer())[0];
       advanceOffset(sizeof(uint64_t));
 
-      str.data = static_cast<uint8_t*>(getCurrentPositionPointer());
-      advanceOffset(sizeof(char) * str.length);
+      auto data = static_cast<uint8_t*>(getCurrentPositionPointer());
+      advanceOffset(sizeof(char) * length);
 
-      return str;
+      return std::string_view(reinterpret_cast<char*>(data) , length);
     }
 
-    void skipArray() {
+    GGufArray parseArray() {
+      GGufArray arr;
       auto element_type =
         static_cast<GGufValueType>(reinterpret_cast<uint32_t*>(getCurrentPositionPointer())[0]);
       advanceOffset(sizeof(decltype(element_type)));
@@ -62,22 +63,27 @@ class GGufReader {
         reinterpret_cast<uint64_t*>(getCurrentPositionPointer())[0];
       advanceOffset(sizeof(decltype(element_count)));
 
+      arr.length = element_count;
+      arr.elem_type = element_type;
+
       if(element_type == GGUF_VALUE_TYPE_ARRAY){
         for(size_t i = 0 ; i < element_count ; i++){
-          skipArray();
+          parseArray();
         }
       }else if (element_type == GGUF_VALUE_TYPE_STRING){
         for(size_t i = 0 ; i < element_count ; i++){
-          parseString();
+          std::string_view str = parseString();
+          arr.strings.emplace_back(str);
         }
       }else{
+        arr.data = static_cast<uint8_t*>(getCurrentPositionPointer());
         advanceOffset((GGufValueSize(element_type)) * element_count);
       }
+      return arr;
     }
 
     void parseKeyValue() {
-      auto metadata = parseString();
-      auto metadata_key = std::string_view(reinterpret_cast<char*>(metadata.data) , metadata.length);
+      auto metadata_key = parseString();
       auto value_type =
         reinterpret_cast<uint32_t*>(getCurrentPositionPointer())[0];
       advanceOffset(sizeof(decltype(value_type)));
@@ -88,7 +94,7 @@ class GGufReader {
       parsed_value.type = value_type;
 
       if(value_type == GGUF_VALUE_TYPE_ARRAY){
-        skipArray();
+        parsed_value.array = parseArray();
       }else if(value_type == GGUF_VALUE_TYPE_STRING){
         parsed_value.string = parseString();
       }else{
@@ -161,8 +167,7 @@ class GGufReader {
     void ParseAllTensors() {
       for (size_t i = 0; i < header.tensor_count; ++i) {
         GGufTensor tensor;
-        auto tensor_name_arr = parseString();
-        tensor.name = std::string_view(reinterpret_cast<char*>(tensor_name_arr.data) , tensor_name_arr.length);
+        tensor.name = parseString();
 
         tensor.dimension_count =
           reinterpret_cast<uint32_t*>(getCurrentPositionPointer())[0];

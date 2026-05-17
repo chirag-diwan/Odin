@@ -1,6 +1,7 @@
 #pragma once
 #include "ggml.h"
 #include <cstdint>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -38,20 +39,25 @@ enum GGufValueType {
   GGUF_VALUE_TYPE_NULL,
 };
 
-struct GGufString {
+struct GGufArray{
+  uint32_t elem_type;
+  uint8_t* data;
   uint64_t length;
-  uint8_t * data;
-
-  GGufString(){
-    length = 0;
+  std::vector<std::string_view> strings;
+  
+  GGufArray(){
+    elem_type = GGUF_VALUE_TYPE_NULL;
     data = nullptr;
+    strings = {};
   }
+
+  ~GGufArray(){ }
 };
 
 struct GGufValue {
   uint8_t* data;
-  GGufString string;
-  GGufString array;
+  std::string_view string;
+  GGufArray array;
   uint32_t type;
 
   GGufValue(){
@@ -59,6 +65,7 @@ struct GGufValue {
     type = GGUF_VALUE_TYPE_NULL;
   }
 };
+
 
 struct metadata_keyvalue{
   std::string_view name;
@@ -86,8 +93,8 @@ struct ModelGlobals{
   uint32_t attention_head_count;//
   uint32_t attention_head_count_kv;//
   uint32_t context_length ; //
-  float rope_freq_base ;
-  float attention_layer_norm_rms_epsilon ;
+  double rope_freq_base ;
+  double attention_layer_norm_rms_epsilon ;
 };
 
 struct ModelGlobalTensors {

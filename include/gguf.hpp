@@ -73,6 +73,38 @@ ret_type Extract(const GGufValue& val){
 }
 
 
+template <typename ret_type , typename T>
+ret_type Extract(const T* data , GGufValueType type){
+  switch (type) {
+    case GGUF_VALUE_TYPE_UINT8:
+      return static_cast<ret_type>(reinterpret_cast<const uint8_t*>(data)[0]);
+    case GGUF_VALUE_TYPE_INT8:
+      return static_cast<ret_type>(reinterpret_cast<const int8_t*>(data)[0]);
+    case GGUF_VALUE_TYPE_UINT16:
+      return static_cast<ret_type>(reinterpret_cast<const uint16_t*>(data)[0]);
+    case GGUF_VALUE_TYPE_INT16:
+      return static_cast<ret_type>(reinterpret_cast<const int16_t*>(data)[0]);
+    case GGUF_VALUE_TYPE_UINT32:
+      return static_cast<ret_type>(reinterpret_cast<const uint32_t*>(data)[0]);
+    case GGUF_VALUE_TYPE_INT32:
+      return static_cast<ret_type>(reinterpret_cast<const int32_t*>(data)[0]);
+    case GGUF_VALUE_TYPE_FLOAT32:
+      return static_cast<ret_type>(reinterpret_cast<const float*>(data)[0]);
+    case GGUF_VALUE_TYPE_BOOL:
+      return static_cast<ret_type>(reinterpret_cast<const bool*>(data)[0]);
+    case GGUF_VALUE_TYPE_UINT64:
+      return static_cast<ret_type>(reinterpret_cast<const uint64_t*>(data)[0]);
+    case GGUF_VALUE_TYPE_INT64:
+      return static_cast<ret_type>(reinterpret_cast<const int64_t*>(data)[0]);
+    case GGUF_VALUE_TYPE_FLOAT64:
+      return static_cast<ret_type>(reinterpret_cast<const double*>(data)[0]);
+    default:
+      Log(ERROR , "Unsupported extraction for %?" , GGufValueName(type));
+      std::exit(-1);
+  }
+}
+
+
 
 size_t GGufValueSize(uint32_t val){
   switch (val) {

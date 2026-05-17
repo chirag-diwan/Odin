@@ -52,4 +52,3 @@ void SetModelGlobals(MetadataKV_t& metadata_key_values , ModelGlobals& global_st
   Log(INFO ,"context_length", global_struct.context_length);
   Log(INFO ,"feed_forward_length", global_struct.feed_forward_length);
 }
-
