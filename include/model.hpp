@@ -12,6 +12,8 @@
 #include <string_view>
 #include <vector>
 
+// Add this to your Model class: ggml_tensor* global_causal_mask;
+
 
 class Model{
   private:
@@ -20,8 +22,10 @@ class Model{
 
     ggml_tensor* K_cache;
     ggml_tensor* V_cache;
+    ggml_tensor* global_causal_mask;
 
     size_t curr_pos;
+
 
     void AppendToKVCache( ggml_context* ctx, ggml_tensor* cache, ggml_tensor* tensor, int token_index , size_t layer_index) {
       const int64_t d         = cache->ne[0];
@@ -38,7 +42,7 @@ class Model{
 
       ggml_tensor* cache_view = ggml_view_3d( ctx, cache, d, tensor->ne[1], kv_heads, cache->nb[1], cache->nb[2], offset);
 
-      ggml_cpy(ctx, tensor, cache_view);
+      tensor = ggml_cpy(ctx, tensor, cache_view);
     }
 
   public:
@@ -47,10 +51,14 @@ class Model{
     Model(MetadataKV_t& metadata_key_values){
       globals = {};
       global_tensors = {};
+      global_causal_mask = nullptr;
       K_cache = nullptr;
       V_cache = nullptr;
       curr_pos = 0;
       SetModelGlobals(metadata_key_values,globals);
+    }
+
+    void PopulateCausalMask(ggml_context* static_ctx) {
     }
 
     void PopulateBlocks(std::vector<GGufTensor>& Tensors , ggml_context* weight_context){
@@ -96,7 +104,6 @@ class Model{
       auto max_ctx = globals.context_length; 
       auto kv_heads = globals.attention_head_count_kv;
 
-
       K_cache = ggml_new_tensor_4d(state_ctx, GGML_TYPE_F32, 
           d, max_ctx, kv_heads , globals.block_count);
 
@@ -137,7 +144,27 @@ class Model{
         ggml_tensor* K_view = ggml_view_3d(compute_ctx, K_cache, d, active_tokens, globals.attention_head_count_kv, K_cache->nb[1], K_cache->nb[2], layer_offset);
         ggml_tensor* V_view = ggml_view_3d(compute_ctx, V_cache, d, active_tokens, globals.attention_head_count_kv, V_cache->nb[1], V_cache->nb[2], layer_offset);
 
-        ggml_tensor* attention_out = ggml_flash_attn_ext(compute_ctx, Q_3D, K_view, V_view, nullptr, scale_factor, 0.0f, 0.0f);
+        ggml_tensor* mask = nullptr;
+        if (s > 1) {
+          mask = ggml_new_tensor_2d(compute_ctx, GGML_TYPE_F16, active_tokens, s);
+          ggml_fp16_t mask_val = ggml_fp32_to_fp16(-INFINITY);
+          ggml_fp16_t zero_val = ggml_fp32_to_fp16(0.0f);
+          ggml_fp16_t* mask_data = (ggml_fp16_t*)mask->data;
+          int past_tokens = active_tokens - s;
+
+          for (int r = 0; r < s; ++r) {
+            for (int c = 0; c < active_tokens; ++c) {
+              if (c > past_tokens + r) {
+                mask_data[r * active_tokens + c] = mask_val; // Future token -> Block
+              } else {
+                mask_data[r * active_tokens + c] = zero_val; // Past/Current token -> Allow
+              }
+            }
+          }
+        }
+
+        ggml_tensor* attention_out = ggml_flash_attn_ext(compute_ctx, Q_3D, K_view, V_view, mask, scale_factor, 0.0f, 0.0f);
+        ggml_diag_mask_inf_inplace(compute_ctx, attention_out, curr_pos);
 
         attention_out = ggml_permute(compute_ctx, attention_out, 0, 2, 1, 3);
         attention_out = ggml_cont(compute_ctx, attention_out);
@@ -147,17 +174,15 @@ class Model{
         embeddings = ggml_add_inplace(compute_ctx, embeddings, proj);
 
 
-
         ggml_tensor* embed_norm = ggml_rms_norm(compute_ctx, embeddings, globals.attention_layer_norm_rms_epsilon);
         embed_norm = ggml_mul(compute_ctx,embed_norm , block.ffn_norm_w);
 
         ggml_tensor* ffn_expand = ggml_mul_mat(compute_ctx, block.ffn_up_w, embed_norm);
 
         ggml_tensor* ffn_gate = ggml_mul_mat(compute_ctx,block.ffn_gate_w, embed_norm);
-        ggml_swiglu(compute_ctx, ffn_gate);
+        ffn_gate = ggml_swiglu(compute_ctx, ffn_gate);
 
-        ggml_tensor* ffn_out = ggml_mul(compute_ctx,ffn_gate,ffn_expand);
-
+        ggml_tensor* ffn_out = ggml_mul(compute_ctx,ffn_expand,ffn_gate);
         ggml_tensor* ffn_down = ggml_mul_mat(compute_ctx, block.ffn_down_w,ffn_out );
         embeddings = ggml_add_inplace(compute_ctx, embeddings, ffn_down);
       }

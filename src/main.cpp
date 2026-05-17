@@ -15,7 +15,7 @@ int main() {
   Model model(reader_ctx.metadata_key_values );
 
   ggml_init_params weight_ctx_params = {
-    .mem_size = 2048ul*1024*1024,
+    .mem_size = 4096ul*1024*1024,
     .mem_buffer = NULL,
     .no_alloc = false
   };
@@ -29,10 +29,11 @@ int main() {
   };
   ggml_context* compute_ctx = ggml_init(compute_ctx_params);
 
-  std::vector<int> tokens = {36};
+  std::vector<int> tokens = {36 , 37};
 
   model.PopulateBlocks(reader_ctx.tensors,weight_ctx);
   model.PopulateKVCache(weight_ctx);
+  model.PopulateCausalMask(weight_ctx);
   model.Prefill(compute_ctx , tokens);
   model.Infer(tokens);
 
