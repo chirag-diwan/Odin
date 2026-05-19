@@ -43,3 +43,21 @@ void debug_print(const GGufValue& val){
     std::cout << Extract<int64_t , GGUF_VALUE_TYPE_UINT8   , GGUF_VALUE_TYPE_INT8    , GGUF_VALUE_TYPE_UINT16  , GGUF_VALUE_TYPE_INT16   , GGUF_VALUE_TYPE_UINT32  , GGUF_VALUE_TYPE_INT32   , GGUF_VALUE_TYPE_BOOL    , GGUF_VALUE_TYPE_UINT64  , GGUF_VALUE_TYPE_INT64   >(val);
   }
 }
+
+void debug_print(const GGufTensor& tensor){
+  Log("tensor.name",tensor.name);
+  Log("  tensor.tensor_type",tensor.tensor_type);
+  Log("  tensor.dimension_count",tensor.dimension_count);
+  std::cout << "   tensor.dimension ";
+  std::cout << "[";
+  for(int i = 0 ; i < DIM_ARRAY_MAX_SIZE ; i++){
+    std::cout << tensor.dimensions[i];
+    if(i != DIM_ARRAY_MAX_SIZE - 1){
+      std::cout << ',';
+    }
+  }
+  std::cout << "]" << '\n';
+  Log("  tensor.file_offset",tensor.file_offset);
+  Log("  tensor.byte_size",tensor.byte_size);
+  Log("  tensor.weights_data",reinterpret_cast<uint64_t>(tensor.weights_data));
+}

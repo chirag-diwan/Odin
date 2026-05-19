@@ -44,7 +44,7 @@ struct GGufArray{
   uint8_t* data;
   uint64_t length;
   std::vector<std::string_view> strings;
-  
+
   GGufArray(){
     elem_type = GGUF_VALUE_TYPE_NULL;
     data = nullptr;
@@ -83,6 +83,16 @@ struct GGufTensor {
   uint64_t         file_offset;
   uint64_t         byte_size;
   uint8_t*         weights_data;
+
+  GGufTensor(){
+    dimension_count = 1;
+    for(int i = 0 ; i < DIM_ARRAY_MAX_SIZE ; i++){
+      dimensions[i] = 1;
+    }
+    file_offset = 0;
+    byte_size = 1;
+    weights_data = 0;
+  }
 };
 
 

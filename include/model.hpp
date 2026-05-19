@@ -121,7 +121,6 @@ class Model{
       embeddings = ggml_mul(temp_ctx, embeddings,global_tensors.output_norm_weights);
       embeddings = ggml_mul_mat(temp_ctx, global_tensors.output_weights, embeddings);
 
-      // Return the terminal node. Do NOT execute or build_forward_expand here.
       return embeddings;
     }
 

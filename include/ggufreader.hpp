@@ -196,6 +196,8 @@ class GGufReader {
         Errorif(byte_size % block_size != 0, "Number of elements in tensor ",
             tensor.name, " is not a multiple of block size ", block_size);
         byte_size = byte_size * ggml_type_size(tensor.tensor_type) / block_size;
+        tensor.byte_size = byte_size;
+
         tensors.push_back(tensor);
       }
       data_offset = (current_offset + byte_alignment - 1) & ~(byte_alignment - 1);
