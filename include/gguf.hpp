@@ -2,6 +2,8 @@
 
 #include "./types.hpp"
 #include "./logging.hpp"
+#include <cstring>
+#include <type_traits>
 
 const char * GGufValueName(uint32_t val){
   switch (val) {
@@ -146,4 +148,12 @@ uint32_t LayerIndex(std::string_view tensor_name) {
   }
   Log(ERROR , "Invalid tensor name ", tensor_name);
   std::exit(-1);
+}
+
+template<typename T>
+T read_unaligned(void* ptr){
+  static_assert(!std::is_pointer<T>::value);
+  T var;
+  memcpy(&var,ptr, sizeof(var));
+  return var;
 }

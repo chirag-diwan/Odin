@@ -1,7 +1,6 @@
 #pragma once
 #include "ggml.h"
 #include <cstdint>
-#include <string>
 #include <string_view>
 #include <vector>
 
@@ -11,6 +10,14 @@
 struct AddrLenPair{
   void * addr;
   int64_t len;
+
+  AddrLenPair(){
+    addr = nullptr;
+    len = 0;
+  }
+
+  AddrLenPair(void * addr , int64_t len) : addr(addr) , len(len){}
+
 };
 
 struct GGufHeader {
@@ -18,6 +25,14 @@ struct GGufHeader {
   uint32_t version;
   uint64_t tensor_count;
   uint64_t metadata_kv_count;
+
+  GGufHeader(){
+    magic = 0;
+    version = 0;
+    tensor_count = 0;
+    metadata_kv_count = 0;
+  }
+
 };
 
 
@@ -48,10 +63,9 @@ struct GGufArray{
   GGufArray(){
     elem_type = GGUF_VALUE_TYPE_NULL;
     data = nullptr;
+    length = 0;
     strings = {};
   }
-
-  ~GGufArray(){ }
 };
 
 struct GGufValue {
@@ -97,19 +111,36 @@ struct GGufTensor {
 
 
 struct ModelGlobals{
-  uint32_t block_count;//
-  uint32_t embedding_length;//
-  uint32_t feed_forward_length;//
-  uint32_t attention_head_count;//
-  uint32_t attention_head_count_kv;//
-  uint32_t context_length ; //
+  uint32_t block_count;
+  uint32_t embedding_length;
+  uint32_t feed_forward_length;
+  uint32_t attention_head_count;
+  uint32_t attention_head_count_kv;
+  uint32_t context_length ;
   double rope_freq_base ;
   double attention_layer_norm_rms_epsilon ;
+
+  ModelGlobals(){
+    block_count = 0;
+    embedding_length = 0;
+    feed_forward_length = 0;
+    attention_head_count = 0;
+    attention_head_count_kv = 0;
+    context_length  = 0;
+    rope_freq_base  = 0;
+    attention_layer_norm_rms_epsilon  = 0;
+  }
 };
 
 struct ModelGlobalTensors {
-  struct ggml_tensor* token_embd_weights  = nullptr;
-  struct ggml_tensor* output_norm_weights = nullptr;
-  struct ggml_tensor* output_weights      = nullptr;
+  struct ggml_tensor* token_embd_weights  ;
+  struct ggml_tensor* output_norm_weights ;
+  struct ggml_tensor* output_weights      ;
+
+  ModelGlobalTensors(){
+    token_embd_weights  = nullptr;
+    output_norm_weights = nullptr;
+    output_weights      = nullptr;
+  }
 };
 

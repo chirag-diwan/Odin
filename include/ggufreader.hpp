@@ -2,6 +2,7 @@
 
 #include "errors.hpp"
 #include "gguf.hpp"
+#include "logging.hpp"
 #include "types.hpp"
 #include <cstdint>
 #include <fcntl.h>
@@ -44,7 +45,7 @@ class GGufReader {
 
     std::string_view parseString(){
       auto length =
-        reinterpret_cast<uint64_t*>(getCurrentPositionPointer())[0];
+        read_unaligned<uint64_t>(getCurrentPositionPointer());
       advanceOffset(sizeof(uint64_t));
 
       auto data = static_cast<uint8_t*>(getCurrentPositionPointer());
@@ -56,11 +57,11 @@ class GGufReader {
     GGufArray parseArray() {
       GGufArray arr;
       auto element_type =
-        static_cast<GGufValueType>(reinterpret_cast<uint32_t*>(getCurrentPositionPointer())[0]);
-      advanceOffset(sizeof(decltype(element_type)));
+        static_cast<GGufValueType>(read_unaligned<uint32_t>(getCurrentPositionPointer()));
+      advanceOffset(sizeof(uint32_t));
 
       auto element_count =
-        reinterpret_cast<uint64_t*>(getCurrentPositionPointer())[0];
+        read_unaligned<uint64_t>(getCurrentPositionPointer());
       advanceOffset(sizeof(decltype(element_count)));
 
       arr.length = element_count;
@@ -85,12 +86,12 @@ class GGufReader {
     void parseKeyValue() {
       auto metadata_key = parseString();
       auto value_type =
-        reinterpret_cast<uint32_t*>(getCurrentPositionPointer())[0];
+        read_unaligned<uint32_t>(getCurrentPositionPointer());
       advanceOffset(sizeof(decltype(value_type)));
 
       GGufValue parsed_value;
       parsed_value.data =
-        reinterpret_cast<uint8_t*>(getCurrentPositionPointer());
+        static_cast<uint8_t*>(getCurrentPositionPointer());
       parsed_value.type = value_type;
 
       if(value_type == GGUF_VALUE_TYPE_ARRAY){
@@ -118,7 +119,6 @@ class GGufReader {
 
       header = {};
       global_struct = {};
-
     }
 
     AddrLenPair OpenFile(const char* filepath) {
@@ -134,7 +134,7 @@ class GGufReader {
           filepath);
 
       this->file_descriptor = opened_descriptor;
-      this->mapped_data     = reinterpret_cast<uint8_t*>(memory_mapped_pointer);
+      this->mapped_data     = static_cast<uint8_t*>(memory_mapped_pointer);
       this->total_size      = file_statistics.st_size;
       this->byte_alignment  = 32;
 
@@ -145,7 +145,7 @@ class GGufReader {
       Errorif(current_offset != 0, "Offset is not zero on the first call");
 
       header =
-        reinterpret_cast<struct GGufHeader*>(getCurrentPositionPointer())[0];
+        static_cast<GGufHeader*>(getCurrentPositionPointer())[0];
       advanceOffset(sizeof(decltype(header)));
     }
 
@@ -160,8 +160,10 @@ class GGufReader {
         if (kv.name == "general.alignment") {
           this->byte_alignment = Extract<uint64_t,GGUF_VALUE_TYPE_UINT32 ,GGUF_VALUE_TYPE_UINT64 >(
               kv.value);
+          return;
         }
       }
+      this->byte_alignment = 32;
     }
 
     void ParseAllTensors() {
@@ -170,26 +172,26 @@ class GGufReader {
         tensor.name = parseString();
 
         tensor.dimension_count =
-          reinterpret_cast<uint32_t*>(getCurrentPositionPointer())[0];
+          read_unaligned<uint32_t>(getCurrentPositionPointer());
         advanceOffset(sizeof(uint32_t));
 
         for (size_t j = 0; j < tensor.dimension_count; j++) {
           tensor.dimensions[j] =
-            reinterpret_cast<int64_t*>(getCurrentPositionPointer())[0];
+            read_unaligned<int64_t>(getCurrentPositionPointer());
           advanceOffset(sizeof(int64_t));
         }
 
         tensor.tensor_type= static_cast<ggml_type>(
-            reinterpret_cast<uint32_t*>(getCurrentPositionPointer())[0]);
+            read_unaligned<uint32_t>(getCurrentPositionPointer()));
         advanceOffset(sizeof(uint32_t));
 
         tensor.file_offset =
-          reinterpret_cast<uint64_t*>(getCurrentPositionPointer())[0];
+          read_unaligned<uint64_t>(getCurrentPositionPointer());
         advanceOffset(sizeof(uint64_t));
 
         uint64_t byte_size = 1;
-        for (uint8_t i = 0; i < tensor.dimension_count; ++i) {
-          byte_size *= tensor.dimensions[i];
+        for (uint8_t k = 0; k < tensor.dimension_count; ++k) {
+          byte_size *= tensor.dimensions[k];
         }
 
         const auto block_size = ggml_blck_size(tensor.tensor_type);
@@ -202,7 +204,8 @@ class GGufReader {
       }
       data_offset = (current_offset + byte_alignment - 1) & ~(byte_alignment - 1);
       for(auto& tensor : tensors){
-        tensor.weights_data = mapped_data + data_offset + tensor.file_offset;
+        tensor.file_offset = tensor.file_offset + data_offset;
+        tensor.weights_data = mapped_data + tensor.file_offset;
       }
     }
     ~GGufReader(){
