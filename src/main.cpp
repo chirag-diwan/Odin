@@ -12,32 +12,30 @@ int main() {
 
   reader_ctx.ParseAllTensors();
 
-  Model model(reader_ctx.metadata_key_values );
+  Model model(reader_ctx.metadata_key_values);
 
-  ggml_init_params weight_ctx_params = {
-    .mem_size = 4096ul*1024*1024,
+  ggml_init_params tensor_ctx_params = {
+    .mem_size = 10*1024*1024,
+    .mem_buffer = NULL,
+    .no_alloc =true 
+  };
+  ggml_context* tensor_ctx = ggml_init(tensor_ctx_params);
+
+
+  ggml_init_params kv_ctx_params = {
+    .mem_size =  2048ul*1024*1024,
     .mem_buffer = NULL,
     .no_alloc = false
   };
-  ggml_context* weight_ctx = ggml_init(weight_ctx_params);
+  ggml_context* kv_ctx = ggml_init(kv_ctx_params);
 
+  std::vector<int> tokens = {39 , 56 , 36};//EFG HIJKLMNOPQRSTUVWXYZ
 
-  ggml_init_params compute_ctx_params = {
-    .mem_size = 256*1024*1024,
-    .mem_buffer = NULL,
-    .no_alloc = false
-  };
-  ggml_context* compute_ctx = ggml_init(compute_ctx_params);
-
-  std::vector<int> tokens = {36 , 37};
-
-  model.PopulateBlocks(reader_ctx.tensors,weight_ctx);
-  model.PopulateKVCache(weight_ctx);
-  model.PopulateCausalMask(weight_ctx);
-  model.Prefill(compute_ctx , tokens);
+  model.PopulateBlocks(reader_ctx.tensors,tensor_ctx);
+  model.PopulateKVCache(kv_ctx);
   model.Infer(tokens);
 
-  
+
   for (const auto & kv : reader_ctx.metadata_key_values) {
     if (kv.name == "tokenizer.ggml.tokens") {
       auto token_strings = kv.value.array.strings;
@@ -47,8 +45,8 @@ int main() {
     }
   }
 
-  ggml_free(weight_ctx);
-  ggml_free(compute_ctx);
+  ggml_free(kv_ctx);
+  ggml_free(tensor_ctx);
   munmap(addr_len_pair.addr, addr_len_pair.len);
 
   return 0;

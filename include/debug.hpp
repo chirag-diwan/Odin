@@ -2,7 +2,6 @@
 
 
 #include "ggml.h"
-#include "gguf.h"
 #include "gguf.hpp"
 #include "logging.hpp"
 #include "types.hpp"

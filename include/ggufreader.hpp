@@ -187,7 +187,7 @@ class GGufReader {
           reinterpret_cast<uint64_t*>(getCurrentPositionPointer())[0];
         advanceOffset(sizeof(uint64_t));
 
-        uint32_t byte_size = 1;
+        uint64_t byte_size = 1;
         for (uint8_t i = 0; i < tensor.dimension_count; ++i) {
           byte_size *= tensor.dimensions[i];
         }
@@ -199,8 +199,10 @@ class GGufReader {
         tensors.push_back(tensor);
       }
       data_offset = (current_offset + byte_alignment - 1) & ~(byte_alignment - 1);
+      for(auto& tensor : tensors){
+        tensor.weights_data = mapped_data + data_offset + tensor.file_offset;
+      }
     }
     ~GGufReader(){
-      munmap(mapped_data, total_size);
     }
 };

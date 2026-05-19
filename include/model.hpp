@@ -12,9 +12,6 @@
 #include <string_view>
 #include <vector>
 
-// Add this to your Model class: ggml_tensor* global_causal_mask;
-
-
 class Model{
   private:
     ModelGlobals globals;
@@ -22,27 +19,110 @@ class Model{
 
     ggml_tensor* K_cache;
     ggml_tensor* V_cache;
-    ggml_tensor* global_causal_mask;
 
-    size_t curr_pos;
+    size_t n_past;
 
+    void appendToKeyCache( ggml_context* state_ctx , ggml_cgraph* gf, ggml_tensor* tensor, int token_index , size_t layer_index){
+      size_t offset = K_cache->nb[3]*layer_index + K_cache->nb[1]*token_index;
 
-    void AppendToKVCache( ggml_context* ctx, ggml_tensor* cache, ggml_tensor* tensor, int token_index , size_t layer_index) {
-      const int64_t d         = cache->ne[0];
-      const int64_t kv_heads  = cache->ne[2];
+      ggml_tensor* K_cache_view = ggml_view_3d(state_ctx,K_cache,tensor->ne[0],  tensor->ne[1], tensor->ne[2] ,K_cache->nb[1], K_cache->nb[2], offset);
+      ggml_tensor* copy_node = ggml_cpy(state_ctx, tensor, K_cache_view);
+      ggml_build_forward_expand(gf, copy_node);
+    }
 
-      size_t token_offset =
-        token_index * cache->nb[1];
+    void appendToValueCache( ggml_context* state_ctx , ggml_cgraph* gf, ggml_tensor* tensor, int token_index , size_t layer_index){
 
-      size_t layer_offset =
-        layer_index * cache->nb[3];
+      size_t offset = V_cache->nb[3] * layer_index
+        + V_cache->nb[0] * token_index;
 
-      size_t offset =
-        token_offset + layer_offset;
+      ggml_tensor* t = ggml_transpose(state_ctx, tensor);
+      ggml_tensor* V_cache_view =
+        ggml_view_3d(state_ctx,
+            V_cache,
+            t->ne[0],
+            t->ne[1],
+            t->ne[2],
+            V_cache->nb[1],
+            V_cache->nb[2],
+            offset);
 
-      ggml_tensor* cache_view = ggml_view_3d( ctx, cache, d, tensor->ne[1], kv_heads, cache->nb[1], cache->nb[2], offset);
+      ggml_tensor* copy_node = ggml_cpy(state_ctx, t, V_cache_view);
+      ggml_build_forward_expand(gf, copy_node);
+    }
 
-      tensor = ggml_cpy(ctx, tensor, cache_view);
+    ggml_tensor* forward(ggml_context* temp_ctx, ggml_cgraph* gf, ggml_tensor* embeddings , ggml_tensor* pos , size_t s , size_t d , float scale_factor){
+      for(size_t i = 0 ; i < blocks.size() ; i++){
+        auto& block = blocks[i];
+
+        ggml_tensor* normed = ggml_rms_norm(temp_ctx, embeddings, globals.attention_layer_norm_rms_epsilon);
+        normed = ggml_mul(temp_ctx, normed, block.attn_norm_w);
+
+        ggml_tensor* K = ggml_mul_mat(temp_ctx, block.attn_k_w, normed);
+        K = ggml_add_inplace(temp_ctx, K, block.attn_k_b); 
+        ggml_tensor* Q = ggml_mul_mat(temp_ctx, block.attn_q_w, normed);
+        Q = ggml_add_inplace(temp_ctx, Q, block.attn_q_b);
+        ggml_tensor* V = ggml_mul_mat(temp_ctx, block.attn_v_w, normed);
+        V = ggml_add_inplace(temp_ctx, V, block.attn_v_b);
+
+        ggml_tensor* Q_3D = ggml_reshape_3d(temp_ctx, Q, d, globals.attention_head_count, s);
+        ggml_tensor* K_3D = ggml_reshape_3d(temp_ctx, K, d, globals.attention_head_count_kv, s);
+        ggml_tensor* V_3D = ggml_reshape_3d(temp_ctx, V, d, globals.attention_head_count_kv, s);
+
+        Q_3D = ggml_rope_ext(temp_ctx, Q_3D, pos, nullptr, d, GGML_ROPE_TYPE_NEOX, globals.context_length, globals.rope_freq_base, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+        K_3D = ggml_rope_ext(temp_ctx, K_3D, pos, nullptr, d, GGML_ROPE_TYPE_NEOX, globals.context_length, globals.rope_freq_base, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+
+        Q_3D = ggml_cont(temp_ctx, ggml_permute(temp_ctx, Q_3D, 0, 2, 1, 3));
+        K_3D = ggml_cont(temp_ctx, ggml_permute(temp_ctx, K_3D, 0, 2, 1, 3));
+        V_3D = ggml_cont(temp_ctx, ggml_permute(temp_ctx, V_3D, 0, 2, 1, 3));
+
+        appendToKeyCache(temp_ctx, gf, K_3D, n_past , i);
+        appendToValueCache(temp_ctx, gf, V_3D, n_past , i);
+
+        int64_t active_tokens = n_past + s;
+
+        size_t layer_offset = i * K_cache->nb[3];
+        ggml_tensor* K_view = ggml_view_3d(temp_ctx, K_cache, d, active_tokens, globals.attention_head_count_kv, K_cache->nb[1], K_cache->nb[2], layer_offset);
+        ggml_tensor* V_view = ggml_view_3d(temp_ctx, V_cache, active_tokens, d, globals.attention_head_count_kv, V_cache->nb[1], V_cache->nb[2], layer_offset);
+
+        K_view = ggml_repeat_4d(temp_ctx, K_view, K_view->ne[0] , K_view->ne[1] , globals.attention_head_count , V_view->ne[3]);
+        V_view = ggml_repeat_4d(temp_ctx, V_view, V_view->ne[0] , V_view->ne[1] , globals.attention_head_count , V_view->ne[3]);
+
+        auto qk_t = ggml_mul_mat(temp_ctx, K_view, Q_3D);
+        qk_t = ggml_scale(temp_ctx, qk_t, scale_factor);
+        qk_t = ggml_diag_mask_inf(temp_ctx, qk_t,  n_past);
+        qk_t = ggml_soft_max(temp_ctx, qk_t);
+
+        ggml_tensor* attention_out = ggml_mul_mat(temp_ctx, V_view, qk_t);
+
+        ggml_tensor* attn_perm = ggml_permute(temp_ctx, attention_out, 0, 2,1,3);
+        ggml_tensor* attn_cont = ggml_cont(temp_ctx, attn_perm);
+        ggml_tensor* attn_flat = ggml_reshape_2d(temp_ctx, attn_cont, globals.embedding_length, s);
+
+        ggml_tensor* attn_out = ggml_mul_mat(temp_ctx, block.attn_output_w, attn_flat);
+        embeddings = ggml_add(temp_ctx, embeddings, attn_out); 
+
+        ggml_tensor* ffn_in = ggml_rms_norm(temp_ctx, embeddings, globals.attention_layer_norm_rms_epsilon);
+        ffn_in = ggml_mul(temp_ctx, ffn_in, block.ffn_norm_w);
+
+        ggml_tensor* ffn_up = ggml_mul_mat(temp_ctx, block.ffn_up_w, ffn_in);
+        ggml_tensor* ffn_gate = ggml_mul_mat(temp_ctx, block.ffn_gate_w, ffn_in);
+        ggml_tensor* ffn_gate_swish = ggml_silu(temp_ctx, ffn_gate);
+        ggml_tensor* ffn_gate_out = ggml_mul(temp_ctx, ffn_gate_swish, ffn_up);
+        ggml_tensor* ffn_down = ggml_mul_mat(temp_ctx, block.ffn_down_w, ffn_gate_out);
+
+        embeddings = ggml_add(temp_ctx, embeddings, ffn_down);
+      }
+
+      if(s > 1){
+        embeddings = ggml_view_1d( temp_ctx, embeddings, globals.embedding_length, embeddings->nb[1] * (s - 1) );
+      }
+
+      embeddings = ggml_rms_norm_inplace(temp_ctx,embeddings,globals.attention_layer_norm_rms_epsilon);
+      embeddings = ggml_mul(temp_ctx, embeddings,global_tensors.output_norm_weights);
+      embeddings = ggml_mul_mat(temp_ctx, global_tensors.output_weights, embeddings);
+
+      // Return the terminal node. Do NOT execute or build_forward_expand here.
+      return embeddings;
     }
 
   public:
@@ -51,38 +131,37 @@ class Model{
     Model(MetadataKV_t& metadata_key_values){
       globals = {};
       global_tensors = {};
-      global_causal_mask = nullptr;
       K_cache = nullptr;
       V_cache = nullptr;
-      curr_pos = 0;
+      n_past = 0;
       SetModelGlobals(metadata_key_values,globals);
     }
 
-    void PopulateCausalMask(ggml_context* static_ctx) {
-    }
 
-    void PopulateBlocks(std::vector<GGufTensor>& Tensors , ggml_context* weight_context){
+    void PopulateBlocks(std::vector<GGufTensor>& Tensors , ggml_context* tensor_context){
       blocks.resize(globals.block_count);
       for(const auto& tensor : Tensors){
         ggml_tensor* t;
         ggml_type current_type = tensor.tensor_type;
         switch (tensor.dimension_count){
           case 1:
-            t = ggml_new_tensor_1d(weight_context,current_type, tensor.dimensions[0]);
+            t = ggml_new_tensor_1d(tensor_context,current_type, tensor.dimensions[0]);
             break;
           case 2:
-            t = ggml_new_tensor_2d(weight_context,current_type, tensor.dimensions[0] , tensor.dimensions[1]);
+            t = ggml_new_tensor_2d(tensor_context,current_type, tensor.dimensions[0] , tensor.dimensions[1]);
             break;
           case 3:
-            t = ggml_new_tensor_3d(weight_context,current_type, tensor.dimensions[0] , tensor.dimensions[1] ,tensor.dimensions[2]);
+            t = ggml_new_tensor_3d(tensor_context,current_type, tensor.dimensions[0] , tensor.dimensions[1] ,tensor.dimensions[2]);
             break;
           case 4:
-            t = ggml_new_tensor_4d(weight_context,current_type, tensor.dimensions[0] , tensor.dimensions[1] ,tensor.dimensions[2] , tensor.dimensions[3]);
+            t = ggml_new_tensor_4d(tensor_context,current_type, tensor.dimensions[0] , tensor.dimensions[1] ,tensor.dimensions[2] , tensor.dimensions[3]);
             break;
           default:
             Log("Unknown dimension count " , tensor.dimension_count);
             continue;
         }
+
+        t->data = tensor.weights_data;
 
         if(tensor.name == "token_embd.weight" ){
           global_tensors.token_embd_weights = t;
@@ -99,171 +178,72 @@ class Model{
     }
 
     void PopulateKVCache(ggml_context* state_ctx) {
-      auto d = globals.embedding_length / globals.attention_head_count;
+      auto d_head = globals.embedding_length / globals.attention_head_count;
 
-      auto max_ctx = globals.context_length; 
-      auto kv_heads = globals.attention_head_count_kv;
+      auto c = globals.context_length; 
+      auto n_head_kv = globals.attention_head_count_kv;
 
-      K_cache = ggml_new_tensor_4d(state_ctx, GGML_TYPE_F32, 
-          d, max_ctx, kv_heads , globals.block_count);
+      K_cache = ggml_new_tensor_4d(state_ctx, GGML_TYPE_F16, 
+          d_head, c, n_head_kv , globals.block_count);
 
-      V_cache = ggml_new_tensor_4d(state_ctx, GGML_TYPE_F32, 
-          d, max_ctx, kv_heads , globals.block_count);
+      V_cache = ggml_new_tensor_4d(state_ctx, GGML_TYPE_F16, 
+          c, d_head, n_head_kv , globals.block_count);
     }
 
-    ggml_tensor* forward(ggml_context* compute_ctx , ggml_tensor* embeddings , ggml_tensor* pos , size_t s , size_t d , float scale_factor){
 
-      for(size_t i = 0 ; i < blocks.size() ; i++){
-        auto& block = blocks[i];
-        ggml_tensor* normed = ggml_rms_norm(compute_ctx, embeddings, globals.attention_layer_norm_rms_epsilon);
-        normed = ggml_mul(compute_ctx, normed, block.attn_norm_w);
+    void Infer(std::vector<int>& tokens, int max_new_tokens = 40) {
+      auto d = globals.embedding_length / globals.attention_head_count;
+      float scale_factor = 1.0f / sqrt((float)d);
 
-        ggml_tensor* K = ggml_mul_mat(compute_ctx, block.attn_k_w, normed);
-        K = ggml_add_inplace(compute_ctx, K, block.attn_k_b); 
-        ggml_tensor* Q = ggml_mul_mat(compute_ctx, block.attn_q_w, normed);
-        Q = ggml_add_inplace(compute_ctx, Q, block.attn_q_b);
-        ggml_tensor* V = ggml_mul_mat(compute_ctx, block.attn_v_w, normed);
-        V = ggml_add_inplace(compute_ctx, V, block.attn_v_b);
+      ggml_backend_t backend = ggml_backend_cpu_init();
+      ggml_gallocr_t allocr = ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend));
 
-        ggml_tensor* Q_3D = ggml_reshape_3d(compute_ctx, Q, d, globals.attention_head_count, s);
-        ggml_tensor* K_3D = ggml_reshape_3d(compute_ctx, K, d, globals.attention_head_count_kv, s);
-        ggml_tensor* V_3D = ggml_reshape_3d(compute_ctx, V, d, globals.attention_head_count_kv, s);
+      for (int i = 0; i < max_new_tokens; i++) {
+        struct ggml_init_params params = { 10 * 1024 * 1024, NULL, true };
+        ggml_context* ctx0 = ggml_init(params);
+        ggml_cgraph* gf = ggml_new_graph(ctx0);
 
-        Q_3D = ggml_rope_ext(compute_ctx, Q_3D, pos, nullptr, d, 0, globals.context_length, globals.rope_freq_base, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-        K_3D = ggml_rope_ext(compute_ctx, K_3D, pos, nullptr, d, 0, globals.context_length, globals.rope_freq_base, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+        size_t s = (i == 0) ? tokens.size() : 1;
 
-        Q_3D = ggml_permute(compute_ctx, Q_3D, 0, 2, 1, 3);
-        K_3D = ggml_permute(compute_ctx, K_3D, 0, 2, 1, 3);
-        V_3D = ggml_permute(compute_ctx, V_3D, 0, 2, 1, 3);
+        ggml_tensor* pos = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, s);
+        ggml_tensor* indices = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, s);
 
-        AppendToKVCache(compute_ctx, K_cache, K_3D, curr_pos , i);
-        AppendToKVCache(compute_ctx, V_cache, V_3D, curr_pos , i);
-        int64_t active_tokens = curr_pos + s;
+        ggml_tensor* embeddings = ggml_get_rows(ctx0, global_tensors.token_embd_weights, indices); 
+        embeddings = forward(ctx0, gf, embeddings, pos, s, d, scale_factor);
 
-        size_t layer_offset = i * K_cache->nb[3];
-        ggml_tensor* K_view = ggml_view_3d(compute_ctx, K_cache, d, active_tokens, globals.attention_head_count_kv, K_cache->nb[1], K_cache->nb[2], layer_offset);
-        ggml_tensor* V_view = ggml_view_3d(compute_ctx, V_cache, d, active_tokens, globals.attention_head_count_kv, V_cache->nb[1], V_cache->nb[2], layer_offset);
+        float temp_scale = 1.0f;
+        ggml_tensor* scaled = ggml_scale(ctx0, embeddings, temp_scale);
+        ggml_tensor* softmaxed = ggml_soft_max(ctx0, scaled);
+        ggml_tensor* max_idx = ggml_argmax(ctx0, softmaxed);
 
-        ggml_tensor* mask = nullptr;
-        if (s > 1) {
-          mask = ggml_new_tensor_2d(compute_ctx, GGML_TYPE_F16, active_tokens, s);
-          ggml_fp16_t mask_val = ggml_fp32_to_fp16(-INFINITY);
-          ggml_fp16_t zero_val = ggml_fp32_to_fp16(0.0f);
-          ggml_fp16_t* mask_data = (ggml_fp16_t*)mask->data;
-          int past_tokens = active_tokens - s;
+        ggml_build_forward_expand(gf, max_idx);
 
-          for (int r = 0; r < s; ++r) {
-            for (int c = 0; c < active_tokens; ++c) {
-              if (c > past_tokens + r) {
-                mask_data[r * active_tokens + c] = mask_val; // Future token -> Block
-              } else {
-                mask_data[r * active_tokens + c] = zero_val; // Past/Current token -> Allow
-              }
-            }
-          }
+        ggml_gallocr_alloc_graph(allocr, gf);
+
+        if(i == 0){
+          std::vector<int32_t> pos_data(s);
+          for (size_t p = 0; p < s; p++) pos_data[p] = p;
+
+          ggml_backend_tensor_set(pos, pos_data.data(), 0, s * sizeof(int32_t));
+          ggml_backend_tensor_set(indices, tokens.data(), 0, s * sizeof(int32_t));
+        } else {
+          int32_t current_pos = n_past;
+          ggml_backend_tensor_set(pos, &current_pos, 0, sizeof(int32_t));
+          ggml_backend_tensor_set(indices, &tokens.back(), 0, sizeof(int32_t));
         }
 
-        ggml_tensor* attention_out = ggml_flash_attn_ext(compute_ctx, Q_3D, K_view, V_view, mask, scale_factor, 0.0f, 0.0f);
-        ggml_diag_mask_inf_inplace(compute_ctx, attention_out, curr_pos);
+        ggml_backend_graph_compute(backend, gf);
 
-        attention_out = ggml_permute(compute_ctx, attention_out, 0, 2, 1, 3);
-        attention_out = ggml_cont(compute_ctx, attention_out);
-        attention_out = ggml_reshape_2d(compute_ctx, attention_out, globals.embedding_length, s);
+        int32_t next_token;
+        ggml_backend_tensor_get(max_idx, &next_token, 0, sizeof(int32_t));
 
-        ggml_tensor* proj = ggml_mul_mat(compute_ctx, block.attn_output_w, attention_out);
-        embeddings = ggml_add_inplace(compute_ctx, embeddings, proj);
-
-
-        ggml_tensor* embed_norm = ggml_rms_norm(compute_ctx, embeddings, globals.attention_layer_norm_rms_epsilon);
-        embed_norm = ggml_mul(compute_ctx,embed_norm , block.ffn_norm_w);
-
-        ggml_tensor* ffn_expand = ggml_mul_mat(compute_ctx, block.ffn_up_w, embed_norm);
-
-        ggml_tensor* ffn_gate = ggml_mul_mat(compute_ctx,block.ffn_gate_w, embed_norm);
-        ffn_gate = ggml_swiglu(compute_ctx, ffn_gate);
-
-        ggml_tensor* ffn_out = ggml_mul(compute_ctx,ffn_expand,ffn_gate);
-        ggml_tensor* ffn_down = ggml_mul_mat(compute_ctx, block.ffn_down_w,ffn_out );
-        embeddings = ggml_add_inplace(compute_ctx, embeddings, ffn_down);
-      }
-      curr_pos += s;
-      return embeddings;
-    }
-
-    void Prefill(ggml_context* compute_ctx , std::vector<int>& tokens ){
-      Errorif(K_cache == nullptr || V_cache == nullptr, "Cache not populated");
-      Log(INFO , "Prefill start");
-
-      auto d = globals.embedding_length / globals.attention_head_count;
-      float scale_factor = 1.0f / sqrt((float)d);
-      auto s = tokens.size();
-
-      ggml_tensor* pos = ggml_new_tensor_1d(compute_ctx, GGML_TYPE_I32, s);
-      for (size_t i = 0; i < s; i++) {
-        static_cast<int32_t*>(pos->data)[i] = i; 
-      }
-
-      ggml_tensor* indices = ggml_new_tensor_1d(compute_ctx,GGML_TYPE_I32, s);
-      for(size_t i = 0 ; i < tokens.size() ; i++){
-        static_cast<int32_t*>(indices->data)[i] = tokens[i];
-      }
-
-      ggml_tensor* embeddings = ggml_get_rows(compute_ctx,global_tensors.token_embd_weights, indices); // What i understood it should be seq_len x model_d(embedding_length)
-      embeddings = forward(compute_ctx, embeddings,pos, s,d,  scale_factor);
-
-      ggml_cgraph* gf = ggml_new_graph(compute_ctx);
-
-      ggml_build_forward_expand(gf, embeddings);
-      int n_threads = 6; // Set to your CPU core count for testing
-
-      ggml_graph_compute_with_ctx(compute_ctx, gf, n_threads);
-
-      Log(INFO , "Prefill completed successfully");
-    }
-
-    void Infer(std::vector<int>& tokens){
-      auto d = globals.embedding_length / globals.attention_head_count;
-      float scale_factor = 1.0f / sqrt((float)d);
-
-      for (int i = 0; i < 40; i++) {
-        struct ggml_init_params params = { 
-          /* .mem_size   = */ 256 * 1024 * 1024, // Size depends on your model
-          /* .mem_buffer = */ NULL,
-          /* .no_alloc   = */ false 
-        };
-        ggml_context* temp_ctx = ggml_init(params);
-
-        int s = 1;
-        int current_token = tokens.back(); 
-
-        ggml_tensor* pos = ggml_new_tensor_1d(temp_ctx, GGML_TYPE_I32, s);
-        static_cast<int32_t*>(pos->data)[0] = curr_pos;
-
-        ggml_tensor* indices = ggml_new_tensor_1d(temp_ctx, GGML_TYPE_I32, s);
-        static_cast<int32_t*>(indices->data)[0] = current_token;
-
-        // Embedding Lookup
-        ggml_tensor* state = ggml_get_rows(temp_ctx, global_tensors.token_embd_weights, indices);
-
-        state = forward(temp_ctx, state, pos, s, d, scale_factor);
-
-        state = ggml_rms_norm(temp_ctx, state, globals.attention_layer_norm_rms_epsilon);
-        state = ggml_mul(temp_ctx, state, global_tensors.output_norm_weights);
-        ggml_tensor* logits = ggml_mul_mat(temp_ctx, global_tensors.output_weights, state);
-
-        ggml_tensor* scaled_logits = ggml_scale(temp_ctx, logits, 1.0f / 0.4f);
-        ggml_soft_max_inplace(temp_ctx, scaled_logits);
-        ggml_tensor* token_tensor = ggml_argmax(temp_ctx, scaled_logits);
-
-        ggml_cgraph* gf = ggml_new_graph(temp_ctx);
-        ggml_build_forward_expand(gf, token_tensor);
-        ggml_graph_compute_with_ctx(temp_ctx, gf, 4);
-
-        int next_token = static_cast<int32_t*>(token_tensor->data)[0];
         tokens.push_back(next_token);
+        n_past += s;
 
-        ggml_free(temp_ctx); // Crucial: Free ephemeral memory
-
+        ggml_free(ctx0);
       }
+
+      ggml_gallocr_free(allocr);
+      ggml_backend_free(backend);
     }
 };
