@@ -84,8 +84,8 @@ class Model{
         ggml_tensor* K_view = ggml_view_3d(temp_ctx, K_cache, d, active_tokens, globals.attention_head_count_kv, K_cache->nb[1], K_cache->nb[2], layer_offset);
         ggml_tensor* V_view = ggml_view_3d(temp_ctx, V_cache, active_tokens, d, globals.attention_head_count_kv, V_cache->nb[1], V_cache->nb[2], layer_offset);
 
-        K_view = ggml_repeat_4d(temp_ctx, K_view, K_view->ne[0] , K_view->ne[1] , globals.attention_head_count , V_view->ne[3]);
-        V_view = ggml_repeat_4d(temp_ctx, V_view, V_view->ne[0] , V_view->ne[1] , globals.attention_head_count , V_view->ne[3]);
+        //K_view = ggml_repeat_4d(temp_ctx, K_view, K_view->ne[0] , K_view->ne[1] , globals.attention_head_count , V_view->ne[3]);
+        //V_view = ggml_repeat_4d(temp_ctx, V_view, V_view->ne[0] , V_view->ne[1] , globals.attention_head_count , V_view->ne[3]);
 
         auto qk_t = ggml_mul_mat(temp_ctx, K_view, Q_3D);
         qk_t = ggml_scale(temp_ctx, qk_t, scale_factor);
