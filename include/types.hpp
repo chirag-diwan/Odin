@@ -144,3 +144,10 @@ struct ModelGlobalTensors {
   }
 };
 
+
+struct ModelState{
+  bool isPreFilled;
+  ModelState(){
+    isPreFilled = false;
+  }
+};
