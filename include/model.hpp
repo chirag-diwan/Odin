@@ -133,8 +133,7 @@ class Model{
   public:
     std::vector<ModelBlock> blocks;
 
-    Model(ModelGlobals model_globals){
-      globals = model_globals;
+    Model(){
       global_tensors = {};
       K_cache = nullptr;
       V_cache = nullptr;
@@ -143,12 +142,16 @@ class Model{
       kv_buffer = nullptr;
       n_past = 0;
     }
+    
+    inline void SetModelGlobals(ModelGlobals model_globals){
+      globals = model_globals;
+    }
 
-    void SetBackend(ggml_backend_t pre_init_backend){
+    inline void SetBackend(ggml_backend_t pre_init_backend){
       backend = pre_init_backend;
     }
 
-    void SetGAlloc(ggml_gallocr_t pre_init_galloc){
+    inline void SetGAlloc(ggml_gallocr_t pre_init_galloc){
       allocr = pre_init_galloc;
     }
 

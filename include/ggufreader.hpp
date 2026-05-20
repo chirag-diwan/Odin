@@ -114,7 +114,6 @@ class GGufReader {
       current_offset = 0;
       data_offset = 0;
       byte_alignment = 0;
-
       header = {};
     }
 
@@ -130,10 +129,10 @@ class GGufReader {
       Errorif(memory_mapped_pointer == MAP_FAILED, "Mapping failed for ",
           filepath);
 
-      this->file_descriptor = opened_descriptor;
-      this->mapped_data     = static_cast<uint8_t*>(memory_mapped_pointer);
-      this->total_size      = file_statistics.st_size;
-      this->byte_alignment  = 32;
+      file_descriptor = opened_descriptor;
+      mapped_data     = static_cast<uint8_t*>(memory_mapped_pointer);
+      total_size      = file_statistics.st_size;
+      byte_alignment  = 32;
 
       return {memory_mapped_pointer , file_statistics.st_size};
     }

@@ -1,40 +1,36 @@
-from tokenizers import Tokenizer
-from huggingface_hub import hf_hub_download
 import socket
-import json
-
-tokenizer_path = hf_hub_download(
-    repo_id="Qwen/Qwen2-7B-Instruct",
-    filename="tokenizer.json"
-)
-
-print(f"Using tokenizer path: {tokenizer_path}")
-
-tokenizer = Tokenizer.from_file(tokenizer_path)
+import struct
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+TOKENS_IN = 1
+TOKENS_IN = 1
+TOKEN_OUT = 2
+END_STREAM = 3
+ERROR_MSG = 4
+
 client_socket.connect(("127.0.0.1", 42069))
 
-while True:
+tokens = [12, 12, 123, 123, 234, 46, 567, 678]
 
-    # Sending
-    text = input("> ")
+# Payload:
+# [token_count:u32]
+# [tokens:u32[token_count]]
 
-    if not text:
-        continue
+payload = (
+    struct.pack("!I", len(tokens)) +
+    struct.pack(f"!{len(tokens)}I", *tokens)
+)
 
-    encoded = tokenizer.encode(text)
-    token_ids = encoded.ids
+# Frame:
+# [length:u32]
+# [type:u8]
+# [payload]
 
-    payload = json.dumps(token_ids).encode("utf-8")
-    client_socket.sendall(payload)
+packet = (
+    struct.pack("!I", 1 + len(payload)) +   # frame length
+    struct.pack("!B", TOKENS_IN) +          # message type
+    payload
+)
 
-    # Reciving
-    data = client_socket.recv(4096)
-
-    if not data:
-        continue
-
-    received_ids = json.loads(data.decode("utf-8"))
-    decoded = tokenizer.decode(received_ids)
-    print(decoded)
+client_socket.sendall(packet)
