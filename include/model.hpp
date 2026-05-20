@@ -1,10 +1,11 @@
 #pragma once
 #include "block.hpp"
 #include "errors.hpp"
-#include "ggml-cpu.h"
+#include "ggml-alloc.h"
+#include "ggml-backend.h"
 #include "ggml.h"
+#include "gguf.hpp"
 #include "logging.hpp"
-#include "model_utils.hpp"
 #include "types.hpp"
 #include <cmath>
 #include <cstdint>
@@ -19,6 +20,11 @@ class Model{
 
     ggml_tensor* K_cache;
     ggml_tensor* V_cache;
+
+    ggml_backend_t backend ;
+    ggml_gallocr_t allocr ;
+
+    ggml_backend_buffer_t kv_buffer;
 
     size_t n_past;
 
@@ -127,18 +133,29 @@ class Model{
   public:
     std::vector<ModelBlock> blocks;
 
-    Model(MetadataKV_t& metadata_key_values){
-      globals = {};
+    Model(ModelGlobals model_globals){
+      globals = model_globals;
       global_tensors = {};
       K_cache = nullptr;
       V_cache = nullptr;
+      backend = nullptr;
+      allocr = nullptr;
+      kv_buffer = nullptr;
       n_past = 0;
-      SetModelGlobals(metadata_key_values,globals);
     }
 
+    void SetBackend(ggml_backend_t pre_init_backend){
+      backend = pre_init_backend;
+    }
 
-    void PopulateBlocks(std::vector<GGufTensor>& Tensors , ggml_context* tensor_context){
+    void SetGAlloc(ggml_gallocr_t pre_init_galloc){
+      allocr = pre_init_galloc;
+    }
+
+    void PopulateBlocks(ggml_context* tensor_context, std::vector<GGufTensor>& Tensors ){
+
       blocks.resize(globals.block_count);
+
       for(const auto& tensor : Tensors){
         ggml_tensor* t;
         ggml_type current_type = tensor.tensor_type;
@@ -187,22 +204,54 @@ class Model{
 
       V_cache = ggml_new_tensor_4d(state_ctx, GGML_TYPE_F16, 
           c, d_head, n_head_kv , globals.block_count);
+
+      kv_buffer = ggml_backend_alloc_ctx_tensors(state_ctx, backend);
+      Errorif(kv_buffer == nullptr, "Failed to allocate physical memory for KV cache");
     }
 
-
-    void Infer(std::vector<int>& tokens, int max_new_tokens = 40) {
+    void Prefill(std::vector<int>& tokens){
       auto d = globals.embedding_length / globals.attention_head_count;
       float scale_factor = 1.0f / sqrt((float)d);
 
-      ggml_backend_t backend = ggml_backend_cpu_init();
-      ggml_gallocr_t allocr = ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend));
 
-      for (int i = 0; i < max_new_tokens; i++) {
+      struct ggml_init_params params = { 10 * 1024 * 1024, NULL, true };
+      ggml_context* ctx0 = ggml_init(params);
+      ggml_cgraph* gf = ggml_new_graph(ctx0);
+
+      size_t s = tokens.size();
+
+      ggml_tensor* pos = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, s);
+      ggml_tensor* indices = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, s);
+
+      ggml_tensor* embeddings = ggml_get_rows(ctx0, global_tensors.token_embd_weights, indices); 
+      embeddings = forward(ctx0, gf, embeddings, pos, s, d, scale_factor);
+
+      ggml_build_forward_expand(gf, embeddings);
+
+      ggml_gallocr_alloc_graph(allocr, gf);
+
+      std::vector<int32_t> pos_data(s);
+      for (size_t p = 0; p < s; p++) pos_data[p] = p;
+
+      ggml_backend_tensor_set(pos, pos_data.data(), 0, s * sizeof(int32_t));
+      ggml_backend_tensor_set(indices, tokens.data(), 0, s * sizeof(int32_t));
+
+      ggml_backend_graph_compute(backend, gf);
+      n_past += s;
+
+      ggml_free(ctx0);
+    }
+
+    void Infer(std::vector<int>& tokens , float temp) {
+      auto d = globals.embedding_length / globals.attention_head_count;
+      float scale_factor = 1.0f / sqrt((float)d);
+
+      for (int i = 0; i < 40; i++) {
         struct ggml_init_params params = { 10 * 1024 * 1024, NULL, true };
         ggml_context* ctx0 = ggml_init(params);
         ggml_cgraph* gf = ggml_new_graph(ctx0);
 
-        size_t s = (i == 0) ? tokens.size() : 1;
+        size_t s = 1;
 
         ggml_tensor* pos = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, s);
         ggml_tensor* indices = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, s);
@@ -210,26 +259,17 @@ class Model{
         ggml_tensor* embeddings = ggml_get_rows(ctx0, global_tensors.token_embd_weights, indices); 
         embeddings = forward(ctx0, gf, embeddings, pos, s, d, scale_factor);
 
-        float temp_scale = 1.0f;
+        float temp_scale = 1.0f/temp;
         ggml_tensor* scaled = ggml_scale(ctx0, embeddings, temp_scale);
         ggml_tensor* softmaxed = ggml_soft_max(ctx0, scaled);
         ggml_tensor* max_idx = ggml_argmax(ctx0, softmaxed);
 
         ggml_build_forward_expand(gf, max_idx);
-
         ggml_gallocr_alloc_graph(allocr, gf);
 
-        if(i == 0){
-          std::vector<int32_t> pos_data(s);
-          for (size_t p = 0; p < s; p++) pos_data[p] = p;
-
-          ggml_backend_tensor_set(pos, pos_data.data(), 0, s * sizeof(int32_t));
-          ggml_backend_tensor_set(indices, tokens.data(), 0, s * sizeof(int32_t));
-        } else {
-          int32_t current_pos = n_past;
-          ggml_backend_tensor_set(pos, &current_pos, 0, sizeof(int32_t));
-          ggml_backend_tensor_set(indices, &tokens.back(), 0, sizeof(int32_t));
-        }
+        int32_t current_pos = n_past;
+        ggml_backend_tensor_set(pos, &current_pos, 0, sizeof(int32_t));
+        ggml_backend_tensor_set(indices, &tokens.back(), 0, sizeof(int32_t));
 
         ggml_backend_graph_compute(backend, gf);
 
@@ -241,8 +281,11 @@ class Model{
 
         ggml_free(ctx0);
       }
+    }
 
-      ggml_gallocr_free(allocr);
-      ggml_backend_free(backend);
+    ~Model(){
+      if (kv_buffer != nullptr) {
+        ggml_backend_buffer_free(kv_buffer);
+      }
     }
 };

@@ -1,48 +1,58 @@
+#include "ggml-alloc.h"
+#include "ggml-cpu.h"
 #include "ggufreader.hpp"
 #include "model.hpp"
+#include "model_utils.hpp"
 #include "types.hpp"
+#include <alloca.h>
+#include <cstddef>
+#include <fcntl.h>
 #include <sys/mman.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
 int main() {
-  GGufReader reader_ctx;
+  GGufReader reader;
 
-  auto addr_len_pair = reader_ctx.OpenFile("/home/chirag/Models/qwen2.5-0.5b-instruct-q4_0.gguf");
-  reader_ctx.ParseHeader();
-  reader_ctx.ParseAllKeyValues();
-  reader_ctx.ParseAllTensors();
+  auto [addr , len]  = reader.OpenFile("/home/chirag/Models/qwen2.5-0.5b-instruct-q4_0.gguf");
+  reader.ParseHeader();
+  reader.ParseAllKeyValues();
+  reader.ParseAllTensors();
 
-  Model model(reader_ctx.metadata_key_values);
 
-  ggml_init_params tensor_ctx_params = {
+  ggml_backend_t backend = ggml_backend_cpu_init();
+  ggml_gallocr_t allocr = ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend));
+
+  std::vector<int> tokens = {
+    9707, 11, 1246, 525, 498, 30
+  };
+
+  ggml_init_params static_ctx_params = {
     .mem_size = 10 * 1024 * 1024,
     .mem_buffer = NULL,
     .no_alloc = true 
   };
-  ggml_context* tensor_ctx = ggml_init(tensor_ctx_params);
 
-  ggml_init_params kv_ctx_params = {
-    .mem_size =  2048ul * 1024 * 1024,
-    .mem_buffer = NULL,
-    .no_alloc = false
-  };
-  ggml_context* kv_ctx = ggml_init(kv_ctx_params);
+  ggml_context* static_ctx = ggml_init(static_ctx_params);
 
-  std::vector<int> tokens = {
-    9707, 11, 1246, 525, 498, 30
+  ModelGlobals globals = GetModelGlobals(reader.metadata_key_values);
+  Model model(globals);
 
-  };
-
-  model.PopulateBlocks(reader_ctx.tensors, tensor_ctx);
-  model.PopulateKVCache(kv_ctx);
-  model.Infer(tokens);
+  model.SetBackend(backend);
+  model.SetGAlloc(allocr);
+  model.PopulateBlocks(static_ctx , reader.tensors);
+  model.PopulateKVCache(static_ctx);
+  model.Prefill(tokens);
+  model.Infer(tokens , 0.9);
 
   for(const auto token : tokens){
     std::cout << token << ",";
   }
 
-  ggml_free(kv_ctx);
-  ggml_free(tensor_ctx);
-  munmap(addr_len_pair.addr, addr_len_pair.len);
+  ggml_free(static_ctx);
+  ggml_gallocr_free(allocr);
+  ggml_backend_free(backend);
+  munmap(addr, len);
 
   return 0;
 }

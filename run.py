@@ -16,6 +16,8 @@ client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect(("127.0.0.1", 42069))
 
 while True:
+
+    # Sending
     text = input("> ")
 
     if not text:
@@ -26,6 +28,8 @@ while True:
 
     payload = json.dumps(token_ids).encode("utf-8")
     client_socket.sendall(payload)
+
+    # Reciving
     data = client_socket.recv(4096)
 
     if not data:

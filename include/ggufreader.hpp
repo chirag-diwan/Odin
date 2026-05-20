@@ -2,7 +2,6 @@
 
 #include "errors.hpp"
 #include "gguf.hpp"
-#include "logging.hpp"
 #include "types.hpp"
 #include <cstdint>
 #include <fcntl.h>
@@ -27,7 +26,6 @@ class GGufReader {
 
   public:
     GGufHeader header;
-    ModelGlobals global_struct;
     std::vector<GGufTensor> tensors;
     MetadataKV_t metadata_key_values;
 
@@ -118,10 +116,9 @@ class GGufReader {
       byte_alignment = 0;
 
       header = {};
-      global_struct = {};
     }
 
-    AddrLenPair OpenFile(const char* filepath) {
+    std::pair<void* , size_t> OpenFile(const char* filepath) {
       int opened_descriptor = open(filepath, O_RDONLY);
       Errorif(opened_descriptor == -1, "Not a valid file descriptor for %?",
           filepath);

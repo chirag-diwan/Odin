@@ -14,7 +14,8 @@ uint64_t calculateKeyValueCacheByteSize(ModelGlobals& global_struct) {
 }
 
 
-void SetModelGlobals(MetadataKV_t& metadata_key_values , ModelGlobals& global_struct){
+ModelGlobals GetModelGlobals(MetadataKV_t& metadata_key_values ){
+  ModelGlobals global_struct;
   GGufValue metadata_value ;
 
   for(const auto& kv : metadata_key_values){
@@ -51,4 +52,5 @@ void SetModelGlobals(MetadataKV_t& metadata_key_values , ModelGlobals& global_st
   Log(INFO ,"block_count", global_struct.block_count);
   Log(INFO ,"context_length", global_struct.context_length);
   Log(INFO ,"feed_forward_length", global_struct.feed_forward_length);
+  return global_struct;
 }
