@@ -3,3 +3,4 @@ Model.info
 /external/*
 perf.data
 /test/
+/venv/
