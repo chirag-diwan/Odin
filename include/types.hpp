@@ -151,3 +151,17 @@ struct ModelState{
     isPreFilled = false;
   }
 };
+
+struct MergeRV{
+  uint64_t merge_rank;
+  uint64_t merge_result;
+};
+
+struct RankIndexPair{
+  uint64_t rank;
+  uint64_t index;
+
+  bool operator>(const RankIndexPair& other) const {
+    return rank > other.rank;
+  }
+};

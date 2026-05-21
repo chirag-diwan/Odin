@@ -212,7 +212,7 @@ class Model{
       Errorif(kv_buffer == nullptr, "Failed to allocate physical memory for KV cache");
     }
 
-    void Prefill(std::vector<int>& tokens){
+    void Prefill(std::vector<int32_t>& tokens , float temp){
       auto d = globals.embedding_length / globals.attention_head_count;
       float scale_factor = 1.0f / sqrt((float)d);
 
@@ -229,8 +229,13 @@ class Model{
       ggml_tensor* embeddings = ggml_get_rows(ctx0, global_tensors.token_embd_weights, indices); 
       embeddings = forward(ctx0, gf, embeddings, pos, s, d, scale_factor);
 
-      ggml_build_forward_expand(gf, embeddings);
 
+      float temp_scale = 1.0f/temp;
+      ggml_tensor* scaled = ggml_scale(ctx0, embeddings, temp_scale);
+      ggml_tensor* softmaxed = ggml_soft_max(ctx0, scaled);
+      ggml_tensor* max_idx = ggml_argmax(ctx0, softmaxed);
+
+      ggml_build_forward_expand(gf, max_idx);
       ggml_gallocr_alloc_graph(allocr, gf);
 
       std::vector<int32_t> pos_data(s);
@@ -240,12 +245,20 @@ class Model{
       ggml_backend_tensor_set(indices, tokens.data(), 0, s * sizeof(int32_t));
 
       ggml_backend_graph_compute(backend, gf);
+
+      int32_t next_token;
+      ggml_backend_tensor_get(max_idx, &next_token, 0, sizeof(int32_t));
+
+      tokens.push_back(next_token);
       n_past += s;
+
+
+
 
       ggml_free(ctx0);
     }
 
-    void Infer(std::vector<int>& tokens , float temp) {
+    void Infer(std::vector<int32_t>& tokens , float temp) {
       auto d = globals.embedding_length / globals.attention_head_count;
       float scale_factor = 1.0f / sqrt((float)d);
 
