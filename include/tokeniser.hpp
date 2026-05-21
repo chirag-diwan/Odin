@@ -182,7 +182,7 @@ class Tokeniser{
 
     void Decode(std::vector<int32_t> tokens){
       for(auto token : tokens){
-        Log(tokens_to_string[token]);
+        std::cout << (tokens_to_string[token]) << " ";
       }
     }
 };

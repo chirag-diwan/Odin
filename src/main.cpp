@@ -22,7 +22,7 @@ int main() {
 
   Tokeniser t(reader.metadata_key_values);
 
-  t.Tokenise("Hello , How are you ?" , tokens);
+  t.Tokenise("You are a really help full assitant and you are supposed to answer the queries asked ot you" , tokens);
 
 
   ggml_backend_t backend = ggml_backend_cpu_init();
@@ -45,7 +45,14 @@ int main() {
   model.PopulateBlocks(static_ctx , reader.tensors);
   model.PopulateKVCache(static_ctx);
   model.Prefill(tokens , 0.9);
-  model.Infer(tokens , 0.9);
+
+  std::cout << " $ ";
+  std::string new_prompt;
+  std::cin >> new_prompt;
+  std::vector<int32_t> new_tokens;
+  t.Tokenise(new_prompt, new_tokens);
+  model.Infer(new_tokens , 0.9);
+  t.Decode(new_tokens);
 
   t.Decode(tokens);
 
