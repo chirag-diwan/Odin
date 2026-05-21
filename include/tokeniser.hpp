@@ -120,7 +120,18 @@ class Tokeniser{
       pcre2_match_data_free(match_data);
       pcre2_code_free(re);
 
+
+      std::vector<std::string> modified_chunk;
+
       for(const auto& chunk : chunks){
+        modified_chunk.emplace_back(chunk);
+      }
+      modified_chunk.emplace_back( "assistant\n");
+
+
+
+      tokens.emplace_back(151644);
+      for(const auto& chunk : modified_chunk){
         std::vector<uint32_t> bytes;
 
         for (size_t i = 0; i < chunk.size(); i++) {
@@ -161,11 +172,12 @@ class Tokeniser{
           bytes[lowest_rank_indx - 1] = target_merge_id;
           bytes.erase(bytes.begin() + lowest_rank_indx);
         }
-
         for(const auto b : bytes){
           tokens.emplace_back(b);
         }
       }
+      tokens.emplace_back(151645);
+      tokens.emplace_back(151643);
     }
 
     void Decode(std::vector<int32_t> tokens){

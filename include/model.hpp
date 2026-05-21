@@ -252,9 +252,6 @@ class Model{
       tokens.push_back(next_token);
       n_past += s;
 
-
-
-
       ggml_free(ctx0);
     }
 
@@ -291,6 +288,10 @@ class Model{
 
         int32_t next_token;
         ggml_backend_tensor_get(max_idx, &next_token, 0, sizeof(int32_t));
+
+        if(__builtin_expect(next_token == 151645 || next_token == 151643 , false)){
+          break;
+        }
 
         tokens.push_back(next_token);
         n_past += s;
