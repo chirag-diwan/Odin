@@ -1,3 +1,4 @@
+#include "gguf.hpp"
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -38,6 +39,7 @@ std::vector<std::string> generate_byte_to_unicode() {
   return byte_to_unicode;
 }
 
+
 class Tokeniser{
   private:
     std::unordered_map<std::string_view, uint64_t> vocab;
@@ -45,6 +47,8 @@ class Tokeniser{
     std::unordered_map<uint64_t, MergeRV> merge_priority;
     std::vector<std::string> byte_to_unicode_table;
 
+    // Class member
+    uint8_t unicode_to_byte_table[65]; // 320 - 256 = 64 (+1 for safety)
 
     __attribute__((always_inline)) inline uint64_t getKey(uint32_t first, uint32_t second){
       return (static_cast<uint64_t>(first) << 32) ^ static_cast<uint64_t>(second);
@@ -79,13 +83,23 @@ class Tokeniser{
               .merge_result = vocab.at(result)
             };
           }
+        } 
+      }
+
+      byte_to_unicode_table = generate_byte_to_unicode();
+
+      int n = 0;
+      for (int b = 0; b < 256; b++) {
+        if ((b >= 33 && b <= 126) || (b >= 161 && b <= 172) || (b >= 174 && b <= 255)) {
+        } else {
+          int unicode_val = 256 + n;
+          unicode_to_byte_table[unicode_val - 256] = static_cast<uint8_t>(b);
+          n++;
         }
       }
-      byte_to_unicode_table = generate_byte_to_unicode();
     }
 
     void Tokenise(std::string prompt, std::vector<int32_t>& tokens){
-
       const std::string regex_str ="(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+";
       std::vector<std::string> chunks;
 
@@ -121,17 +135,8 @@ class Tokeniser{
       pcre2_code_free(re);
 
 
-      std::vector<std::string> modified_chunk;
 
       for(const auto& chunk : chunks){
-        modified_chunk.emplace_back(chunk);
-      }
-      modified_chunk.emplace_back( "assistant\n");
-
-
-
-      tokens.emplace_back(151644);
-      for(const auto& chunk : modified_chunk){
         std::vector<uint32_t> bytes;
 
         for (size_t i = 0; i < chunk.size(); i++) {
@@ -176,13 +181,35 @@ class Tokeniser{
           tokens.emplace_back(b);
         }
       }
-      tokens.emplace_back(151645);
-      tokens.emplace_back(151643);
     }
 
     void Decode(std::vector<int32_t> tokens){
-      for(auto token : tokens){
-        std::cout << (tokens_to_string[token]) << " ";
+      for (auto token_id : tokens) {
+        std::string_view token_str = tokens_to_string[token_id];
+
+        for (size_t i = 0; i < token_str.size(); ) {
+          unsigned char c = token_str[i];
+
+          if ((c & 0x80) == 0) {
+            std::putchar(c); 
+            i++;
+          } 
+          else if ((c & 0xE0) == 0xC0) {
+            unsigned char c2 = token_str[i + 1];
+
+            uint16_t unicode_val = ((c & 0x1F) << 6) | (c2 & 0x3F);
+
+            uint8_t original_byte = unicode_to_byte_table[unicode_val - 256];
+            std::putchar(original_byte);
+
+            i += 2; 
+          } 
+          else {
+            Log(ERROR, "Malformed BPE sequence detected.");
+            break;
+          }
+        }
+        std::fflush(stdout); 
       }
     }
 };

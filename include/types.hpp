@@ -117,6 +117,8 @@ struct ModelGlobals{
   uint32_t attention_head_count;
   uint32_t attention_head_count_kv;
   uint32_t context_length ;
+  uint32_t ggml_eos_token_id;
+  uint32_t ggml_bos_token_id;
   double rope_freq_base ;
   double attention_layer_norm_rms_epsilon ;
 
@@ -129,6 +131,8 @@ struct ModelGlobals{
     context_length  = 0;
     rope_freq_base  = 0;
     attention_layer_norm_rms_epsilon  = 0;
+    ggml_eos_token_id = 0;
+    ggml_bos_token_id = 0;
   }
 };
 

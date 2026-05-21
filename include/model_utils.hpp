@@ -42,6 +42,10 @@ ModelGlobals GetModelGlobals(MetadataKV_t& metadata_key_values ){
 
     }else if( kv.name == "qwen2.attention.layer_norm_rms_epsilon"){
       global_struct.attention_layer_norm_rms_epsilon = Extract<float, GGUF_VALUE_TYPE_FLOAT32, GGUF_VALUE_TYPE_FLOAT64>(kv.value);
+    }else if(kv.name == "tokenizer.ggml.eos_token_id"){
+      global_struct.ggml_eos_token_id = Extract<uint32_t , GGUF_VALUE_TYPE_INT32 , GGUF_VALUE_TYPE_UINT32>(kv.value);
+    }else if(kv.name == "tokenizer.ggml.bos_token_id"){
+      global_struct.ggml_bos_token_id = Extract<uint32_t , GGUF_VALUE_TYPE_INT32 , GGUF_VALUE_TYPE_UINT32>(kv.value);
     }
   }
   Log(INFO ,"attention_layer_norm_rms_epsilon", global_struct.attention_layer_norm_rms_epsilon);
@@ -52,5 +56,7 @@ ModelGlobals GetModelGlobals(MetadataKV_t& metadata_key_values ){
   Log(INFO ,"block_count", global_struct.block_count);
   Log(INFO ,"context_length", global_struct.context_length);
   Log(INFO ,"feed_forward_length", global_struct.feed_forward_length);
+  Log(INFO ,"ggml_eos_token_id", global_struct.ggml_eos_token_id);
+  Log(INFO ,"ggml_bos_token_id", global_struct.ggml_bos_token_id);
   return global_struct;
 }

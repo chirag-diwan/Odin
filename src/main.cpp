@@ -17,13 +17,6 @@ int main() {
   reader.ParseAllKeyValues();
   reader.ParseAllTensors();
 
-  std::vector<int32_t> tokens;
-
-
-  Tokeniser t(reader.metadata_key_values);
-
-  t.Tokenise("You are a really help full assitant and you are supposed to answer the queries asked ot you" , tokens);
-
 
   ggml_backend_t backend = ggml_backend_cpu_init();
   ggml_gallocr_t allocr = ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend));
@@ -44,17 +37,28 @@ int main() {
   model.SetGAlloc(allocr);
   model.PopulateBlocks(static_ctx , reader.tensors);
   model.PopulateKVCache(static_ctx);
-  model.Prefill(tokens , 0.9);
 
-  std::cout << " $ ";
-  std::string new_prompt;
-  std::cin >> new_prompt;
-  std::vector<int32_t> new_tokens;
-  t.Tokenise(new_prompt, new_tokens);
-  model.Infer(new_tokens , 0.9);
-  t.Decode(new_tokens);
 
-  t.Decode(tokens);
+  Tokeniser tokeniser(reader.metadata_key_values);
+  std::vector<int32_t> user_text_tokens;
+  tokeniser.Tokenise("Hello, how are you?", user_text_tokens);
+
+  std::vector<int32_t> final_prompt;
+
+  final_prompt.push_back(151644);
+  tokeniser.Tokenise("user\n", final_prompt); 
+
+  final_prompt.insert(final_prompt.end(), user_text_tokens.begin(), user_text_tokens.end());
+
+  final_prompt.push_back(globals.ggml_eos_token_id); 
+  tokeniser.Tokenise("\n", final_prompt);
+
+  final_prompt.push_back(151644);
+  tokeniser.Tokenise("assistant\n", final_prompt);
+
+  model.Prefill(final_prompt);
+  model.Infer(final_prompt);
+  tokeniser.Decode(final_prompt);
 
   munmap(addr, len);
   return 0;
