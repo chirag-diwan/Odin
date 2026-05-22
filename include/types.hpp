@@ -4,8 +4,7 @@
 #include <string_view>
 #include <vector>
 
-
-#define DIM_ARRAY_MAX_SIZE 8
+#define DIM_ARRAY_MAX_SIZE 8 //Future proof
 
 struct AddrLenPair{
   void * addr;

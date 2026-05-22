@@ -7,7 +7,6 @@
 #include <string_view>
 #include <sys/types.h>
 #include <unordered_map>
-#include <vector>
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
 #include <utf8proc.h>
@@ -17,6 +16,7 @@
 #include <string>
 #include <vector>
 
+// XXX CREATED by llm
 std::vector<std::string> generate_byte_to_unicode() {
   std::vector<std::string> byte_to_unicode(256);
   int n = 0;
@@ -46,9 +46,7 @@ class Tokeniser{
     std::unordered_map<uint64_t , std::string_view> tokens_to_string;
     std::unordered_map<uint64_t, MergeRV> merge_priority;
     std::vector<std::string> byte_to_unicode_table;
-
-    // Class member
-    uint8_t unicode_to_byte_table[65]; // 320 - 256 = 64 (+1 for safety)
+    uint8_t unicode_to_byte_table[65];
 
     __attribute__((always_inline)) inline uint64_t getKey(uint32_t first, uint32_t second){
       return (static_cast<uint64_t>(first) << 32) ^ static_cast<uint64_t>(second);
@@ -56,6 +54,7 @@ class Tokeniser{
 
   public:
     Tokeniser(MetadataKV_t& metadata_key_values){
+      int32_t eos_token = 0;
       for(const auto& kv : metadata_key_values){
         if(kv.name == "tokenizer.ggml.tokens"){
           for(size_t i = 0 ; i <kv.value.array.strings.size() ; i++){
@@ -82,8 +81,10 @@ class Tokeniser{
               .merge_rank = i ,
               .merge_result = vocab.at(result)
             };
-          }
-        } 
+          } 
+        }else if(kv.name == "tokenizer.ggml.eos_token_id"){
+          eos_token = Extract<int32_t, GGUF_VALUE_TYPE_UINT32 , GGUF_VALUE_TYPE_UINT32>(kv.value);
+        }
       }
 
       byte_to_unicode_table = generate_byte_to_unicode();
@@ -196,7 +197,6 @@ class Tokeniser{
           } 
           else if ((c & 0xE0) == 0xC0) {
             unsigned char c2 = token_str[i + 1];
-
             uint16_t unicode_val = ((c & 0x1F) << 6) | (c2 & 0x3F);
 
             uint8_t original_byte = unicode_to_byte_table[unicode_val - 256];
@@ -211,5 +211,33 @@ class Tokeniser{
         }
         std::fflush(stdout); 
       }
+    }
+
+
+    void Decode(int32_t token_id){
+      std::string_view token_str = tokens_to_string[token_id];
+
+      for (size_t i = 0; i < token_str.size(); ) {
+        unsigned char c = token_str[i];
+
+        if ((c & 0x80) == 0) {
+          std::putchar(c); 
+          i++;
+        } 
+        else if ((c & 0xE0) == 0xC0) {
+          unsigned char c2 = token_str[i + 1];
+          uint16_t unicode_val = ((c & 0x1F) << 6) | (c2 & 0x3F);
+
+          uint8_t original_byte = unicode_to_byte_table[unicode_val - 256];
+          std::putchar(original_byte);
+
+          i += 2; 
+        } 
+        else {
+          Log(ERROR, "Malformed BPE sequence detected.");
+          break;
+        }
+      }
+      std::fflush(stdout); 
     }
 };

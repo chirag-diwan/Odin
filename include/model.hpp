@@ -252,6 +252,42 @@ class Model{
       ggml_free(ctx0);
     }
 
+
+    int32_t Infer(int32_t prev_token) {
+      auto d = globals.embedding_length / globals.attention_head_count;
+      float scale_factor = 1.0f / sqrt((float)d);
+
+      struct ggml_init_params params = { 10 * 1024 * 1024, NULL, true };
+      ggml_context* ctx0 = ggml_init(params);
+      ggml_cgraph* gf = ggml_new_graph(ctx0);
+
+      size_t s = 1;
+
+      ggml_tensor* pos = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, s);
+      ggml_tensor* indices = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, s);
+
+      ggml_tensor* embeddings = ggml_get_rows(ctx0, global_tensors.token_embd_weights, indices);
+      embeddings = forward(ctx0, gf, embeddings, pos, s, d, scale_factor);
+
+      ggml_tensor* max_idx = ggml_argmax(ctx0, embeddings);
+
+      ggml_build_forward_expand(gf, max_idx);
+      ggml_gallocr_alloc_graph(allocr, gf);
+
+      int32_t current_pos = n_past;
+      ggml_backend_tensor_set(pos, &current_pos, 0, sizeof(int32_t));
+      ggml_backend_tensor_set(indices, &prev_token, 0, sizeof(int32_t));
+
+      ggml_backend_graph_compute(backend, gf);
+
+      int32_t next_token;
+      ggml_backend_tensor_get(max_idx, &next_token, 0, sizeof(int32_t));
+
+      n_past += s;
+      ggml_free(ctx0);
+      return next_token;
+    }
+
     void Infer(std::vector<int32_t>& tokens) {
       auto d = globals.embedding_length / globals.attention_head_count;
       float scale_factor = 1.0f / sqrt((float)d);
