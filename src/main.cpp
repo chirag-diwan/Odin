@@ -1,10 +1,11 @@
 #include "ggml-cpu.h"
-#include "model.hpp"
-#include "model_utils.hpp"
-#include "tokeniser.hpp"
-#include "ggufreader.hpp"
+#include "../include/model.hpp"
+#include "../include/model_utils.hpp"
+#include "../include/tokeniser.hpp"
+#include "../include/ggufreader.hpp"
 #include <alloca.h>
 #include <fcntl.h>
+#include <string>
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -39,26 +40,45 @@ int main() {
   model.PopulateKVCache(static_ctx);
 
 
-  Tokeniser tokeniser(reader.metadata_key_values);
-  std::vector<int32_t> user_text_tokens;
-  tokeniser.Tokenise("Hello, how are you?", user_text_tokens);
+  Tokeniser tokeniser(globals);
+  int32_t prev_token ;
+  bool infer_complete = true;
 
-  std::vector<int32_t> final_prompt;
+  std::vector<int32_t> tokens;
+  while(true){
+    if(infer_complete){
+      std::string prompt;
+      std::cout << "\n $ ";
+      std::getline(std::cin , prompt);
 
-  final_prompt.push_back(151644);
-  tokeniser.Tokenise("user\n", final_prompt); 
+      tokens.push_back(151644);
+      tokeniser.Tokenise("user\n", tokens); 
 
-  final_prompt.insert(final_prompt.end(), user_text_tokens.begin(), user_text_tokens.end());
+      tokeniser.Tokenise(prompt, tokens);
 
-  final_prompt.push_back(globals.ggml_eos_token_id); 
-  tokeniser.Tokenise("\n", final_prompt);
+      tokens.push_back(globals.ggml_eos_token_id); 
+      tokeniser.Tokenise("\n", tokens);
 
-  final_prompt.push_back(151644);
-  tokeniser.Tokenise("assistant\n", final_prompt);
+      tokens.push_back(151644);
+      tokeniser.Tokenise("assistant\n", tokens);
 
-  model.Prefill(final_prompt);
-  model.Infer(final_prompt);
-  tokeniser.Decode(final_prompt);
+      model.Prefill(tokens);
+      prev_token = tokens.back();
+
+      infer_complete = false;
+    }else{
+      auto next_token = model.Infer(prev_token);
+      tokens.emplace_back(next_token);
+      prev_token = next_token;
+
+      if(next_token == globals.ggml_eos_token_id){
+        infer_complete = true;
+        continue;
+      }
+
+      tokeniser.Decode(next_token);
+    }
+  }
 
   munmap(addr, len);
   return 0;

@@ -12,11 +12,17 @@ add_subdirectory(./external/ggml)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(PCRE2 REQUIRED libpcre2-8)
 
+option(ENABLE_TESTS "Build the test suite" OFF)
 
-
-add_executable(odin
-  ./src/main.cpp
-)
+if(ENABLE_TESTS)
+  add_executable(odin
+    ./tests/test.cpp
+  )
+else()
+  add_executable(odin
+    ./src/main.cpp
+  )
+endif()
 
 target_include_directories(odin
   PRIVATE

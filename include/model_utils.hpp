@@ -14,7 +14,7 @@ uint64_t calculateKeyValueCacheByteSize(ModelGlobals& global_struct) {
 }
 
 
-ModelGlobals GetModelGlobals(MetadataKV_t& metadata_key_values ){
+ModelGlobals GetModelGlobals(metadatakv_t& metadata_key_values ){
   ModelGlobals global_struct;
   GGufValue metadata_value ;
 
@@ -46,6 +46,12 @@ ModelGlobals GetModelGlobals(MetadataKV_t& metadata_key_values ){
       global_struct.ggml_eos_token_id = Extract<uint32_t , GGUF_VALUE_TYPE_INT32 , GGUF_VALUE_TYPE_UINT32>(kv.value);
     }else if(kv.name == "tokenizer.ggml.bos_token_id"){
       global_struct.ggml_bos_token_id = Extract<uint32_t , GGUF_VALUE_TYPE_INT32 , GGUF_VALUE_TYPE_UINT32>(kv.value);
+    }else if(kv.name == "tokenizer.ggml.tokens"){
+      global_struct.token_vocab = &kv.value.array.strings;
+
+    }else if(kv.name == "tokenizer.ggml.merges"){
+      global_struct.token_merges = &kv.value.array.strings;
+
     }
   }
   Log(INFO ,"attention_layer_norm_rms_epsilon", global_struct.attention_layer_norm_rms_epsilon);

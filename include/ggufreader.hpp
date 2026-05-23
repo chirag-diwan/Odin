@@ -27,7 +27,7 @@ class GGufReader {
   public:
     GGufHeader header;
     std::vector<GGufTensor> tensors;
-    MetadataKV_t metadata_key_values;
+    metadatakv_t metadata_key_values;
 
 
   private:

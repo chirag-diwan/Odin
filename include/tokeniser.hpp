@@ -1,8 +1,7 @@
-#include "gguf.hpp"
+#include "bidirectional_map.hpp"
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <sys/types.h>
@@ -16,7 +15,7 @@
 #include <string>
 #include <vector>
 
-// XXX CREATED by llm
+// XXX created by llm
 std::vector<std::string> generate_byte_to_unicode() {
   std::vector<std::string> byte_to_unicode(256);
   int n = 0;
@@ -42,50 +41,94 @@ std::vector<std::string> generate_byte_to_unicode() {
 
 class Tokeniser{
   private:
-    std::unordered_map<std::string_view, uint64_t> vocab;
-    std::unordered_map<uint64_t , std::string_view> tokens_to_string;
+    bidirectional_map vocab;
     std::unordered_map<uint64_t, MergeRV> merge_priority;
     std::vector<std::string> byte_to_unicode_table;
     uint8_t unicode_to_byte_table[65];
+
+    pcre2_code* compiled_regex;
 
     __attribute__((always_inline)) inline uint64_t getKey(uint32_t first, uint32_t second){
       return (static_cast<uint64_t>(first) << 32) ^ static_cast<uint64_t>(second);
     }
 
   public:
-    Tokeniser(MetadataKV_t& metadata_key_values){
-      int32_t eos_token = 0;
-      for(const auto& kv : metadata_key_values){
-        if(kv.name == "tokenizer.ggml.tokens"){
-          for(size_t i = 0 ; i <kv.value.array.strings.size() ; i++){
-            vocab[kv.value.array.strings[i]] = i;
-            tokens_to_string[i] = kv.value.array.strings[i];
-          }
-        }else if(kv.name == "tokenizer.ggml.merges"){
-          for(size_t i = 0 ; i <kv.value.array.strings.size() ; i++){
-            std::string_view merge_pair = kv.value.array.strings[i];
-            auto split_point = merge_pair.find(' ');
-            std::string_view first = merge_pair.substr(0 , split_point);
-            std::string_view second = merge_pair.substr(split_point + 1);
-            auto first_idx = vocab.at(first);
-            auto second_idx = vocab.at(second);
+    Tokeniser(ModelGlobals& globals) : vocab(globals.token_vocab->size()) {
+      if(globals.token_vocab == nullptr){
+        Log(ERROR , "globals.token_vocab is a nullptr");
+        return;
+      }
 
-            auto key = getKey(first_idx , second_idx);
-            std::string result;
-            result.reserve(first.size() + second.size());
+      if(globals.token_merges == nullptr){
+        Log(ERROR , "globals.token_merges is a nullptr");
+        return;
+      }
 
-            result.append(first);
-            result.append(second);
 
-            merge_priority[key] = {
-              .merge_rank = i ,
-              .merge_result = vocab.at(result)
-            };
-          } 
-        }else if(kv.name == "tokenizer.ggml.eos_token_id"){
-          eos_token = Extract<int32_t, GGUF_VALUE_TYPE_UINT32 , GGUF_VALUE_TYPE_UINT32>(kv.value);
+      for(size_t i = 0 ; i <globals.token_vocab->size() ; i++){
+        if(__builtin_expect(!vocab.insert(globals.token_vocab->at(i), i) , false)){
+          Log(ERROR , "cannot insert key value" , globals.token_vocab->at(i), i);
         }
       }
+
+      for(size_t i = 0 ; i <globals.token_merges->size() ; i++){
+        std::string_view merge_pair = globals.token_merges->at(i);
+        auto split_point = merge_pair.find(' ');
+        std::string_view first = merge_pair.substr(0 , split_point);
+        std::string_view second = merge_pair.substr(split_point + 1);
+        auto first_idx = vocab.getValueOf(first);
+        auto second_idx = vocab.getValueOf(second);
+
+        if(__builtin_expect(!first_idx.has_value(),false)){
+          Log(ERROR , "value not found for key" , first);
+          continue;
+        }
+        if (__builtin_expect(!second_idx.has_value(),false)) {
+          Log(ERROR , "value not found for key" , second);
+          continue;
+        }
+
+
+
+        auto key = getKey(*first_idx, *second_idx);
+        std::string result;
+        result.reserve(first.size() + second.size());
+
+        result.append(first);
+        result.append(second);
+
+        auto merge_result = vocab.getValueOf(result);
+        if(__builtin_expect(!merge_result.has_value(),false)){
+          Log(ERROR , "value not found for key" , result);
+          continue;
+        }
+
+        merge_priority[key] = {
+          .merge_rank = static_cast<int32_t>(i) ,
+          .merge_result = *merge_result
+        };
+      } 
+
+
+      const std::string regex_str ="(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+";
+
+      int errornumber;
+      PCRE2_SIZE erroroffset;
+
+      compiled_regex = pcre2_compile(
+          reinterpret_cast<PCRE2_SPTR>(regex_str.c_str()),
+          PCRE2_ZERO_TERMINATED,
+          PCRE2_UTF | PCRE2_UCP, 
+          &errornumber,
+          &erroroffset,
+          NULL
+          );
+
+      if (compiled_regex == NULL) {
+        Log(ERROR , "PCRE2 compilation failed.");
+        return; 
+      }
+
 
       byte_to_unicode_table = generate_byte_to_unicode();
 
@@ -100,31 +143,15 @@ class Tokeniser{
       }
     }
 
-    void Tokenise(std::string prompt, std::vector<int32_t>& tokens){
-      const std::string regex_str ="(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+";
-      std::vector<std::string> chunks;
+    void Tokenise(std::string prompt_str, std::vector<int32_t>& tokens){
 
-      int errornumber;
-      PCRE2_SIZE erroroffset;
+      std::vector<std::string_view> chunks;
+      std::string_view prompt = prompt_str;
 
-      pcre2_code* re = pcre2_compile(
-          reinterpret_cast<PCRE2_SPTR>(regex_str.c_str()),
-          PCRE2_ZERO_TERMINATED,
-          PCRE2_UTF | PCRE2_UCP, 
-          &errornumber,
-          &erroroffset,
-          NULL
-          );
-
-      if (re == NULL) {
-        Log(ERROR , "PCRE2 compilation failed.");
-        return; 
-      }
-
-      pcre2_match_data* match_data = pcre2_match_data_create_from_pattern(re, NULL);
+      pcre2_match_data* match_data = pcre2_match_data_create_from_pattern(compiled_regex, NULL);
       PCRE2_SIZE start_offset = 0;
 
-      while (pcre2_match(re, reinterpret_cast<PCRE2_SPTR>(prompt.c_str()), prompt.length(), start_offset, 0, match_data, NULL) >= 0) {
+      while (pcre2_match(compiled_regex, reinterpret_cast<PCRE2_SPTR>(prompt_str.c_str()), prompt.length(), start_offset, 0, match_data, NULL) >= 0) {
         PCRE2_SIZE* ovector = pcre2_get_ovector_pointer(match_data);
 
         chunks.push_back(prompt.substr(ovector[0], ovector[1] - ovector[0]));
@@ -133,9 +160,6 @@ class Tokeniser{
       }
 
       pcre2_match_data_free(match_data);
-      pcre2_code_free(re);
-
-
 
       for(const auto& chunk : chunks){
         std::vector<uint32_t> bytes;
@@ -144,12 +168,12 @@ class Tokeniser{
           uint8_t raw_byte = static_cast<uint8_t>(chunk[i]);
           auto mapped_str = byte_to_unicode_table[raw_byte];
 
-          try {
-            auto id = vocab.at(mapped_str);
-            bytes.emplace_back(id);
-          } catch (std::out_of_range& e) {
-            Log(ERROR, "Not found in vocab: ", mapped_str);
+          auto id = vocab.getValueOf(mapped_str);
+          if(__builtin_expect(!id.has_value(),false)){
+            Log(ERROR , "value not found for", mapped_str);
+            continue;
           }
+          bytes.emplace_back(*id);
 
         }
 
@@ -186,8 +210,13 @@ class Tokeniser{
 
     void Decode(std::vector<int32_t> tokens){
       for (auto token_id : tokens) {
-        std::string_view token_str = tokens_to_string[token_id];
+        auto token_opt = vocab.getKeyOf(token_id);
+        if(__builtin_expect(!token_opt.has_value(),false)){
+          Log(ERROR , "key not found for ", token_id);
+          continue;
+        }
 
+        auto token_str = *token_opt;
         for (size_t i = 0; i < token_str.size(); ) {
           unsigned char c = token_str[i];
 
@@ -215,7 +244,13 @@ class Tokeniser{
 
 
     void Decode(int32_t token_id){
-      std::string_view token_str = tokens_to_string[token_id];
+      auto token_opt = vocab.getKeyOf(token_id);
+      if(__builtin_expect(!token_opt.has_value(),false)){
+        Log(ERROR , "key not found for ", token_id);
+        return;
+      }
+
+      auto token_str = *token_opt;
 
       for (size_t i = 0; i < token_str.size(); ) {
         unsigned char c = token_str[i];
@@ -239,5 +274,11 @@ class Tokeniser{
         }
       }
       std::fflush(stdout); 
+    }
+
+    ~Tokeniser(){
+      pcre2_code_free(compiled_regex);
+
+
     }
 };

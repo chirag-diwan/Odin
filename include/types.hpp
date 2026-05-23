@@ -85,7 +85,7 @@ struct metadata_keyvalue{
   GGufValue value;
 };
 
-using MetadataKV_t = std::vector<metadata_keyvalue>;
+using metadatakv_t = std::vector<metadata_keyvalue>;
 
 
 struct GGufTensor {
@@ -121,6 +121,10 @@ struct ModelGlobals{
   double rope_freq_base ;
   double attention_layer_norm_rms_epsilon ;
 
+  const std::vector<std::string_view>* token_vocab;
+  const std::vector<std::string_view>* token_merges;
+  
+
   ModelGlobals(){
     block_count = 0;
     embedding_length = 0;
@@ -132,6 +136,8 @@ struct ModelGlobals{
     attention_layer_norm_rms_epsilon  = 0;
     ggml_eos_token_id = 0;
     ggml_bos_token_id = 0;
+    token_vocab = nullptr;
+    token_merges = nullptr;
   }
 };
 
@@ -156,8 +162,8 @@ struct ModelState{
 };
 
 struct MergeRV{
-  uint64_t merge_rank;
-  uint64_t merge_result;
+  int32_t merge_rank;
+  int32_t merge_result;
 };
 
 struct RankIndexPair{
@@ -168,3 +174,4 @@ struct RankIndexPair{
     return rank > other.rank;
   }
 };
+
