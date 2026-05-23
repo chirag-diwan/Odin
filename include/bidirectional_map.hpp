@@ -37,10 +37,8 @@ class bidirectional_map {
   public:
     explicit bidirectional_map(size_t max_elements) {
       if (max_elements == 0) {
-        throw std::invalid_argument("Capacity must be strictly positive");
+        return;
       }
-      // Structurally decouple the requested elements from the physical memory required 
-      // to maintain a <= 0.5 load factor for linear probing.
       capacity = max_elements * 2;
       current_size = 0;
 
@@ -48,14 +46,11 @@ class bidirectional_map {
       values = std::make_unique<bid_value_t[]>(capacity);
     }
 
-    bidirectional_map(){}
-
     bool insert(std::string_view key, int32_t value) {
       if (current_size >= capacity / 2) {
-        return false; // Reject insertion to prevent O(N) degradation
+        return false; 
       }
 
-      // Enforce the 1:1 Bijection: Reject duplicates
       if (getValueOf(key).has_value() || getKeyOf(value).has_value()) {
         return false;
       }

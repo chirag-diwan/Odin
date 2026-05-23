@@ -3,6 +3,7 @@
 #include "../include/model_utils.hpp"
 #include "../include/tokeniser.hpp"
 #include "../include/ggufreader.hpp"
+#include "ggml.h"
 #include <alloca.h>
 #include <fcntl.h>
 #include <string>
@@ -20,7 +21,8 @@ int main() {
 
 
   ggml_backend_t backend = ggml_backend_cpu_init();
-  ggml_gallocr_t allocr = ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend));
+  ggml_gallocr_t prefill_allocr = ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend));
+  ggml_gallocr_t infer_allocr = ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend));
 
   ggml_init_params static_ctx_params = {
     .mem_size = 10 * 1024 * 1024,
@@ -35,16 +37,17 @@ int main() {
 
   model.SetModelGlobals(globals);
   model.SetBackend(backend);
-  model.SetGAlloc(allocr);
+  model.SetPrefillAllocr(prefill_allocr);
+  model.SetInferAllocr(infer_allocr);
   model.PopulateBlocks(static_ctx , reader.tensors);
   model.PopulateKVCache(static_ctx);
 
-
   Tokeniser tokeniser(globals);
-  int32_t prev_token ;
   bool infer_complete = true;
-
   std::vector<int32_t> tokens;
+
+
+  int32_t prev_token;
   while(true){
     if(infer_complete){
       std::string prompt;
@@ -64,6 +67,7 @@ int main() {
 
       model.Prefill(tokens);
       prev_token = tokens.back();
+      tokeniser.Decode(prev_token);
 
       infer_complete = false;
     }else{

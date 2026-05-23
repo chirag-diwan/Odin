@@ -1,11 +1,11 @@
 #include "bidirectional_map.hpp"
+#include "unidirectional_map.hpp"
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <string>
 #include <string_view>
 #include <sys/types.h>
-#include <unordered_map>
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
 #include <utf8proc.h>
@@ -42,7 +42,8 @@ std::vector<std::string> generate_byte_to_unicode() {
 class Tokeniser{
   private:
     bidirectional_map vocab;
-    std::unordered_map<uint64_t, MergeRV> merge_priority;
+    unidirectional_map<MergeRV> merge_priority;
+
     std::vector<std::string> byte_to_unicode_table;
     uint8_t unicode_to_byte_table[65];
 
@@ -53,7 +54,7 @@ class Tokeniser{
     }
 
   public:
-    Tokeniser(ModelGlobals& globals) : vocab(globals.token_vocab->size()) {
+    Tokeniser(ModelGlobals& globals) : vocab(globals.token_vocab->size()) , merge_priority(globals.token_merges->size()) {
       if(globals.token_vocab == nullptr){
         Log(ERROR , "globals.token_vocab is a nullptr");
         return;
@@ -103,10 +104,7 @@ class Tokeniser{
           continue;
         }
 
-        merge_priority[key] = {
-          .merge_rank = static_cast<int32_t>(i) ,
-          .merge_result = *merge_result
-        };
+        merge_priority.insert(key , { .merge_rank = static_cast<int32_t>(i) , .merge_result = *merge_result });
       } 
 
 
@@ -184,14 +182,14 @@ class Tokeniser{
 
           for (size_t i = 1; i < bytes.size(); i++) {
             auto key = getKey(bytes[i - 1], bytes[i]);
-            auto it = merge_priority.find(key);
+            auto it = merge_priority.getValueOf(key);
 
-            if (it == merge_priority.end()) continue;
+            if (!it.has_value()) continue;
 
-            if (it->second.merge_rank < lowest_rank) {
-              lowest_rank = it->second.merge_rank;
+            if ((*it).merge_rank < lowest_rank) {
+              lowest_rank = (*it).merge_rank;
               lowest_rank_indx = i;
-              target_merge_id = it->second.merge_result;
+              target_merge_id = (*it).merge_result;
             }
           }
 
