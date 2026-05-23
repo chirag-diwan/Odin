@@ -54,15 +54,5 @@ ModelGlobals GetModelGlobals(metadatakv_t& metadata_key_values ){
 
     }
   }
-  Log(INFO ,"attention_layer_norm_rms_epsilon", global_struct.attention_layer_norm_rms_epsilon);
-  Log(INFO ,"embedding_length", global_struct.embedding_length);
-  Log(INFO ,"attention_head_count_kv", global_struct.attention_head_count_kv);
-  Log(INFO ,"attention_head_count", global_struct.attention_head_count);
-  Log(INFO ,"rope_freq_base", global_struct.rope_freq_base);
-  Log(INFO ,"block_count", global_struct.block_count);
-  Log(INFO ,"context_length", global_struct.context_length);
-  Log(INFO ,"feed_forward_length", global_struct.feed_forward_length);
-  Log(INFO ,"ggml_eos_token_id", global_struct.ggml_eos_token_id);
-  Log(INFO ,"ggml_bos_token_id", global_struct.ggml_bos_token_id);
   return global_struct;
 }
