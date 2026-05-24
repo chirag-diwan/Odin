@@ -10,7 +10,7 @@ struct uni_pack_t{
   bool occupied;
 };
 
-template <typename value_type , typename key_type = uint64_t>
+template <typename key_type , typename value_type>
 class unidirectional_map{
   private:
 

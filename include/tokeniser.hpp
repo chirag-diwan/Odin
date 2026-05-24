@@ -43,7 +43,7 @@ std::vector<std::string> generate_byte_to_unicode() {
 class Tokeniser{
   private:
     bidirectional_map<std::string_view, uint32_t> vocab;
-    unidirectional_map<MergeRV> merge_priority;
+    unidirectional_map<uint64_t , MergeRV> merge_priority;
 
     std::vector<std::string> byte_to_unicode_table;
     uint8_t unicode_to_byte_table[65];
@@ -241,7 +241,7 @@ class Tokeniser{
       }
     }
 
-    
+
     void Decode(span<uint32_t> tokens){
       for (auto token_id : tokens) {
         auto token_opt = vocab.getKeyOf(token_id);

@@ -86,7 +86,7 @@ int main(int argc , char **argv) {
         std::cout << "\n $ ";
         std::getline(std::cin , prompt);
 
-        tokens.push_back(151644);
+        //tokens.push_back(151644);
         tokeniser.Tokenise("user\n", tokens); 
 
         tokeniser.Tokenise(prompt, tokens);
@@ -94,7 +94,7 @@ int main(int argc , char **argv) {
         tokens.push_back(globals.ggml_eos_token_id); 
         tokeniser.Tokenise("\n", tokens);
 
-        tokens.push_back(151644);
+        //tokens.push_back(151644);
         tokeniser.Tokenise("assistant\n", tokens);
 
         model.Prefill(tokens);
