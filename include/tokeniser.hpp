@@ -1,5 +1,6 @@
 #include "bidirectional_map.hpp"
 #include "unidirectional_map.hpp"
+#include "span.hpp"
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -104,7 +105,7 @@ class Tokeniser{
           continue;
         }
 
-        merge_priority.insert(key , { .merge_rank = static_cast<int32_t>(i) , .merge_result = *merge_result });
+        merge_priority.insert(key , { .merge_rank = static_cast<uint32_t>(i) , .merge_result = *merge_result });
       } 
 
 
@@ -141,7 +142,7 @@ class Tokeniser{
       }
     }
 
-    void Tokenise(std::string prompt_str, std::vector<int32_t>& tokens){
+    void Tokenise(std::string prompt_str, std::vector<uint32_t>& tokens){
 
       std::vector<std::string_view> chunks;
       std::string_view prompt = prompt_str;
@@ -206,7 +207,42 @@ class Tokeniser{
       }
     }
 
-    void Decode(std::vector<int32_t> tokens){
+    void Decode(std::vector<uint32_t> tokens){
+      for (auto token_id : tokens) {
+        auto token_opt = vocab.getKeyOf(token_id);
+        if(__builtin_expect(!token_opt.has_value(),false)){
+          Log(ERROR , "key not found for ", token_id);
+          continue;
+        }
+
+        auto token_str = *token_opt;
+        for (size_t i = 0; i < token_str.size(); ) {
+          unsigned char c = token_str[i];
+
+          if ((c & 0x80) == 0) {
+            std::putchar(c); 
+            i++;
+          } 
+          else if ((c & 0xE0) == 0xC0) {
+            unsigned char c2 = token_str[i + 1];
+            uint16_t unicode_val = ((c & 0x1F) << 6) | (c2 & 0x3F);
+
+            uint8_t original_byte = unicode_to_byte_table[unicode_val - 256];
+            std::putchar(original_byte);
+
+            i += 2; 
+          } 
+          else {
+            Log(ERROR, "Malformed BPE sequence detected.");
+            break;
+          }
+        }
+        std::fflush(stdout); 
+      }
+    }
+
+    
+    void Decode(span<uint32_t> tokens){
       for (auto token_id : tokens) {
         auto token_opt = vocab.getKeyOf(token_id);
         if(__builtin_expect(!token_opt.has_value(),false)){

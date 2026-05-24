@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
-#include <stdexcept>
 #include <string_view>
 #include <optional>
 
@@ -83,7 +82,7 @@ class bidirectional_map {
       return std::nullopt;
     }
 
-    std::optional<int32_t> getValueOf(std::string_view key) const {
+    std::optional<uint32_t> getValueOf(std::string_view key) const {
       auto key_idx = getKeyIndex(key);
       while (keys[key_idx].occupied) {
         if (keys[key_idx].key == key) {

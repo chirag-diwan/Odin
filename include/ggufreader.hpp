@@ -117,8 +117,8 @@ class GGufReader {
       header = {};
     }
 
-    std::pair<void* , size_t> OpenFile(const char* filepath) {
-      int opened_descriptor = open(filepath, O_RDONLY);
+    std::pair<void* , size_t> OpenFile(std::string& filepath) {
+      int opened_descriptor = open(filepath.c_str(), O_RDONLY);
       Errorif(opened_descriptor == -1, "Not a valid file descriptor for %?",
           filepath);
       struct stat file_statistics;

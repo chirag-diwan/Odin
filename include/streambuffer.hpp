@@ -56,4 +56,13 @@ class StreamBuffer {
       out = ntohl(net);
       return true;
     }
+
+    uint8_t* begin(){
+      return buf.data() + r;
+    }
+
+
+    uint8_t* end(){
+      return buf.data() + w;
+    }
 };

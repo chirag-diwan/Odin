@@ -1,6 +1,8 @@
 #pragma once
 #include "ggml.h"
 #include <cstdint>
+#include <netinet/in.h>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -123,7 +125,7 @@ struct ModelGlobals{
 
   const std::vector<std::string_view>* token_vocab;
   const std::vector<std::string_view>* token_merges;
-  
+
 
   ModelGlobals(){
     block_count = 0;
@@ -162,8 +164,8 @@ struct ModelState{
 };
 
 struct MergeRV{
-  int32_t merge_rank;
-  int32_t merge_result;
+  uint32_t merge_rank;
+  uint32_t merge_result;
 };
 
 struct RankIndexPair{
@@ -175,3 +177,18 @@ struct RankIndexPair{
   }
 };
 
+
+struct Config{
+  uint16_t port;
+  uint8_t thread_count;
+  bool interactive;
+  std::string model_path;
+  std::string prompt;
+  Config(){
+    port = 3141;
+    thread_count = 4;
+    interactive = true;
+    model_path = "";
+    prompt = "";
+  }
+};
