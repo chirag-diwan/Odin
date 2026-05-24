@@ -1,0 +1,378 @@
+/home/chirag/Models/qwen2.5-0.5b-instruct-q4_0.gguf (ver 3): 26 key-value pairs, 291 tensors
+general.architecture: [string] qwen2
+general.type: [string] model
+general.name: [string] qwen2.5-0.5b-instruct
+general.version: [string] v0.1
+general.finetune: [string] qwen2.5-0.5b-instruct
+general.size_label: [string] 630M
+qwen2.block_count: [uint32] 24
+qwen2.context_length: [uint32] 32768
+qwen2.embedding_length: [uint32] 896
+qwen2.feed_forward_length: [uint32] 4864
+qwen2.attention.head_count: [uint32] 14
+qwen2.attention.head_count_kv: [uint32] 2
+qwen2.rope.freq_base: [float32] 1000000.000000
+qwen2.attention.layer_norm_rms_epsilon: [float32] 0.000001
+general.file_type: [uint32] 2
+tokenizer.ggml.model: [string] gpt2
+tokenizer.ggml.pre: [string] qwen2
+tokenizer.ggml.tokens: [array] [!, ", #, $, %, &, ', (, ), *, +, ,, -, ., /, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, :, ;, <, =, >, ... 151906 more items of 151936]
+tokenizer.ggml.token_type: [array] [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ... 151906 more items of 151936]
+tokenizer.ggml.merges: [array] [Ġ Ġ, ĠĠ ĠĠ, i n, Ġ t, ĠĠĠĠ ĠĠĠĠ, e r, ĠĠ Ġ, o n, Ġ a, r e, a t, s t, e n, o r, Ġt h, Ċ Ċ, Ġ c, l e, Ġ s, i t, a n, a r, a l, Ġth e, ; Ċ, Ġ p, Ġ f, o u, Ġ =, i s, ... 151357 more items of 151387]
+tokenizer.ggml.eos_token_id: [uint32] 151645
+tokenizer.ggml.padding_token_id: [uint32] 151643
+tokenizer.ggml.bos_token_id: [uint32] 151643
+tokenizer.ggml.add_bos_token: [bool] false
+tokenizer.chat_template: [string] {%- if tools %}
+    {{- '<|im_start|>system\n' }}
+    {%- if messages[0]['role'] == 'system' %}
+        {{- messages[0]['content'] }}
+    {%- else %}
+        {{- 'You are Qwen, created by Alibaba Cloud. You are a helpful assistant.' }}
+    {%- endif %}
+    {{- "\n\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>" }}
+    {%- for tool in tools %}
+        {{- "\n" }}
+        {{- tool | tojson }}
+    {%- endfor %}
+    {{- "\n</tools>\n\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\n<tool_call>\n{{\"name\": <function-name>, \"arguments\": <args-json-object>}}\n</tool_call><|im_end|>\n" }}
+{%- else %}
+    {%- if messages[0]['role'] == 'system' %}
+        {{- '<|im_start|>system\n' + messages[0]['content'] + '<|im_end|>\n' }}
+    {%- else %}
+        {{- '<|im_start|>system\nYou are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>\n' }}
+    {%- endif %}
+{%- endif %}
+{%- for message in messages %}
+    {%- if (message.role == "user") or (message.role == "system" and not loop.first) or (message.role == "assistant" and not message.tool_calls) %}
+        {{- '<|im_start|>' + message.role + '\n' + message.content + '<|im_end|>' + '\n' }}
+    {%- elif message.role == "assistant" %}
+        {{- '<|im_start|>' + message.role }}
+        {%- if message.content %}
+            {{- '\n' + message.content }}
+        {%- endif %}
+        {%- for tool_call in message.tool_calls %}
+            {%- if tool_call.function is defined %}
+                {%- set tool_call = tool_call.function %}
+            {%- endif %}
+            {{- '\n<tool_call>\n{"name": "' }}
+            {{- tool_call.name }}
+            {{- '", "arguments": ' }}
+            {{- tool_call.arguments | tojson }}
+            {{- '}\n</tool_call>' }}
+        {%- endfor %}
+        {{- '<|im_end|>\n' }}
+    {%- elif message.role == "tool" %}
+        {%- if (loop.index0 == 0) or (messages[loop.index0 - 1].role != "tool") %}
+            {{- '<|im_start|>user' }}
+        {%- endif %}
+        {{- '\n<tool_response>\n' }}
+        {{- message.content }}
+        {{- '\n</tool_response>' }}
+        {%- if loop.last or (messages[loop.index0 + 1].role != "tool") %}
+            {{- '<|im_end|>\n' }}
+        {%- endif %}
+    {%- endif %}
+{%- endfor %}
+{%- if add_generation_prompt %}
+    {{- '<|im_start|>assistant\n' }}
+{%- endif %}
+
+general.quantization_version: [uint32] 2
+
+kv-metadata ends 5931189 
+
+output.weight @5947744, 136134656 weights, dims [896,151936], 144643072 bytes
+token_embd.weight @150590816, 136134656 weights, dims [896,151936], 76575744 bytes
+blk.0.attn_norm.weight @227166560, 896 weights, dims [896], 3584 bytes
+blk.0.ffn_down.weight @227170144, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.0.ffn_gate.weight @229621600, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.0.ffn_up.weight @232073056, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.0.ffn_norm.weight @234524512, 896 weights, dims [896], 3584 bytes
+blk.0.attn_k.bias @234528096, 128 weights, dims [128], 512 bytes
+blk.0.attn_k.weight @234528608, 114688 weights, dims [896,128], 64512 bytes
+blk.0.attn_output.weight @234593120, 802816 weights, dims [896,896], 451584 bytes
+blk.0.attn_q.bias @235044704, 896 weights, dims [896], 3584 bytes
+blk.0.attn_q.weight @235048288, 802816 weights, dims [896,896], 451584 bytes
+blk.0.attn_v.bias @235499872, 128 weights, dims [128], 512 bytes
+blk.0.attn_v.weight @235500384, 114688 weights, dims [896,128], 64512 bytes
+blk.1.attn_norm.weight @235564896, 896 weights, dims [896], 3584 bytes
+blk.1.ffn_down.weight @235568480, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.1.ffn_gate.weight @238019936, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.1.ffn_up.weight @240471392, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.1.ffn_norm.weight @242922848, 896 weights, dims [896], 3584 bytes
+blk.1.attn_k.bias @242926432, 128 weights, dims [128], 512 bytes
+blk.1.attn_k.weight @242926944, 114688 weights, dims [896,128], 64512 bytes
+blk.1.attn_output.weight @242991456, 802816 weights, dims [896,896], 451584 bytes
+blk.1.attn_q.bias @243443040, 896 weights, dims [896], 3584 bytes
+blk.1.attn_q.weight @243446624, 802816 weights, dims [896,896], 451584 bytes
+blk.1.attn_v.bias @243898208, 128 weights, dims [128], 512 bytes
+blk.1.attn_v.weight @243898720, 114688 weights, dims [896,128], 64512 bytes
+blk.10.attn_norm.weight @243963232, 896 weights, dims [896], 3584 bytes
+blk.10.ffn_down.weight @243966816, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.10.ffn_gate.weight @246418272, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.10.ffn_up.weight @248869728, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.10.ffn_norm.weight @251321184, 896 weights, dims [896], 3584 bytes
+blk.10.attn_k.bias @251324768, 128 weights, dims [128], 512 bytes
+blk.10.attn_k.weight @251325280, 114688 weights, dims [896,128], 64512 bytes
+blk.10.attn_output.weight @251389792, 802816 weights, dims [896,896], 451584 bytes
+blk.10.attn_q.bias @251841376, 896 weights, dims [896], 3584 bytes
+blk.10.attn_q.weight @251844960, 802816 weights, dims [896,896], 451584 bytes
+blk.10.attn_v.bias @252296544, 128 weights, dims [128], 512 bytes
+blk.10.attn_v.weight @252297056, 114688 weights, dims [896,128], 64512 bytes
+blk.11.attn_norm.weight @252361568, 896 weights, dims [896], 3584 bytes
+blk.11.ffn_down.weight @252365152, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.11.ffn_gate.weight @254816608, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.11.ffn_up.weight @257268064, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.11.ffn_norm.weight @259719520, 896 weights, dims [896], 3584 bytes
+blk.11.attn_k.bias @259723104, 128 weights, dims [128], 512 bytes
+blk.11.attn_k.weight @259723616, 114688 weights, dims [896,128], 64512 bytes
+blk.11.attn_output.weight @259788128, 802816 weights, dims [896,896], 451584 bytes
+blk.11.attn_q.bias @260239712, 896 weights, dims [896], 3584 bytes
+blk.11.attn_q.weight @260243296, 802816 weights, dims [896,896], 451584 bytes
+blk.11.attn_v.bias @260694880, 128 weights, dims [128], 512 bytes
+blk.11.attn_v.weight @260695392, 114688 weights, dims [896,128], 64512 bytes
+blk.12.attn_norm.weight @260759904, 896 weights, dims [896], 3584 bytes
+blk.12.ffn_down.weight @260763488, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.12.ffn_gate.weight @263214944, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.12.ffn_up.weight @265666400, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.12.ffn_norm.weight @268117856, 896 weights, dims [896], 3584 bytes
+blk.12.attn_k.bias @268121440, 128 weights, dims [128], 512 bytes
+blk.12.attn_k.weight @268121952, 114688 weights, dims [896,128], 64512 bytes
+blk.12.attn_output.weight @268186464, 802816 weights, dims [896,896], 451584 bytes
+blk.12.attn_q.bias @268638048, 896 weights, dims [896], 3584 bytes
+blk.12.attn_q.weight @268641632, 802816 weights, dims [896,896], 451584 bytes
+blk.12.attn_v.bias @269093216, 128 weights, dims [128], 512 bytes
+blk.12.attn_v.weight @269093728, 114688 weights, dims [896,128], 64512 bytes
+blk.13.attn_norm.weight @269158240, 896 weights, dims [896], 3584 bytes
+blk.13.ffn_down.weight @269161824, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.13.ffn_gate.weight @271613280, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.13.ffn_up.weight @274064736, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.13.ffn_norm.weight @276516192, 896 weights, dims [896], 3584 bytes
+blk.13.attn_k.bias @276519776, 128 weights, dims [128], 512 bytes
+blk.13.attn_k.weight @276520288, 114688 weights, dims [896,128], 64512 bytes
+blk.13.attn_output.weight @276584800, 802816 weights, dims [896,896], 451584 bytes
+blk.13.attn_q.bias @277036384, 896 weights, dims [896], 3584 bytes
+blk.13.attn_q.weight @277039968, 802816 weights, dims [896,896], 451584 bytes
+blk.13.attn_v.bias @277491552, 128 weights, dims [128], 512 bytes
+blk.13.attn_v.weight @277492064, 114688 weights, dims [896,128], 64512 bytes
+blk.14.attn_norm.weight @277556576, 896 weights, dims [896], 3584 bytes
+blk.14.ffn_down.weight @277560160, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.14.ffn_gate.weight @280011616, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.14.ffn_up.weight @282463072, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.14.ffn_norm.weight @284914528, 896 weights, dims [896], 3584 bytes
+blk.14.attn_k.bias @284918112, 128 weights, dims [128], 512 bytes
+blk.14.attn_k.weight @284918624, 114688 weights, dims [896,128], 64512 bytes
+blk.14.attn_output.weight @284983136, 802816 weights, dims [896,896], 451584 bytes
+blk.14.attn_q.bias @285434720, 896 weights, dims [896], 3584 bytes
+blk.14.attn_q.weight @285438304, 802816 weights, dims [896,896], 451584 bytes
+blk.14.attn_v.bias @285889888, 128 weights, dims [128], 512 bytes
+blk.14.attn_v.weight @285890400, 114688 weights, dims [896,128], 64512 bytes
+blk.15.attn_norm.weight @285954912, 896 weights, dims [896], 3584 bytes
+blk.15.ffn_down.weight @285958496, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.15.ffn_gate.weight @288409952, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.15.ffn_up.weight @290861408, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.15.ffn_norm.weight @293312864, 896 weights, dims [896], 3584 bytes
+blk.15.attn_k.bias @293316448, 128 weights, dims [128], 512 bytes
+blk.15.attn_k.weight @293316960, 114688 weights, dims [896,128], 64512 bytes
+blk.15.attn_output.weight @293381472, 802816 weights, dims [896,896], 451584 bytes
+blk.15.attn_q.bias @293833056, 896 weights, dims [896], 3584 bytes
+blk.15.attn_q.weight @293836640, 802816 weights, dims [896,896], 451584 bytes
+blk.15.attn_v.bias @294288224, 128 weights, dims [128], 512 bytes
+blk.15.attn_v.weight @294288736, 114688 weights, dims [896,128], 64512 bytes
+blk.16.attn_norm.weight @294353248, 896 weights, dims [896], 3584 bytes
+blk.16.ffn_down.weight @294356832, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.16.ffn_gate.weight @296808288, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.16.ffn_up.weight @299259744, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.16.ffn_norm.weight @301711200, 896 weights, dims [896], 3584 bytes
+blk.16.attn_k.bias @301714784, 128 weights, dims [128], 512 bytes
+blk.16.attn_k.weight @301715296, 114688 weights, dims [896,128], 64512 bytes
+blk.16.attn_output.weight @301779808, 802816 weights, dims [896,896], 451584 bytes
+blk.16.attn_q.bias @302231392, 896 weights, dims [896], 3584 bytes
+blk.16.attn_q.weight @302234976, 802816 weights, dims [896,896], 451584 bytes
+blk.16.attn_v.bias @302686560, 128 weights, dims [128], 512 bytes
+blk.16.attn_v.weight @302687072, 114688 weights, dims [896,128], 64512 bytes
+blk.17.attn_norm.weight @302751584, 896 weights, dims [896], 3584 bytes
+blk.17.ffn_down.weight @302755168, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.17.ffn_gate.weight @305206624, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.17.ffn_up.weight @307658080, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.17.ffn_norm.weight @310109536, 896 weights, dims [896], 3584 bytes
+blk.17.attn_k.bias @310113120, 128 weights, dims [128], 512 bytes
+blk.17.attn_k.weight @310113632, 114688 weights, dims [896,128], 64512 bytes
+blk.17.attn_output.weight @310178144, 802816 weights, dims [896,896], 451584 bytes
+blk.17.attn_q.bias @310629728, 896 weights, dims [896], 3584 bytes
+blk.17.attn_q.weight @310633312, 802816 weights, dims [896,896], 451584 bytes
+blk.17.attn_v.bias @311084896, 128 weights, dims [128], 512 bytes
+blk.17.attn_v.weight @311085408, 114688 weights, dims [896,128], 64512 bytes
+blk.18.attn_norm.weight @311149920, 896 weights, dims [896], 3584 bytes
+blk.18.ffn_down.weight @311153504, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.18.ffn_gate.weight @313604960, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.18.ffn_up.weight @316056416, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.18.ffn_norm.weight @318507872, 896 weights, dims [896], 3584 bytes
+blk.18.attn_k.bias @318511456, 128 weights, dims [128], 512 bytes
+blk.18.attn_k.weight @318511968, 114688 weights, dims [896,128], 64512 bytes
+blk.18.attn_output.weight @318576480, 802816 weights, dims [896,896], 451584 bytes
+blk.18.attn_q.bias @319028064, 896 weights, dims [896], 3584 bytes
+blk.18.attn_q.weight @319031648, 802816 weights, dims [896,896], 451584 bytes
+blk.18.attn_v.bias @319483232, 128 weights, dims [128], 512 bytes
+blk.18.attn_v.weight @319483744, 114688 weights, dims [896,128], 64512 bytes
+blk.19.attn_norm.weight @319548256, 896 weights, dims [896], 3584 bytes
+blk.19.ffn_down.weight @319551840, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.19.ffn_gate.weight @322003296, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.19.ffn_up.weight @324454752, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.19.ffn_norm.weight @326906208, 896 weights, dims [896], 3584 bytes
+blk.19.attn_k.bias @326909792, 128 weights, dims [128], 512 bytes
+blk.19.attn_k.weight @326910304, 114688 weights, dims [896,128], 64512 bytes
+blk.19.attn_output.weight @326974816, 802816 weights, dims [896,896], 451584 bytes
+blk.19.attn_q.bias @327426400, 896 weights, dims [896], 3584 bytes
+blk.19.attn_q.weight @327429984, 802816 weights, dims [896,896], 451584 bytes
+blk.19.attn_v.bias @327881568, 128 weights, dims [128], 512 bytes
+blk.19.attn_v.weight @327882080, 114688 weights, dims [896,128], 64512 bytes
+blk.2.attn_norm.weight @327946592, 896 weights, dims [896], 3584 bytes
+blk.2.ffn_down.weight @327950176, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.2.ffn_gate.weight @330401632, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.2.ffn_up.weight @332853088, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.2.ffn_norm.weight @335304544, 896 weights, dims [896], 3584 bytes
+blk.2.attn_k.bias @335308128, 128 weights, dims [128], 512 bytes
+blk.2.attn_k.weight @335308640, 114688 weights, dims [896,128], 64512 bytes
+blk.2.attn_output.weight @335373152, 802816 weights, dims [896,896], 451584 bytes
+blk.2.attn_q.bias @335824736, 896 weights, dims [896], 3584 bytes
+blk.2.attn_q.weight @335828320, 802816 weights, dims [896,896], 451584 bytes
+blk.2.attn_v.bias @336279904, 128 weights, dims [128], 512 bytes
+blk.2.attn_v.weight @336280416, 114688 weights, dims [896,128], 64512 bytes
+blk.20.attn_norm.weight @336344928, 896 weights, dims [896], 3584 bytes
+blk.20.ffn_down.weight @336348512, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.20.ffn_gate.weight @338799968, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.20.ffn_up.weight @341251424, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.20.ffn_norm.weight @343702880, 896 weights, dims [896], 3584 bytes
+blk.20.attn_k.bias @343706464, 128 weights, dims [128], 512 bytes
+blk.20.attn_k.weight @343706976, 114688 weights, dims [896,128], 64512 bytes
+blk.20.attn_output.weight @343771488, 802816 weights, dims [896,896], 451584 bytes
+blk.20.attn_q.bias @344223072, 896 weights, dims [896], 3584 bytes
+blk.20.attn_q.weight @344226656, 802816 weights, dims [896,896], 451584 bytes
+blk.20.attn_v.bias @344678240, 128 weights, dims [128], 512 bytes
+blk.20.attn_v.weight @344678752, 114688 weights, dims [896,128], 64512 bytes
+blk.21.attn_norm.weight @344743264, 896 weights, dims [896], 3584 bytes
+blk.21.ffn_down.weight @344746848, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.21.ffn_gate.weight @347198304, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.21.ffn_up.weight @349649760, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.21.ffn_norm.weight @352101216, 896 weights, dims [896], 3584 bytes
+blk.21.attn_k.bias @352104800, 128 weights, dims [128], 512 bytes
+blk.21.attn_k.weight @352105312, 114688 weights, dims [896,128], 64512 bytes
+blk.21.attn_output.weight @352169824, 802816 weights, dims [896,896], 451584 bytes
+blk.21.attn_q.bias @352621408, 896 weights, dims [896], 3584 bytes
+blk.21.attn_q.weight @352624992, 802816 weights, dims [896,896], 451584 bytes
+blk.21.attn_v.bias @353076576, 128 weights, dims [128], 512 bytes
+blk.21.attn_v.weight @353077088, 114688 weights, dims [896,128], 64512 bytes
+blk.22.attn_norm.weight @353141600, 896 weights, dims [896], 3584 bytes
+blk.22.ffn_down.weight @353145184, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.22.ffn_gate.weight @355596640, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.22.ffn_up.weight @358048096, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.22.ffn_norm.weight @360499552, 896 weights, dims [896], 3584 bytes
+blk.22.attn_k.bias @360503136, 128 weights, dims [128], 512 bytes
+blk.22.attn_k.weight @360503648, 114688 weights, dims [896,128], 64512 bytes
+blk.22.attn_output.weight @360568160, 802816 weights, dims [896,896], 451584 bytes
+blk.22.attn_q.bias @361019744, 896 weights, dims [896], 3584 bytes
+blk.22.attn_q.weight @361023328, 802816 weights, dims [896,896], 451584 bytes
+blk.22.attn_v.bias @361474912, 128 weights, dims [128], 512 bytes
+blk.22.attn_v.weight @361475424, 114688 weights, dims [896,128], 64512 bytes
+blk.23.attn_norm.weight @361539936, 896 weights, dims [896], 3584 bytes
+blk.23.ffn_down.weight @361543520, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.23.ffn_gate.weight @363994976, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.23.ffn_up.weight @366446432, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.23.ffn_norm.weight @368897888, 896 weights, dims [896], 3584 bytes
+blk.23.attn_k.bias @368901472, 128 weights, dims [128], 512 bytes
+blk.23.attn_k.weight @368901984, 114688 weights, dims [896,128], 64512 bytes
+blk.23.attn_output.weight @368966496, 802816 weights, dims [896,896], 451584 bytes
+blk.23.attn_q.bias @369418080, 896 weights, dims [896], 3584 bytes
+blk.23.attn_q.weight @369421664, 802816 weights, dims [896,896], 451584 bytes
+blk.23.attn_v.bias @369873248, 128 weights, dims [128], 512 bytes
+blk.23.attn_v.weight @369873760, 114688 weights, dims [896,128], 64512 bytes
+blk.3.attn_norm.weight @369938272, 896 weights, dims [896], 3584 bytes
+blk.3.ffn_down.weight @369941856, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.3.ffn_gate.weight @372393312, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.3.ffn_up.weight @374844768, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.3.ffn_norm.weight @377296224, 896 weights, dims [896], 3584 bytes
+blk.3.attn_k.bias @377299808, 128 weights, dims [128], 512 bytes
+blk.3.attn_k.weight @377300320, 114688 weights, dims [896,128], 64512 bytes
+blk.3.attn_output.weight @377364832, 802816 weights, dims [896,896], 451584 bytes
+blk.3.attn_q.bias @377816416, 896 weights, dims [896], 3584 bytes
+blk.3.attn_q.weight @377820000, 802816 weights, dims [896,896], 451584 bytes
+blk.3.attn_v.bias @378271584, 128 weights, dims [128], 512 bytes
+blk.3.attn_v.weight @378272096, 114688 weights, dims [896,128], 64512 bytes
+blk.4.attn_norm.weight @378336608, 896 weights, dims [896], 3584 bytes
+blk.4.ffn_down.weight @378340192, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.4.ffn_gate.weight @380791648, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.4.ffn_up.weight @383243104, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.4.ffn_norm.weight @385694560, 896 weights, dims [896], 3584 bytes
+blk.4.attn_k.bias @385698144, 128 weights, dims [128], 512 bytes
+blk.4.attn_k.weight @385698656, 114688 weights, dims [896,128], 64512 bytes
+blk.4.attn_output.weight @385763168, 802816 weights, dims [896,896], 451584 bytes
+blk.4.attn_q.bias @386214752, 896 weights, dims [896], 3584 bytes
+blk.4.attn_q.weight @386218336, 802816 weights, dims [896,896], 451584 bytes
+blk.4.attn_v.bias @386669920, 128 weights, dims [128], 512 bytes
+blk.4.attn_v.weight @386670432, 114688 weights, dims [896,128], 64512 bytes
+blk.5.attn_norm.weight @386734944, 896 weights, dims [896], 3584 bytes
+blk.5.ffn_down.weight @386738528, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.5.ffn_gate.weight @389189984, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.5.ffn_up.weight @391641440, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.5.ffn_norm.weight @394092896, 896 weights, dims [896], 3584 bytes
+blk.5.attn_k.bias @394096480, 128 weights, dims [128], 512 bytes
+blk.5.attn_k.weight @394096992, 114688 weights, dims [896,128], 64512 bytes
+blk.5.attn_output.weight @394161504, 802816 weights, dims [896,896], 451584 bytes
+blk.5.attn_q.bias @394613088, 896 weights, dims [896], 3584 bytes
+blk.5.attn_q.weight @394616672, 802816 weights, dims [896,896], 451584 bytes
+blk.5.attn_v.bias @395068256, 128 weights, dims [128], 512 bytes
+blk.5.attn_v.weight @395068768, 114688 weights, dims [896,128], 64512 bytes
+blk.6.attn_norm.weight @395133280, 896 weights, dims [896], 3584 bytes
+blk.6.ffn_down.weight @395136864, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.6.ffn_gate.weight @397588320, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.6.ffn_up.weight @400039776, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.6.ffn_norm.weight @402491232, 896 weights, dims [896], 3584 bytes
+blk.6.attn_k.bias @402494816, 128 weights, dims [128], 512 bytes
+blk.6.attn_k.weight @402495328, 114688 weights, dims [896,128], 64512 bytes
+blk.6.attn_output.weight @402559840, 802816 weights, dims [896,896], 451584 bytes
+blk.6.attn_q.bias @403011424, 896 weights, dims [896], 3584 bytes
+blk.6.attn_q.weight @403015008, 802816 weights, dims [896,896], 451584 bytes
+blk.6.attn_v.bias @403466592, 128 weights, dims [128], 512 bytes
+blk.6.attn_v.weight @403467104, 114688 weights, dims [896,128], 64512 bytes
+blk.7.attn_norm.weight @403531616, 896 weights, dims [896], 3584 bytes
+blk.7.ffn_down.weight @403535200, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.7.ffn_gate.weight @405986656, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.7.ffn_up.weight @408438112, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.7.ffn_norm.weight @410889568, 896 weights, dims [896], 3584 bytes
+blk.7.attn_k.bias @410893152, 128 weights, dims [128], 512 bytes
+blk.7.attn_k.weight @410893664, 114688 weights, dims [896,128], 64512 bytes
+blk.7.attn_output.weight @410958176, 802816 weights, dims [896,896], 451584 bytes
+blk.7.attn_q.bias @411409760, 896 weights, dims [896], 3584 bytes
+blk.7.attn_q.weight @411413344, 802816 weights, dims [896,896], 451584 bytes
+blk.7.attn_v.bias @411864928, 128 weights, dims [128], 512 bytes
+blk.7.attn_v.weight @411865440, 114688 weights, dims [896,128], 64512 bytes
+blk.8.attn_norm.weight @411929952, 896 weights, dims [896], 3584 bytes
+blk.8.ffn_down.weight @411933536, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.8.ffn_gate.weight @414384992, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.8.ffn_up.weight @416836448, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.8.ffn_norm.weight @419287904, 896 weights, dims [896], 3584 bytes
+blk.8.attn_k.bias @419291488, 128 weights, dims [128], 512 bytes
+blk.8.attn_k.weight @419292000, 114688 weights, dims [896,128], 64512 bytes
+blk.8.attn_output.weight @419356512, 802816 weights, dims [896,896], 451584 bytes
+blk.8.attn_q.bias @419808096, 896 weights, dims [896], 3584 bytes
+blk.8.attn_q.weight @419811680, 802816 weights, dims [896,896], 451584 bytes
+blk.8.attn_v.bias @420263264, 128 weights, dims [128], 512 bytes
+blk.8.attn_v.weight @420263776, 114688 weights, dims [896,128], 64512 bytes
+blk.9.attn_norm.weight @420328288, 896 weights, dims [896], 3584 bytes
+blk.9.ffn_down.weight @420331872, 4358144 weights, dims [4864,896], 2451456 bytes
+blk.9.ffn_gate.weight @422783328, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.9.ffn_up.weight @425234784, 4358144 weights, dims [896,4864], 2451456 bytes
+blk.9.ffn_norm.weight @427686240, 896 weights, dims [896], 3584 bytes
+blk.9.attn_k.bias @427689824, 128 weights, dims [128], 512 bytes
+blk.9.attn_k.weight @427690336, 114688 weights, dims [896,128], 64512 bytes
+blk.9.attn_output.weight @427754848, 802816 weights, dims [896,896], 451584 bytes
+blk.9.attn_q.bias @428206432, 896 weights, dims [896], 3584 bytes
+blk.9.attn_q.weight @428210016, 802816 weights, dims [896,896], 451584 bytes
+blk.9.attn_v.bias @428661600, 128 weights, dims [128], 512 bytes
+blk.9.attn_v.weight @428662112, 114688 weights, dims [896,128], 64512 bytes
+output_norm.weight @428726624, 896 weights, dims [896], 3584 bytes
+
+data off 5947744 
+gguf-tools.info.parameters: 0.63B
