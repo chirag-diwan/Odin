@@ -183,11 +183,13 @@ struct Config{
   uint8_t thread_count;
   bool interactive;
   std::string model_path;
+  std::string tokenizer_json_path;
   std::string prompt;
   Config(){
-    port = 3141;
+    port = 42069;
     thread_count = 4;
     interactive = true;
+    tokenizer_json_path = "";
     model_path = "";
     prompt = "";
   }

@@ -42,7 +42,7 @@ std::vector<std::string> generate_byte_to_unicode() {
 
 class Tokeniser{
   private:
-    bidirectional_map vocab;
+    bidirectional_map<std::string_view, uint32_t> vocab;
     unidirectional_map<MergeRV> merge_priority;
 
     std::vector<std::string> byte_to_unicode_table;

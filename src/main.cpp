@@ -6,13 +6,9 @@
 #include "../include/config.hpp"
 #include "../include/span.hpp"
 #include "ggml.h"
-#include "logging.hpp"
-#include <alloca.h>
-#include <fcntl.h>
+#include "../include/logging.hpp"
 #include <string>
 #include <sys/mman.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
 
 int main(int argc , char **argv) {
   if(argc < 2){

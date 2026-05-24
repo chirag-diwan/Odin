@@ -23,7 +23,21 @@ class unidirectional_map{
     }
 
   public:
+    unidirectional_map(){
+      capacity = 0;
+      current_size = 0;
+    }
+
     unidirectional_map(size_t max_size){
+      if(max_size == 0){
+        return;
+      }
+      capacity = 2*max_size;
+      current_size = 0;
+      values = std::make_unique<uni_pack_t<value_type , key_type>[]>(capacity);
+    }
+
+    void populate(size_t max_size){
       if(max_size == 0){
         return;
       }
