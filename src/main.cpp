@@ -1,8 +1,7 @@
-#include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "../include/model.hpp"
 #include "../include/model_utils.hpp"
-#include "../include/tokeniser.hpp"
+#include "../include/qwen2_tokeniser.hpp"
 #include "../include/ggufreader.hpp"
 #include "../include/config.hpp"
 #include "../include/span.hpp"
@@ -16,7 +15,6 @@ int main(int argc , char **argv) {
     Log("Usage : \n\t ./odin --model /path/to/model --thread 3 --interactive [true / false] --prompt (if interactive false)\"Hey how are you\"\n");
     return 0;
   }
-
   Config config = ParseConfig(argc, argv);
   GGufReader reader;
 
@@ -42,10 +40,6 @@ int main(int argc , char **argv) {
   ggml_context* static_ctx = ggml_init(static_ctx_params);
 
   ModelGlobals globals = GetModelGlobals(reader.metadata_key_values);
-
-  Log(globals.ggml_bos_token_id);
-  Log(globals.ggml_eos_token_id);
-
   Model model;
 
   model.SetModelGlobals(globals);
@@ -57,18 +51,71 @@ int main(int argc , char **argv) {
 
   model.ReserveDecodeMemory();
 
-  Tokeniser tokeniser(globals);
+  QwenStyleTokenizer tokeniser(globals);
 
   bool infer_complete = true;
-  std::vector<uint32_t> tokens = { 128000, 2028, 374, 279 };
+  std::vector<uint32_t> tokens;
 
-  model.Prefill(tokens);
-  model.Infer(tokens);
+  if(config.interactive == false){
+    Log(config.prompt);
+    tokens.push_back(151644);
+    tokeniser.Tokenise("user\n", tokens); 
 
-  for(const auto token : tokens){
-    Log(token);
+    tokeniser.Tokenise(config.prompt, tokens);
+
+    tokens.push_back(globals.ggml_eos_token_id); 
+    tokeniser.Tokenise("\n", tokens);
+
+    tokens.push_back(151644);
+    tokeniser.Tokenise("assistant\n", tokens);
+
+    size_t prompt_tokens = tokens.size();
+
+    model.Prefill(tokens);
+
+    model.Infer(tokens);
+
+    span<uint32_t> infered_tokens(tokens, prompt_tokens , tokens.size() - prompt_tokens);
+
+    tokeniser.Decode(infered_tokens);
+  }else{
+    uint32_t prev_token;
+    while(true){
+      if(infer_complete){
+        std::string prompt;
+        std::cout << "\n $ ";
+        std::getline(std::cin , prompt);
+
+        tokens.push_back(globals.ggml_bos_token_id);
+        tokeniser.Tokenise("user\n", tokens); 
+
+        tokeniser.Tokenise(prompt, tokens);
+
+        tokens.push_back(globals.ggml_eos_token_id); 
+        tokeniser.Tokenise("\n", tokens);
+
+        tokens.push_back(globals.ggml_bos_token_id);
+        tokeniser.Tokenise("assistant\n", tokens);
+
+        model.Prefill(tokens);
+        prev_token = tokens.back();
+        tokeniser.Decode(prev_token);
+
+        infer_complete = false;
+      }else{
+        auto next_token = model.Infer(prev_token);
+        tokens.emplace_back(next_token);
+        prev_token = next_token;
+
+        if(next_token == globals.ggml_eos_token_id){
+          infer_complete = true;
+          continue;
+        }
+
+        tokeniser.Decode(next_token);
+      }
+    }
   }
-
   munmap(addr, len);
 
   return 0;

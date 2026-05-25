@@ -17,17 +17,13 @@ option(ENABLE_TESTS "Build the test suite" OFF)
 set(TEST_FILE "" CACHE FILEPATH "Path to test source file")
 
 
-option(ENABLE_TESTS "Build the test suite" OFF)
-
 if(ENABLE_TESTS)
   if(NOT TEST_FILE)
     message(FATAL_ERROR "ENABLE_TESTS is ON but TEST_FILE is not set")
   endif()
-
-  get_filename_component(TEST_NAME ${TEST_FILE} NAME_WE)
-
-  add_executable(${TEST_NAME} ${TEST_FILE})
-  set(TARGET_NAME ${TEST_NAME})
+  get_filename_component(TEST_BASENAME ${TEST_FILE} NAME_WE)
+  add_executable(${TEST_BASENAME}_TEST ${TEST_FILE})
+  set(TARGET_NAME ${TEST_BASENAME}_TEST)
 else()
   add_executable(odin ./src/main.cpp)
   set(TARGET_NAME odin)
