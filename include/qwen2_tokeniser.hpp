@@ -1,3 +1,5 @@
+#pragma once
+
 #include "bidirectional_map.hpp"
 #include "unidirectional_map.hpp"
 #include "span.hpp"
@@ -40,7 +42,7 @@ std::vector<std::string> generate_byte_to_unicode() {
 }
 
 
-class Tokeniser{
+class QwenStyleTokenizer{
   private:
     bidirectional_map<std::string_view, uint32_t> vocab;
     unidirectional_map<uint64_t , MergeRV> merge_priority;
@@ -55,7 +57,7 @@ class Tokeniser{
     }
 
   public:
-    Tokeniser(ModelGlobals& globals) : vocab(globals.token_vocab->size()) , merge_priority(globals.token_merges->size()) {
+    QwenStyleTokenizer(ModelGlobals& globals) : vocab(globals.token_vocab->size()) , merge_priority(globals.token_merges->size()) {
       if(globals.token_vocab == nullptr){
         Log(ERROR , "globals.token_vocab is a nullptr");
         return;
@@ -108,12 +110,7 @@ class Tokeniser{
       } 
 
 
-      std::string regex_str;
-      if(globals.general_model_architecture == "llama"){
-        regex_str = "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]? \\p{L}+|\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+";
-      }else if(globals.general_model_architecture == "qwen2"){
-        const std::string regex_str ="(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+";
-      }
+      const std::string regex_str ="(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+";
 
       int errornumber;
       PCRE2_SIZE erroroffset;
@@ -211,42 +208,6 @@ class Tokeniser{
       }
     }
 
-
-    void Decode(std::vector<uint32_t> tokens){
-      for (auto token_id : tokens) {
-        auto token_opt = vocab.getKeyOf(token_id);
-        if(__builtin_expect(!token_opt.has_value(),false)){
-          Log(ERROR , "key not found for ", token_id);
-          continue;
-        }
-
-        auto token_str = *token_opt;
-        for (size_t i = 0; i < token_str.size(); ) {
-          unsigned char c = token_str[i];
-
-          if ((c & 0x80) == 0) {
-            std::putchar(c); 
-            i++;
-          } 
-          else if ((c & 0xE0) == 0xC0) {
-            unsigned char c2 = token_str[i + 1];
-            uint16_t unicode_val = ((c & 0x1F) << 6) | (c2 & 0x3F);
-
-            uint8_t original_byte = unicode_to_byte_table[unicode_val - 256];
-            std::putchar(original_byte);
-
-            i += 2; 
-          } 
-          else {
-            Log(ERROR, "Malformed BPE sequence detected.");
-            break;
-          }
-        }
-        std::fflush(stdout); 
-      }
-    }
-
-
     void Decode(span<uint32_t> tokens){
       for (auto token_id : tokens) {
         auto token_opt = vocab.getKeyOf(token_id);
@@ -315,7 +276,7 @@ class Tokeniser{
       std::fflush(stdout); 
     }
 
-    ~Tokeniser(){
+    ~QwenStyleTokenizer(){
       pcre2_code_free(compiled_regex);
     }
 };

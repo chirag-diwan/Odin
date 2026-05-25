@@ -1,5 +1,7 @@
 #pragma once
+#include "logging.hpp"
 #include <cstddef>
+#include <cstdlib>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -65,10 +67,20 @@ class bidirectional_map {
 
     bool insert(key_type key,value_type value) {
       if (current_size >= capacity / 2) {
+        Log("Current size greator than capacity/2");
+        std::exit(-1);
         return false; 
       }
 
-      if (getValueOf(key).has_value() || getKeyOf(value).has_value()) {
+      if(getKeyOf(value).has_value()) {
+        Log("Value already present" , value);
+        std::exit(-1);
+        return false;
+      }
+
+      if (getValueOf(key).has_value()){
+        Log("Key already present" , key);
+        std::exit(-1);
         return false;
       }
 
@@ -98,6 +110,14 @@ class bidirectional_map {
         value_idx = (value_idx + 1) % capacity;
       }
       return std::nullopt;
+    }
+
+    bool contains_key(key_type key) const{
+      return getValueOf(key).has_value();
+    }
+
+    bool contains_value(value_type value) const{
+      return getKeyOf(value).has_value();
     }
 
     std::optional<value_type> getValueOf(key_type key) const {
