@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string_view>
 #include "gguf.hpp"
 #include "types.hpp"
 
@@ -19,38 +20,44 @@ ModelGlobals GetModelGlobals(metadatakv_t& metadata_key_values ){
   GGufValue metadata_value ;
 
   for(const auto& kv : metadata_key_values){
-    if(kv.name == "qwen2.block_count"){
+    if(kv.name.find("block_count") != std::string_view::npos){
       global_struct.block_count = Extract<uint64_t, GGUF_VALUE_TYPE_UINT32, GGUF_VALUE_TYPE_UINT64>(kv.value);
 
-    }else if(kv.name == "qwen2.context_length"){
+    }else if(kv.name.find("context_length") != std::string_view::npos){
       global_struct.context_length = Extract<uint64_t, GGUF_VALUE_TYPE_UINT32, GGUF_VALUE_TYPE_UINT64>(kv.value);
 
-    }else if(kv.name == "qwen2.attention.head_count_kv"){
+    }else if(kv.name.find("attention.head_count_kv") != std::string_view::npos){
       global_struct.attention_head_count_kv = Extract<uint64_t, GGUF_VALUE_TYPE_UINT32, GGUF_VALUE_TYPE_UINT64>(kv.value);
 
-    }else if(kv.name == "qwen2.embedding_length"){
+    }else if(kv.name.find("embedding_length") != std::string_view::npos){
       global_struct.embedding_length = Extract<uint64_t, GGUF_VALUE_TYPE_UINT32, GGUF_VALUE_TYPE_UINT64>(kv.value);
 
-    }else if(kv.name == "qwen2.attention.head_count"){
+    }else if(kv.name.find("attention.head_count") != std::string_view::npos){
       global_struct. attention_head_count = Extract<uint64_t, GGUF_VALUE_TYPE_UINT32, GGUF_VALUE_TYPE_UINT64>(kv.value);
 
-    }else if( kv.name == "qwen2.feed_forward_length"){
+    }else if( kv.name.find("feed_forward_length") != std::string_view::npos){
       global_struct.feed_forward_length = Extract<uint64_t, GGUF_VALUE_TYPE_UINT32, GGUF_VALUE_TYPE_UINT64>(kv.value);
 
-    }else if( kv.name == "qwen2.rope.freq_base"){
+    }else if( kv.name.find("rope.freq_base") != std::string_view::npos){
       global_struct.rope_freq_base = Extract<float, GGUF_VALUE_TYPE_FLOAT32, GGUF_VALUE_TYPE_FLOAT64>(kv.value);
 
-    }else if( kv.name == "qwen2.attention.layer_norm_rms_epsilon"){
+    }else if( kv.name.find("attention.layer_norm_rms_epsilon") != std::string_view::npos){
       global_struct.attention_layer_norm_rms_epsilon = Extract<float, GGUF_VALUE_TYPE_FLOAT32, GGUF_VALUE_TYPE_FLOAT64>(kv.value);
-    }else if(kv.name == "tokenizer.ggml.eos_token_id"){
+
+    }else if(kv.name.find("tokenizer.ggml.eos_token_id") != std::string_view::npos){
       global_struct.ggml_eos_token_id = Extract<uint32_t , GGUF_VALUE_TYPE_INT32 , GGUF_VALUE_TYPE_UINT32>(kv.value);
-    }else if(kv.name == "tokenizer.ggml.bos_token_id"){
+
+    }else if(kv.name.find("tokenizer.ggml.bos_token_id") != std::string_view::npos){
       global_struct.ggml_bos_token_id = Extract<uint32_t , GGUF_VALUE_TYPE_INT32 , GGUF_VALUE_TYPE_UINT32>(kv.value);
-    }else if(kv.name == "tokenizer.ggml.tokens"){
+
+    }else if(kv.name.find("tokenizer.ggml.tokens") != std::string_view::npos){
       global_struct.token_vocab = &kv.value.array.strings;
 
-    }else if(kv.name == "tokenizer.ggml.merges"){
+    }else if(kv.name.find("tokenizer.ggml.merges") != std::string_view::npos){
       global_struct.token_merges = &kv.value.array.strings;
+
+    }else if(kv.name.find("general.architecture") != std::string_view::npos){
+      global_struct.general_model_architecture = kv.value.string;
 
     }
   }

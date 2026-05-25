@@ -4,6 +4,7 @@
 #include <netinet/in.h>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <vector>
 
 #define DIM_ARRAY_MAX_SIZE 8 //Future proof
@@ -112,6 +113,7 @@ struct GGufTensor {
 
 
 struct ModelGlobals{
+  std::string_view general_model_architecture;
   uint32_t block_count;
   uint32_t embedding_length;
   uint32_t feed_forward_length;
@@ -128,6 +130,7 @@ struct ModelGlobals{
 
 
   ModelGlobals(){
+    general_model_architecture = "";
     block_count = 0;
     embedding_length = 0;
     feed_forward_length = 0;
@@ -147,11 +150,13 @@ struct ModelGlobalTensors {
   struct ggml_tensor* token_embd_weights  ;
   struct ggml_tensor* output_norm_weights ;
   struct ggml_tensor* output_weights      ;
+  struct ggml_tensor* rope_freq_weights   ;
 
   ModelGlobalTensors(){
     token_embd_weights  = nullptr;
     output_norm_weights = nullptr;
     output_weights      = nullptr;
+    rope_freq_weights   = nullptr;
   }
 };
 
@@ -183,13 +188,11 @@ struct Config{
   uint8_t thread_count;
   bool interactive;
   std::string model_path;
-  std::string tokenizer_json_path;
   std::string prompt;
   Config(){
     port = 42069;
-    thread_count = 4;
+    thread_count = std::thread::hardware_concurrency();
     interactive = true;
-    tokenizer_json_path = "";
     model_path = "";
     prompt = "";
   }

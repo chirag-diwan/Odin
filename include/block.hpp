@@ -121,7 +121,6 @@ static inline void print_tensor(const char* name, struct ggml_tensor* t) {
 }
 
 void DebugPrintBlock(ModelBlock& block) {
-
   print_tensor("attn_norm_w", block.attn_norm_w);
   print_tensor("attn_norm_b", block.attn_norm_b);
   print_tensor("ffn_norm_w",  block.ffn_norm_w);

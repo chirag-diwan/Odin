@@ -1,5 +1,6 @@
 build/
-Model.info
+qwen-2.5-model.info
+llama-3.2-model.info
 /external/*
 perf.data
 /test/

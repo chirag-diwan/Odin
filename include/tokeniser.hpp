@@ -67,13 +67,13 @@ class Tokeniser{
       }
 
 
-      for(size_t i = 0 ; i <globals.token_vocab->size() ; i++){
+      for(size_t i = 0 ; i < globals.token_vocab->size() ; i++){
         if(__builtin_expect(!vocab.insert(globals.token_vocab->at(i), i) , false)){
           Log(ERROR , "cannot insert key value" , globals.token_vocab->at(i), i);
         }
       }
 
-      for(size_t i = 0 ; i <globals.token_merges->size() ; i++){
+      for(size_t i = 0 ; i < globals.token_merges->size() ; i++){
         std::string_view merge_pair = globals.token_merges->at(i);
         auto split_point = merge_pair.find(' ');
         std::string_view first = merge_pair.substr(0 , split_point);
@@ -89,7 +89,6 @@ class Tokeniser{
           Log(ERROR , "value not found for key" , second);
           continue;
         }
-
 
 
         auto key = getKey(*first_idx, *second_idx);
@@ -109,7 +108,12 @@ class Tokeniser{
       } 
 
 
-      const std::string regex_str ="(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+";
+      std::string regex_str;
+      if(globals.general_model_architecture == "llama"){
+        regex_str = "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]? \\p{L}+|\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+";
+      }else if(globals.general_model_architecture == "qwen2"){
+        const std::string regex_str ="(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+";
+      }
 
       int errornumber;
       PCRE2_SIZE erroroffset;
@@ -206,6 +210,7 @@ class Tokeniser{
         }
       }
     }
+
 
     void Decode(std::vector<uint32_t> tokens){
       for (auto token_id : tokens) {
@@ -312,7 +317,5 @@ class Tokeniser{
 
     ~Tokeniser(){
       pcre2_code_free(compiled_regex);
-
-
     }
 };

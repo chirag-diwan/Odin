@@ -1,9 +1,9 @@
-/home/chirag/Models/Llama-3.2-1B.Q4_K_M.gguf (ver 3): 29 key-value pairs, 147 tensors
+/home/chirag/models/llama-3.2-1b.q4_k_m.gguf (ver 3): 29 key-value pairs, 147 tensors
 general.architecture: [string] llama
 general.type: [string] model
-general.name: [string] Llama 3.2 1B
-general.basename: [string] Llama-3.2
-general.size_label: [string] 1B
+general.name: [string] llama 3.2 1b
+general.basename: [string] llama-3.2
+general.size_label: [string] 1b
 general.license: [string] llama3.2
 general.tags: [array] [facebook, meta, pytorch, llama, llama-3, text-generation]
 general.languages: [array] [en, de, fr, it, pt, hi, es, th]
@@ -24,7 +24,7 @@ tokenizer.ggml.model: [string] gpt2
 tokenizer.ggml.pre: [string] llama-bpe
 tokenizer.ggml.tokens: [array] [!, ", #, $, %, &, ', (, ), *, +, ,, -, ., /, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, :, ;, <, =, >, ... 128226 more items of 128256]
 tokenizer.ggml.token_type: [array] [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ... 128226 more items of 128256]
-tokenizer.ggml.merges: [array] [Ġ Ġ, Ġ ĠĠĠ, ĠĠ ĠĠ, ĠĠĠ Ġ, i n, Ġ t, Ġ ĠĠĠĠĠĠĠ, ĠĠ ĠĠĠĠĠĠ, ĠĠĠĠ ĠĠĠĠ, ĠĠĠ ĠĠĠĠĠ, ĠĠĠĠĠĠĠ Ġ, ĠĠĠĠĠ ĠĠĠ, ĠĠĠĠĠĠ ĠĠ, e r, Ġ ĠĠ, ĠĠ Ġ, o n, Ġ a, r e, a t, s t, e n, o r, Ġ th, Ġt h, Ċ Ċ, Ġ c, l e, Ġ s, i t, ... 280117 more items of 280147]
+tokenizer.ggml.merges: [array] [ġ ġ, ġ ġġġ, ġġ ġġ, ġġġ ġ, i n, ġ t, ġ ġġġġġġġ, ġġ ġġġġġġ, ġġġġ ġġġġ, ġġġ ġġġġġ, ġġġġġġġ ġ, ġġġġġ ġġġ, ġġġġġġ ġġ, e r, ġ ġġ, ġġ ġ, o n, ġ a, r e, a t, s t, e n, o r, ġ th, ġt h, ċ ċ, ġ c, l e, ġ s, i t, ... 280117 more items of 280147]
 tokenizer.ggml.bos_token_id: [uint32] 128000
 tokenizer.ggml.eos_token_id: [uint32] 128001
 general.quantization_version: [uint32] 2
@@ -177,4 +177,4 @@ blk.9.attn_q.weight @804462592, 4194304 weights, dims [2048,2048], 2359296 bytes
 blk.9.attn_v.weight @806821888, 1048576 weights, dims [2048,512], 860160 bytes
 output_norm.weight @807682048, 2048 weights, dims [2048], 8192 bytes
 data off 7827328 
-gguf-tools.info.parameters: 1.24B
+gguf-tools.info.parameters: 1.24b

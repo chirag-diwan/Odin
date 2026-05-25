@@ -26,11 +26,7 @@ Config ParseConfig(int argc , char ** argv){
     }else if(strcmp(argv[i], "--prompt") == 0){
       Errorif(i + 1 > argc, "Expected string after --prompt");
       config.prompt = argv[i + 1];
-    } else if(strcmp(argv[i], "--tokenizer_json") == 0){
-      Errorif(i + 1 > argc, "Expected path after --tokenizer_json");
-      config.tokenizer_json_path = argv[i + 1];
-    }
-
+    } 
   }
   return config;
 }
