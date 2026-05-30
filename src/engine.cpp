@@ -1,12 +1,12 @@
 #include "ggml-cpu.h"
 #include "../include/model.hpp"
 #include "../include/model_utils.hpp"
+#include "../include/qwen2_tokeniser.hpp"
 #include "../include/ggufreader.hpp"
 #include "../include/config.hpp"
-#include "../include/span.hpp"
-#include "../include/ggml.h"
+#include "ggml.h"
 #include "../include/logging.hpp"
-#include "../include/llama3_tokenizer.hpp"
+#include <string>
 #include <sys/mman.h>
 
 int main(int argc , char **argv) {
@@ -50,22 +50,67 @@ int main(int argc , char **argv) {
 
   model.ReserveDecodeMemory();
 
-  LLamaStyleTokenizer tokeniser(globals);
+  QwenStyleTokenizer tokeniser(globals);
 
+  bool infer_complete = true;
   std::vector<uint32_t> tokens;
 
-  std::vector<ChatMessage> history = {
-    {"system", "You are a helpful assistant."},
-    {"user", "Hello how are you"}
-  };
+  if(config.interactive == false){
+    Log(config.prompt);
+    tokens.push_back(151644);
+    tokeniser.Tokenise("user\n", tokens); 
 
-  tokeniser.TokeniseChatFormat(history, tokens);
+    tokeniser.Tokenise(config.prompt, tokens);
 
-  model.Prefill(tokens);
-  model.Infer(tokens);
-  span<uint32_t> token_view(tokens , 0 , tokens.size());
-  tokeniser.Decode(token_view);
+    tokens.push_back(globals.ggml_eos_token_id); 
+    tokeniser.Tokenise("\n", tokens);
 
+    tokens.push_back(151644);
+    tokeniser.Tokenise("assistant\n", tokens);
+
+    model.Prefill(tokens);
+
+    model.Infer(tokens);
+
+    tokeniser.Decode(tokens);
+  }else{
+    uint32_t prev_token;
+    while(true){
+      if(infer_complete){
+        std::string prompt;
+        std::cout << "\n $ ";
+        std::getline(std::cin , prompt);
+
+        tokens.push_back(globals.ggml_bos_token_id);
+        tokeniser.Tokenise("user\n", tokens); 
+
+        tokeniser.Tokenise(prompt, tokens);
+
+        tokens.push_back(globals.ggml_eos_token_id); 
+        tokeniser.Tokenise("\n", tokens);
+
+        tokens.push_back(globals.ggml_bos_token_id);
+        tokeniser.Tokenise("assistant\n", tokens);
+
+        model.Prefill(tokens);
+        prev_token = tokens.back();
+        tokeniser.Decode(prev_token);
+
+        infer_complete = false;
+      }else{
+        auto next_token = model.Infer(prev_token);
+        tokens.emplace_back(next_token);
+        prev_token = next_token;
+
+        if(next_token == globals.ggml_eos_token_id){
+          infer_complete = true;
+          continue;
+        }
+
+        tokeniser.Decode(next_token);
+      }
+    }
+  }
   munmap(addr, len);
 
   return 0;

@@ -1,7 +1,7 @@
-#include "model_utils.hpp"
-#include "ggufreader.hpp"
-#include "llama3_tokenizer.hpp"
-#include "span.hpp"
+#include "../include/model_utils.hpp"
+#include "../include/ggufreader.hpp"
+#include "../include/llama3_tokenizer.hpp"
+#include "../include/span.hpp"
 #include <string>
 #include <sys/mman.h>
 

@@ -4,9 +4,10 @@
 #include "../include/qwen2_tokeniser.hpp"
 #include "../include/ggufreader.hpp"
 #include "../include/config.hpp"
-#include "../include/span.hpp"
 #include "ggml.h"
 #include "../include/logging.hpp"
+#include <chrono>
+#include <cstdio>
 #include <string>
 #include <sys/mman.h>
 
@@ -56,6 +57,11 @@ int main(int argc , char **argv) {
   bool infer_complete = true;
   std::vector<uint32_t> tokens;
 
+  std::chrono::time_point start{std::chrono::high_resolution_clock::now()};
+  std::chrono::time_point end{std::chrono::high_resolution_clock::now()};
+
+  auto generated_tokens = 0;
+
   if(config.interactive == false){
     Log(config.prompt);
     tokens.push_back(151644);
@@ -69,15 +75,13 @@ int main(int argc , char **argv) {
     tokens.push_back(151644);
     tokeniser.Tokenise("assistant\n", tokens);
 
-    size_t prompt_tokens = tokens.size();
-
     model.Prefill(tokens);
 
     model.Infer(tokens);
 
-    span<uint32_t> infered_tokens(tokens, prompt_tokens , tokens.size() - prompt_tokens);
+    tokeniser.Decode(tokens);
 
-    tokeniser.Decode(infered_tokens);
+    start = std::chrono::high_resolution_clock::now();
   }else{
     uint32_t prev_token;
     while(true){
@@ -109,14 +113,18 @@ int main(int argc , char **argv) {
 
         if(next_token == globals.ggml_eos_token_id){
           infer_complete = true;
+          end = std::chrono::high_resolution_clock::now();
           continue;
         }
-
+        generated_tokens++;
         tokeniser.Decode(next_token);
       }
     }
   }
+  std::cout << generated_tokens/(end - start).count();
+  std::fflush(stdout);
   munmap(addr, len);
 
   return 0;
 }
+

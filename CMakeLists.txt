@@ -25,7 +25,7 @@ if(ENABLE_TESTS)
   add_executable(${TEST_BASENAME}_TEST ${TEST_FILE})
   set(TARGET_NAME ${TEST_BASENAME}_TEST)
 else()
-  add_executable(odin ./src/main.cpp)
+  add_executable(odin ./src/engine.cpp)
   set(TARGET_NAME odin)
 endif()
 

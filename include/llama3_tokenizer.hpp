@@ -179,22 +179,13 @@ class LLamaStyleTokenizer {
         // Tokenise the role (usually "system", "user", or "assistant")
         Tokenise(msg.role, tokens);
 
-        // Close Header
         tokens.push_back(*end_header_opt);
 
-        // LLaMA 3 strictly requires two newlines after the header.
-        // These are standard text and MUST go through BPE.
         Tokenise("\n\n", tokens);
-
-        // Tokenise the actual payload
         Tokenise(msg.content, tokens);
-
-        // End of Turn (Signals the model this message is over)
         tokens.push_back(*eot_opt);
       }
 
-      // 4. Generation Prompt
-      // You must set up the sequence so the model knows it is its turn to speak.
       tokens.push_back(*start_header_opt);
       Tokenise("assistant", tokens);
       tokens.push_back(*end_header_opt);

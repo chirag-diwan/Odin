@@ -1,3 +1,4 @@
+#pragma once
 #include "errors.hpp"
 #include "types.hpp"
 #include <cstring>

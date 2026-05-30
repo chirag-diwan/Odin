@@ -208,7 +208,7 @@ class QwenStyleTokenizer{
       }
     }
 
-    void Decode(span<uint32_t> tokens){
+    void Decode(std::vector<uint32_t> tokens){
       for (auto token_id : tokens) {
         auto token_opt = vocab.getKeyOf(token_id);
         if(__builtin_expect(!token_opt.has_value(),false)){
