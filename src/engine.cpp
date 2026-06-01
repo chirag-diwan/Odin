@@ -1,3 +1,4 @@
+#include "ggml-alloc.h"
 #include "ggml-cpu.h"
 #include "../include/model.hpp"
 #include "../include/model_utils.hpp"
@@ -6,12 +7,13 @@
 #include "../include/config.hpp"
 #include "ggml.h"
 #include "../include/logging.hpp"
+#include <cstdlib>
 #include <string>
 #include <sys/mman.h>
 
 int main(int argc , char **argv) {
   if(argc < 2){
-    Log("Usage : \n\t ./odin --model /path/to/model --thread 3 --interactive [true / false] --prompt (if interactive false)\"Hey how are you\"\n");
+    Log("Usage : \n\t ./odin --model /path/to/model --thread 3 \n");
     return 0;
   }
   Config config = ParseConfig(argc, argv);
@@ -52,65 +54,54 @@ int main(int argc , char **argv) {
 
   QwenStyleTokenizer tokeniser(globals);
 
-  bool infer_complete = true;
+
   std::vector<uint32_t> tokens;
 
-  if(config.interactive == false){
-    Log(config.prompt);
-    tokens.push_back(151644);
-    tokeniser.Tokenise("user\n", tokens); 
+  size_t last_index = 0;
+  bool infer_complete = true;
 
-    tokeniser.Tokenise(config.prompt, tokens);
+  while(true){
+    if (infer_complete) {
+      std::string prompt;
+      std::cout << "\n $ ";
+      std::getline(std::cin, prompt);
 
-    tokens.push_back(globals.ggml_eos_token_id); 
-    tokeniser.Tokenise("\n", tokens);
-
-    tokens.push_back(151644);
-    tokeniser.Tokenise("assistant\n", tokens);
-
-    model.Prefill(tokens);
-
-    model.Infer(tokens);
-
-    tokeniser.Decode(tokens);
-  }else{
-    uint32_t prev_token;
-    while(true){
-      if(infer_complete){
-        std::string prompt;
-        std::cout << "\n $ ";
-        std::getline(std::cin , prompt);
-
-        tokens.push_back(globals.ggml_bos_token_id);
-        tokeniser.Tokenise("user\n", tokens); 
-
-        tokeniser.Tokenise(prompt, tokens);
-
-        tokens.push_back(globals.ggml_eos_token_id); 
-        tokeniser.Tokenise("\n", tokens);
-
-        tokens.push_back(globals.ggml_bos_token_id);
-        tokeniser.Tokenise("assistant\n", tokens);
-
-        model.Prefill(tokens);
-        prev_token = tokens.back();
-        tokeniser.Decode(prev_token);
-
-        infer_complete = false;
-      }else{
-        auto next_token = model.Infer(prev_token);
-        tokens.emplace_back(next_token);
-        prev_token = next_token;
-
-        if(next_token == globals.ggml_eos_token_id){
-          infer_complete = true;
-          continue;
-        }
-
-        tokeniser.Decode(next_token);
+      if (prompt == "exit") {
+        break;
       }
+
+      // 1. Capture the EXACT boundary BEFORE appending new text
+      last_index = tokens.size();
+
+      // 2. Append the new prompt tokens to the history
+      tokeniser.TokeniseFormatted(prompt, tokens);
+
+      // 3. Slice ONLY the new prompt tokens for the Prefill phase
+      span<uint32_t> tokens_view(tokens.data() + last_index, tokens.size() - last_index);
+
+      // 4. Execute prefill on the isolated new context
+      auto next_token = model.Prefill(tokens_view);
+      tokens.emplace_back(next_token);
+
+      tokeniser.Decode(next_token);
+
+      infer_complete = false;
+    }else{  auto next_token = model.Infer(tokens.back());
+      tokens.emplace_back(next_token);
+
+      if(next_token == globals.ggml_eos_token_id){
+        infer_complete = true;
+        continue;
+      }
+
+      tokeniser.Decode(next_token);
     }
   }
+
+
+  ggml_gallocr_free(prefill_allocr);
+  ggml_gallocr_free(infer_allocr);
+  ggml_free(static_ctx);
   munmap(addr, len);
 
   return 0;

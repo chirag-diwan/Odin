@@ -186,14 +186,10 @@ struct RankIndexPair{
 struct Config{
   uint16_t port;
   uint8_t thread_count;
-  bool interactive;
   std::string model_path;
-  std::string prompt;
   Config(){
     port = 42069;
     thread_count = std::thread::hardware_concurrency();
-    interactive = true;
     model_path = "";
-    prompt = "";
   }
 };

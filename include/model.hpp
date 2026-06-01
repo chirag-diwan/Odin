@@ -6,6 +6,7 @@
 #include "ggml.h"
 #include "gguf.hpp"
 #include "logging.hpp"
+#include "span.hpp"
 #include "types.hpp"
 #include <cmath>
 #include <cstdint>
@@ -305,7 +306,7 @@ class Model{
 
 
 
-    void Prefill(std::vector<uint32_t>& tokens){
+    uint32_t Prefill(span<uint32_t>& tokens){
       auto d = globals.embedding_length / globals.attention_head_count;
       float scale_factor = 1.0f / sqrt((float)d);
 
@@ -329,7 +330,9 @@ class Model{
       ggml_gallocr_alloc_graph(prefill_allocr, gf);
 
       std::vector<int32_t> pos_data(s);
-      for (size_t p = 0; p < s; p++) pos_data[p] = p;
+      for (size_t p = 0; p < s; p++){ 
+        pos_data[p] = p + n_past;
+      }
 
       ggml_backend_tensor_set(pos, pos_data.data(), 0, s * sizeof(int32_t));
       ggml_backend_tensor_set(indices, tokens.data(), 0, s * sizeof(int32_t));
@@ -339,10 +342,10 @@ class Model{
       int32_t next_token;
       ggml_backend_tensor_get(max_idx, &next_token, 0, sizeof(int32_t));
 
-      tokens.push_back(next_token);
       n_past += s;
 
       ggml_free(ctx0);
+      return next_token;
     }
 
     // XXX created by llm

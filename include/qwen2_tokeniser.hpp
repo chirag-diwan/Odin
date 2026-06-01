@@ -2,7 +2,6 @@
 
 #include "bidirectional_map.hpp"
 #include "unidirectional_map.hpp"
-#include "span.hpp"
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -18,46 +17,76 @@
 #include <string>
 #include <vector>
 
-// XXX created by llm
-std::vector<std::string> generate_byte_to_unicode() {
-  std::vector<std::string> byte_to_unicode(256);
-  int n = 0;
-  for (int b = 0; b < 256; b++) {
-    // Range of printable characters that map to themselves
-    if ((b >= 33 && b <= 126) || (b >= 161 && b <= 172) || (b >= 174 && b <= 255)) {
-      byte_to_unicode[b] = std::string(1, static_cast<char>(b));
-    } else {
-      // Map to U+0100 and above
-      int unicode_val = 256 + n;
-      std::string utf8_char;
-      // Convert to 2-byte UTF-8 (since range is 256-320)
-      utf8_char.push_back(static_cast<char>(0xC0 | (unicode_val >> 6)));
-      utf8_char.push_back(static_cast<char>(0x80 | (unicode_val & 0x3F)));
-
-      byte_to_unicode[b] = utf8_char;
-      n++;
-    }
-  }
-  return byte_to_unicode;
-}
 
 
 class QwenStyleTokenizer{
   private:
+    uint32_t bos_token_id;
+    uint32_t eos_token_id;
+
     bidirectional_map<std::string_view, uint32_t> vocab;
     unidirectional_map<uint64_t , MergeRV> merge_priority;
 
     std::vector<std::string> byte_to_unicode_table;
     uint8_t unicode_to_byte_table[65];
 
+    std::vector<uint32_t> format_block_1;
+    std::vector<uint32_t> format_block_2;
+
+    const std::string regex_str ="(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+";
     pcre2_code* compiled_regex;
+
+    // XXX created by llm
+    void generate_unicode_to_byte(){
+      int n = 0;
+      for (int b = 0; b < 256; b++) {
+        if ((b >= 33 && b <= 126) || (b >= 161 && b <= 172) || (b >= 174 && b <= 255)) {
+        } else {
+          int unicode_val = 256 + n;
+          unicode_to_byte_table[unicode_val - 256] = static_cast<uint8_t>(b);
+          n++;
+        }
+      }
+    }
+
+    // XXX created by llm
+    void generate_byte_to_unicode() {
+      byte_to_unicode_table.resize(256);
+      int n = 0;
+      for (int b = 0; b < 256; b++) {
+        // Range of printable characters that map to themselves
+        if ((b >= 33 && b <= 126) || (b >= 161 && b <= 172) || (b >= 174 && b <= 255)) {
+          byte_to_unicode_table[b] = std::string(1, static_cast<char>(b));
+        } else {
+          // Map to U+0100 and above
+          int unicode_val = 256 + n;
+          std::string utf8_char;
+          // Convert to 2-byte UTF-8 (since range is 256-320)
+          utf8_char.push_back(static_cast<char>(0xC0 | (unicode_val >> 6)));
+          utf8_char.push_back(static_cast<char>(0x80 | (unicode_val & 0x3F)));
+
+          byte_to_unicode_table[b] = utf8_char;
+          n++;
+        }
+      }
+    }
+
 
     __attribute__((always_inline)) inline uint64_t getKey(uint32_t first, uint32_t second){
       return (static_cast<uint64_t>(first) << 32) ^ static_cast<uint64_t>(second);
     }
 
+
+
   public:
-    QwenStyleTokenizer(ModelGlobals& globals) : vocab(globals.token_vocab->size()) , merge_priority(globals.token_merges->size()) {
+    QwenStyleTokenizer(ModelGlobals& globals) :
+
+      bos_token_id(globals.ggml_bos_token_id) ,
+      eos_token_id(globals.ggml_eos_token_id) ,
+      vocab(globals.token_vocab->size()) ,
+      merge_priority(globals.token_merges->size())
+  
+  {
       if(globals.token_vocab == nullptr){
         Log(ERROR , "globals.token_vocab is a nullptr");
         return;
@@ -67,6 +96,7 @@ class QwenStyleTokenizer{
         Log(ERROR , "globals.token_merges is a nullptr");
         return;
       }
+
 
 
       for(size_t i = 0 ; i < globals.token_vocab->size() ; i++){
@@ -110,7 +140,6 @@ class QwenStyleTokenizer{
       } 
 
 
-      const std::string regex_str ="(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+";
 
       int errornumber;
       PCRE2_SIZE erroroffset;
@@ -130,20 +159,26 @@ class QwenStyleTokenizer{
       }
 
 
-      byte_to_unicode_table = generate_byte_to_unicode();
+      generate_byte_to_unicode();
+      generate_unicode_to_byte();
 
-      int n = 0;
-      for (int b = 0; b < 256; b++) {
-        if ((b >= 33 && b <= 126) || (b >= 161 && b <= 172) || (b >= 174 && b <= 255)) {
-        } else {
-          int unicode_val = 256 + n;
-          unicode_to_byte_table[unicode_val - 256] = static_cast<uint8_t>(b);
-          n++;
-        }
-      }
+
+      format_block_1.push_back(bos_token_id);
+      Tokenise("user\n", format_block_1); 
+
+      format_block_2.push_back(eos_token_id); 
+      Tokenise("\n", format_block_2);
+      format_block_2.push_back(eos_token_id);
+      Tokenise("assistant\n", format_block_2);
     }
 
-    void Tokenise(std::string prompt_str, std::vector<uint32_t>& tokens){
+    void TokeniseFormatted(const std::string& prompt_str , std::vector<uint32_t>& tokens){
+      tokens.insert(tokens.end() , format_block_1.begin() , format_block_1.end());
+      Tokenise(prompt_str, tokens);
+      tokens.insert(tokens.end() , format_block_2.begin() , format_block_2.end());
+    }
+
+    void Tokenise(const std::string& prompt_str, std::vector<uint32_t>& tokens){
 
       std::vector<std::string_view> chunks;
       std::string_view prompt = prompt_str;

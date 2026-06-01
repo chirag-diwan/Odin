@@ -14,19 +14,9 @@ Config ParseConfig(int argc , char ** argv){
     }else if(strcmp(argv[i], "--port") == 0){
       Errorif(i + 1 > argc, "Expected port after --port");
       config.port = std::stoi(argv[i + 1]);
-    }else if(strcmp(argv[i], "--interactive") == 0) {
-      Errorif(i + 1 > argc, "Expected boolean after --interactive");
-      if(strcmp(argv[i + 1], "true") == 0){
-        config.interactive = true;
-      }else{
-        config.interactive = false;
-      }
     }else if(strcmp(argv[i], "--model") == 0){
       Errorif(i + 1 > argc, "Expected model path after --model");
       config.model_path = argv[i + 1];
-    }else if(strcmp(argv[i], "--prompt") == 0){
-      Errorif(i + 1 > argc, "Expected string after --prompt");
-      config.prompt = argv[i + 1];
     } 
   }
   return config;
