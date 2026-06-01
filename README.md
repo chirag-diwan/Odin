@@ -24,5 +24,3 @@ Cli flag and there meaning
 | --- | --- |
 | --model | To specify the model path |
 | --thread | The mazimum number of thread that the backend should use |
-| --interactive | If on then the engine runs like a chat client |
-| --prompt | If `--interactive false` then , used to provide prompt for non interactive chat |
