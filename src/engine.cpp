@@ -70,16 +70,12 @@ int main(int argc , char **argv) {
         break;
       }
 
-      // 1. Capture the EXACT boundary BEFORE appending new text
       last_index = tokens.size();
 
-      // 2. Append the new prompt tokens to the history
       tokeniser.TokeniseFormatted(prompt, tokens);
 
-      // 3. Slice ONLY the new prompt tokens for the Prefill phase
       span<uint32_t> tokens_view(tokens.data() + last_index, tokens.size() - last_index);
 
-      // 4. Execute prefill on the isolated new context
       auto next_token = model.Prefill(tokens_view);
       tokens.emplace_back(next_token);
 

@@ -1,0 +1,88 @@
+[INFO]TIME PER TASK
+Parsing the gguf file 11 ms
+Initializing the model 1 ms
+Setting up the tokeniser 106 ms
+
+ $ Hello
+Hello! How can I assist you today?
+ $ Write a c++ program to print hello world
+Sure, here is a simple C++ program that prints "Hello, World!" to the console:
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    cout << "Hello, World!" << endl;
+    return 0;
+}
+```
+
+When you run this program, it will output:
+
+```
+Hello, World!
+```
+ $ Make a calculator in c++ . Take in the input from the user and calculate addition and division
+Sure, here is a simple C++ program that takes input from the user and calculates addition and division:
+
+```cpp
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+
+using namespace std;
+
+int main() {
+    string input;
+    cout << "Enter the first number: ";
+    getline(cin, input);
+    cout << "Enter the second number: ";
+    getline(cin, input);
+    cout << "Enter the operation (+, -, *, /): ";
+    getline(cin, input);
+    int num1 = stoi(input);
+    int num2 = stoi(input);
+    int operation = stoi(input);
+
+    switch (operation) {
+        case '+':
+            cout << num1 << " + " << num2 << " = " << num1 + num2 << endl;
+            break;
+        case '-':
+            cout << num1 << " - " << num2 << " = " << num1 - num2 << endl;
+            break;
+        case '*':
+            cout << num1 << " * " << num2 << " = " << num1 * num2 << endl;
+            break;
+        case '/':
+            if (num2 != 0) {
+                cout << num1 << " / " << num2 << " = " << num1 / num2 << endl;
+            } else {
+                cout << "Error: Division by zero is not allowed." << endl;
+            }
+            break;
+        default:
+            cout << "Error: Invalid operation. Please choose from +, -, *, /." << endl;
+            break;
+    }
+    return 0;
+}
+```
+
+When you run this program, it will output:
+
+```
+Enter the first number: 10
+Enter the second number: 5
+Enter the operation (+, -, *, /): *
+Enter the first number: 10
+Enter the second number: 5
+Enter the operation (+, -, *, /): +
+```
+
+This program takes input from the user and performs the specified operation on the two numbers. It also handles division by zero and invalid operations.
+ $ exit
+Time to first token 368 ms
+Tokens per second 10 tokens/s
+[ble: elapsed 58.266s (CPU 183.1%)] ./qwen_metrics_TEST --model "/home/chirag/Models/qwen2.5-0.5b-instruct-q4_0.gguf" --thre
