@@ -15,7 +15,7 @@ Odin is in its initial development stage and only supports qwen2 class of archit
 # Running
 
 ``` bash
-    ./odin --model "/path/to/model.gguf" --thread $(nproc) --interactive true --prompt "Hello how are :wyou"
+    ./odin --model "/path/to/model.gguf" --thread $(nproc) 
 ```
 
 Cli flag and there meaning
