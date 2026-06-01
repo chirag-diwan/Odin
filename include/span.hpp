@@ -1,37 +1,29 @@
 #pragma once
 #include <cstddef>
-#include <vector>
-template <typename T>
+#include <cstdint>
+
+template <typename value_type = uint32_t>
 class span{
   private:
-    T* data_;
     size_t size_;
-    std::vector<T>& parent;
+    const value_type* data_;
+
   public:
-    span(std::vector<T>& vec , size_t offset , size_t size): parent(vec){
-      data_ = vec.data() + offset;
-      size_ = size > vec.size() ? vec.size() : size;
-    }
+    span(value_type* data , size_t size) : data_(data) , size_(size){}
 
     size_t size() const {
       return size_;
     }
 
-    T* data(){
+    const value_type* data() const {
       return data_;
     }
 
-    void push_back(T elem){
-      parent.push_back(elem);
-      data_ = parent.data();
-      size_++;
+    value_type& operator[](size_t i){
+      return data_[i];
     }
 
-    T* begin(){
-      return data_;
-    }
-
-    T* end(){
-      return data_ + size_;
+    value_type operator[](size_t i)const{
+      return data_[i];
     }
 };
