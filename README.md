@@ -5,7 +5,7 @@ Odin is a CPU focused inference engine . The main goal of this project is the in
 Odin is in its initial development stage and only supports qwen2 class of architecture . More architecture support is being actively developed
 
 # Metrics
-SEE `bench_log.txt` for more the bench 
+SEE `bench_log.txt` for more info about the bench 
 ``` bash
 [INFO]TIME PER TASK
 Parsing the gguf file 11 ms
