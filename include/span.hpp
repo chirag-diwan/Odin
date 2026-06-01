@@ -5,8 +5,8 @@
 template <typename value_type = uint32_t>
 class span{
   private:
-    size_t size_;
     const value_type* data_;
+    size_t size_;
 
   public:
     span(value_type* data , size_t size) : data_(data) , size_(size){}
