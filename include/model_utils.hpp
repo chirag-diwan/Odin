@@ -2,7 +2,9 @@
 
 #include <cstdint>
 #include <string_view>
+#include "block.hpp"
 #include "gguf.hpp"
+#include "ggufreader.hpp"
 #include "types.hpp"
 
 
@@ -62,4 +64,55 @@ ModelGlobals GetModelGlobals(metadatakv_t& metadata_key_values ){
     }
   }
   return global_struct;
+}
+
+
+
+Model CreateModel(ggml_context* tensor_context, GGufReader& reader){
+  Model m;
+  m.globals = GetModelGlobals(reader.metadata_key_values);
+  m.blocks.resize(m.globals.block_count);
+
+  for(const auto& tensor : reader.tensors){
+    ggml_tensor* t;
+    ggml_type current_type = tensor.tensor_type;
+    switch (tensor.dimension_count){
+      case 1:
+        t = ggml_new_tensor_1d(tensor_context,current_type, tensor.dimensions[0]);
+        break;
+      case 2:
+        t = ggml_new_tensor_2d(tensor_context,current_type, tensor.dimensions[0] , tensor.dimensions[1]);
+        break;
+      case 3:
+        t = ggml_new_tensor_3d(tensor_context,current_type, tensor.dimensions[0] , tensor.dimensions[1] ,tensor.dimensions[2]);
+        break;
+      case 4:
+        t = ggml_new_tensor_4d(tensor_context,current_type, tensor.dimensions[0] , tensor.dimensions[1] ,tensor.dimensions[2] , tensor.dimensions[3]);
+        break;
+      default:
+        Log("Unknown dimension count " , tensor.dimension_count);
+        continue;
+    }
+
+    t->data = tensor.weights_data;
+
+    if(tensor.name == "token_embd.weight"){
+      m.global_tensors.token_embd_weights = t;
+
+    }else if(tensor.name == "output.weight"){
+      m.global_tensors.output_weights = t;
+
+    }else if(tensor.name == "output_norm.weight"){
+      m.global_tensors.output_norm_weights = t;
+
+    }else if(tensor.name == "rope_freqs.weight"){
+      m.global_tensors.rope_freq_weights = t;
+
+    }else{
+      auto layer_idx = LayerIndex(tensor.name);
+      Errorif(layer_idx >= m.globals.block_count, "Layer index greater than block count" , layer_idx , m.globals.block_count);
+      m.blocks[layer_idx].MapTensor(tensor.name, t);
+    }
+  }
+  return m;
 }

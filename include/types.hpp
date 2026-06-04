@@ -1,4 +1,8 @@
 #pragma once
+#include "block.hpp"
+#include "errors.hpp"
+#include "ggml-alloc.h"
+#include "ggml-backend.h"
 #include "ggml.h"
 #include <cstdint>
 #include <netinet/in.h>
@@ -8,19 +12,6 @@
 #include <vector>
 
 #define DIM_ARRAY_MAX_SIZE 8 //Future proof
-
-struct AddrLenPair{
-  void * addr;
-  int64_t len;
-
-  AddrLenPair(){
-    addr = nullptr;
-    len = 0;
-  }
-
-  AddrLenPair(void * addr , int64_t len) : addr(addr) , len(len){}
-
-};
 
 struct GGufHeader {
   uint32_t magic;
@@ -83,12 +74,12 @@ struct GGufValue {
 };
 
 
-struct metadata_keyvalue{
+struct metadata_key_value{
   std::string_view name;
   GGufValue value;
 };
 
-using metadatakv_t = std::vector<metadata_keyvalue>;
+using metadatakv_t = std::vector<metadata_key_value>;
 
 
 struct GGufTensor {
@@ -146,13 +137,13 @@ struct ModelGlobals{
   }
 };
 
-struct ModelGlobalTensors {
+struct GlobalTensors {
   struct ggml_tensor* token_embd_weights  ;
   struct ggml_tensor* output_norm_weights ;
   struct ggml_tensor* output_weights      ;
   struct ggml_tensor* rope_freq_weights   ;
 
-  ModelGlobalTensors(){
+  GlobalTensors(){
     token_embd_weights  = nullptr;
     output_norm_weights = nullptr;
     output_weights      = nullptr;
@@ -161,23 +152,16 @@ struct ModelGlobalTensors {
 };
 
 
-struct ModelState{
-  bool isPreFilled;
-  ModelState(){
-    isPreFilled = false;
-  }
-};
-
-struct MergeRV{
+struct merge_rank_result{
   uint32_t merge_rank;
   uint32_t merge_result;
 };
 
-struct RankIndexPair{
+struct rank_index_pair{
   uint64_t rank;
   uint64_t index;
 
-  bool operator>(const RankIndexPair& other) const {
+  bool operator>(const rank_index_pair& other) const {
     return rank > other.rank;
   }
 };
@@ -193,3 +177,75 @@ struct Config{
     model_path = "";
   }
 };
+
+
+struct Model{
+  ModelGlobals globals;
+  GlobalTensors global_tensors;
+  std::vector<ModelBlock> blocks;
+};
+
+struct EngineState{
+  size_t d;
+  float scale_factor;
+  size_t n_past;
+};
+
+struct KVCache{
+  ggml_tensor* K;
+  ggml_tensor* V;
+  ggml_backend_buffer_t kv_buffer;
+
+  KVCache(ggml_context* state_ctx ,ggml_backend_t backend ,  Model& model ){
+    auto d_head = model.globals.embedding_length / model.globals.attention_head_count;
+
+    auto c = model.globals.context_length; 
+    auto n_head_kv = model.globals.attention_head_count_kv;
+
+    K = ggml_new_tensor_4d(state_ctx, GGML_TYPE_F16, 
+        d_head, c, n_head_kv , model.globals.block_count);
+
+    V = ggml_new_tensor_4d(state_ctx, GGML_TYPE_F16, 
+        c, d_head, n_head_kv , model.globals.block_count);
+
+    kv_buffer = ggml_backend_alloc_ctx_tensors(state_ctx, backend);
+    Errorif(kv_buffer == nullptr, "Failed to allocate physical memory for KV cache");
+  }
+
+  void AppendToKeyCache( ggml_context* state_ctx , ggml_cgraph* gf, ggml_tensor* tensor, int token_index , size_t layer_index)const{
+
+    size_t offset = K->nb[3]*layer_index + K->nb[1]*token_index;
+
+    ggml_tensor* K_view = ggml_view_3d(state_ctx,K,tensor->ne[0],  tensor->ne[1], tensor->ne[2] ,K->nb[1], K->nb[2], offset);
+    ggml_tensor* copy_node = ggml_cpy(state_ctx, tensor, K_view);
+    ggml_build_forward_expand(gf, copy_node);
+  }
+
+  void AppendToValueCache( ggml_context* state_ctx , ggml_cgraph* gf, ggml_tensor* tensor, int token_index , size_t layer_index)const{
+
+    size_t offset = V->nb[3] * layer_index
+      + V->nb[0] * token_index;
+
+    ggml_tensor* t = ggml_transpose(state_ctx, tensor);
+    ggml_tensor* V_view =
+      ggml_view_3d(state_ctx,
+          V,
+          t->ne[0],
+          t->ne[1],
+          t->ne[2],
+          V->nb[1],
+          V->nb[2],
+          offset);
+
+    ggml_tensor* copy_node = ggml_cpy(state_ctx, t, V_view);
+    ggml_build_forward_expand(gf, copy_node);
+  }
+
+
+  ~KVCache(){
+    if (kv_buffer != nullptr) {
+      ggml_backend_buffer_free(kv_buffer);
+    }
+  }
+};
+

@@ -25,7 +25,7 @@ class QwenStyleTokenizer{
     uint32_t eos_token_id;
 
     bidirectional_map<std::string_view, uint32_t> vocab;
-    unidirectional_map<uint64_t , MergeRV> merge_priority;
+    unidirectional_map<uint64_t , merge_rank_result> merge_priority;
 
     std::vector<std::string> byte_to_unicode_table;
     uint8_t unicode_to_byte_table[65];
