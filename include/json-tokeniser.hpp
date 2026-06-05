@@ -19,10 +19,9 @@ class JsonTokeniser{
 
     ondemand::parser parser;
     padded_string json;
-    ondemand::document doc;
     bidirectional_map<std::string_view, uint32_t> vocab;
     bidirectional_map<std::string_view, uint32_t> special_tokens;
-    unidirectional_map<uint32_t, merge_rank_result> merges;
+    unidirectional_map<uint64_t, merge_rank_result> merges;
 
 
 
@@ -32,9 +31,10 @@ class JsonTokeniser{
 
   public:
     JsonTokeniser(const std::string& tokeniser_json) :
-      json(padded_string::load(tokeniser_json)) ,
-      doc(parser.iterate(json))
+      json(padded_string::load(tokeniser_json)) 
   {
+
+    auto doc = parser.iterate(json);
     auto added_token = doc["added_tokens"]->get_array();
     auto added_token_count = added_token->count_elements();
 
@@ -64,42 +64,37 @@ class JsonTokeniser{
         Log(ERROR , "PreTokeniser type Split not found");
       }
     }
-    auto vocab_obj = doc["model"]["vocab"].get_object();
-    auto vocab_field_count = vocab_obj->count_fields();
-    if(vocab_field_count.has_value()){
-      vocab = bidirectional_map<std::string_view, uint32_t>(vocab_field_count.value());
-    }else{
-      Log(ERROR , "vocab_field_count dosen't has value");
-    }
 
+    auto vocab_obj = doc["model"]["vocab"].get_object();
+    size_t vocab_size = vocab_obj->count_fields();
+    vocab = bidirectional_map<std::string_view, uint32_t>(vocab_size);
+    Log(vocab_size);
+
+
+    auto merges_array = doc["model"]["merges"]->get_array();
+    size_t merges_size = merges_array->count_elements();
+    merges = unidirectional_map<uint64_t , merge_rank_result>(merges_size);
+    Log(merges_size);
+
+    //Re iterate
+    auto doc_reinit = parser.iterate(json);
+
+
+    vocab_obj = doc_reinit["model"]["vocab"].get_object();
     for (auto field : vocab_obj) {
-      std::string_view key = field.unescaped_key(); // or field.key()
+      std::string_view key = field->unescaped_key();
       uint32_t value = uint32_t(field.value());
       vocab.insert(key, value);
     }
 
-    auto merges_array = doc["model"]["merges"]->get_array();
 
-    std::vector<std::pair<std::string_view, std::string_view>> temp;
-    temp.reserve(1024); // optional guess
-
-    for (auto element : merges_array) {
-      std::string_view merge_pair = element.get_string().value();
-
+    merges_array = doc_reinit["model"]["merges"]->get_array();
+    size_t i = 0;
+    for(auto element : merges_array){
+      std::string_view merge_pair = element.get_string();
       auto split_point = merge_pair.find(' ');
-      if (split_point == std::string_view::npos) continue;
-
-      temp.emplace_back(
-          merge_pair.substr(0, split_point),
-          merge_pair.substr(split_point + 1)
-          );
-    }
-
-    merges = unidirectional_map<uint32_t , merge_rank_result>(temp.size());
-
-    for(size_t i = 0 ; i < temp.size() ; i++){
-      std::string_view first = temp[i].first;
-      std::string_view second = temp[i].second;
+      std::string_view first = merge_pair.substr(0 , split_point);
+      std::string_view second = merge_pair.substr(split_point + 1);
       auto first_idx = vocab.getValueOf(first);
       auto second_idx = vocab.getValueOf(second);
 
@@ -111,6 +106,7 @@ class JsonTokeniser{
         Log(ERROR , "value not found for key" , second);
         continue;
       }
+
 
       auto key = getKey(*first_idx, *second_idx);
       std::string result;
@@ -124,8 +120,8 @@ class JsonTokeniser{
         Log(ERROR , "value not found for key" , result);
         continue;
       }
-
       merges.insert(key , { .merge_rank = static_cast<uint32_t>(i) , .merge_result = *merge_result });
+      i++;
     }
   }
 };
