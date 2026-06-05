@@ -32,6 +32,16 @@ endif()
 target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(${TARGET_NAME} PRIVATE ${PCRE2_INCLUDE_DIRS})
 
+target_include_directories(${TARGET_NAME}
+    PRIVATE
+    ${CMAKE_SOURCE_DIR}/external/simdjson
+)
+
+target_sources(${TARGET_NAME}
+    PRIVATE
+    ${CMAKE_SOURCE_DIR}/external/simdjson/simdjson.cpp
+)
+
 target_link_libraries(${TARGET_NAME}
   PRIVATE
   ggml

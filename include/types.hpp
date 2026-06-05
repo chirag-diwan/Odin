@@ -171,13 +171,23 @@ struct Config{
   uint16_t port;
   uint8_t thread_count;
   std::string model_path;
+  std::string tokeniser_json_path;
+  float temperature ;
+  uint32_t k ;
   Config(){
     port = 42069;
     thread_count = std::thread::hardware_concurrency();
-    model_path = "";
+    model_path = "NOT PROVIDED";
+    tokeniser_json_path = "NOT PROVIDED";
+    temperature = 1;
+    k = 10;
   }
 };
 
+struct InferenceParams{
+  float temp;
+  uint32_t K;
+};
 
 struct Model{
   ModelGlobals globals;
@@ -189,6 +199,7 @@ struct EngineState{
   size_t d;
   float scale_factor;
   size_t n_past;
+  float temp_inv;
 };
 
 struct KVCache{
@@ -247,5 +258,20 @@ struct KVCache{
       ggml_backend_buffer_free(kv_buffer);
     }
   }
+};
+
+
+
+struct TokeniserConfig{
+  bool turnacation;
+  bool padding;
+  std::string_view normalizer;
+};
+
+struct PreTokeniser{
+  std::string_view type;
+  std::string_view regex;
+  std::string_view behavior;
+  bool invert;
 };
 

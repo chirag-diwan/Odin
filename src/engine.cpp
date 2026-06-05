@@ -1,5 +1,6 @@
 #include "../include/engine.hpp"
 #include "../include/model_utils.hpp"
+#include "../include/engine_utils.hpp"
 #include "../include/qwen2_tokeniser.hpp"
 #include "../include/ggufreader.hpp"
 #include "../include/config.hpp"
@@ -59,13 +60,20 @@ int main(int argc , char **argv) {
       std::cout << "\n $ ";
       std::getline(std::cin, prompt);
 
-      if (prompt == "exit") {
+      if (prompt == "!exit") {
         break;
       }
 
       last_index = tokens.size();
 
-      tokeniser.TokeniseFormatted(prompt, tokens);
+      if(prompt.find("!attach") != std::string::npos){
+        auto pos = prompt.find(' ');
+        auto filepath = prompt.substr(pos + 1 , prompt.size() - pos - 1);
+        filepath = strip(filepath);
+        AttachFile(filepath.c_str(), tokeniser, tokens);
+      }else{
+        tokeniser.TokeniseFormatted(prompt, tokens);
+      }
 
       const size_t span_size = tokens.size() - last_index;
 

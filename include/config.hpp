@@ -17,7 +17,16 @@ Config ParseConfig(int argc , char ** argv){
     }else if(strcmp(argv[i], "--model") == 0){
       Errorif(i + 1 > argc, "Expected model path after --model");
       config.model_path = argv[i + 1];
-    } 
+    }else if(strcmp(argv[i], "--temp") == 0){
+      Errorif(i + 1 > argc, "Expected float temp after --temp");
+      config.temperature = std::stof(argv[i + 1]);
+    }else if(strcmp(argv[i], "--top-k") == 0){
+      Errorif(i + 1 > argc, "Expected positive integer after --top-k");
+      config.k = std::stoi(argv[i + 1]);
+    }else if(strcmp(argv[i], "--tokeniser-json") == 0){
+      Errorif(i + 1 > argc, "Expected tokeniser json file path after --tokeniser-json");
+      config.tokeniser_json_path = argv[i + 1];
+    }
   }
   return config;
 }

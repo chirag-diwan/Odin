@@ -30,8 +30,6 @@ class QwenStyleTokenizer{
     std::vector<std::string> byte_to_unicode_table;
     uint8_t unicode_to_byte_table[65];
 
-    std::vector<uint32_t> format_block_1;
-    std::vector<uint32_t> format_block_2;
 
     const std::string regex_str ="(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+";
     pcre2_code* compiled_regex;
@@ -79,6 +77,9 @@ class QwenStyleTokenizer{
 
 
   public:
+    std::vector<uint32_t> format_block_1;
+    std::vector<uint32_t> format_block_2;
+
     QwenStyleTokenizer(ModelGlobals& globals) :
 
       bos_token_id(globals.ggml_bos_token_id) ,

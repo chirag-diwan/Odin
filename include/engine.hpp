@@ -22,7 +22,7 @@ class Engine{
     const ggml_gallocr_t infer_allocr ;
 
     KVCache cache;
-  
+
 
   public:
     static constexpr size_t prefill_batch_size = 512;

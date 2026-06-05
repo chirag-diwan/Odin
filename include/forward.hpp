@@ -2,6 +2,7 @@
 
 #include "block.hpp"
 #include "ggml.h"
+#include "debug.hpp"
 #include "types.hpp"
 
 ggml_tensor* forward(
@@ -21,18 +22,24 @@ ggml_tensor* forward(
     normed = ggml_mul(temp_ctx, normed, block.attn_norm_w);
 
     ggml_tensor* K = ggml_mul_mat(temp_ctx, block.attn_k_w, normed);
-    K = ggml_add_inplace(temp_ctx, K, block.attn_k_b); 
+    if(block.attn_k_b != nullptr){
+      K = ggml_add_inplace(temp_ctx, K, block.attn_k_b); 
+    }
     ggml_tensor* Q = ggml_mul_mat(temp_ctx, block.attn_q_w, normed);
-    Q = ggml_add_inplace(temp_ctx, Q, block.attn_q_b);
+    if(block.attn_q_b != nullptr){
+      Q = ggml_add_inplace(temp_ctx, Q, block.attn_q_b);
+    }
     ggml_tensor* V = ggml_mul_mat(temp_ctx, block.attn_v_w, normed);
-    V = ggml_add_inplace(temp_ctx, V, block.attn_v_b);
+    if(block.attn_v_b != nullptr){
+      V = ggml_add_inplace(temp_ctx, V, block.attn_v_b);
+    }
 
     ggml_tensor* Q_3D = ggml_reshape_3d(temp_ctx, Q, state.d, model.globals.attention_head_count, s);
     ggml_tensor* K_3D = ggml_reshape_3d(temp_ctx, K, state.d, model.globals.attention_head_count_kv, s);
     ggml_tensor* V_3D = ggml_reshape_3d(temp_ctx, V, state.d, model.globals.attention_head_count_kv, s);
 
-    Q_3D = ggml_rope_ext(temp_ctx, Q_3D, pos, nullptr, state.d, GGML_ROPE_TYPE_NEOX, model.globals.context_length, model.globals.rope_freq_base, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-    K_3D = ggml_rope_ext(temp_ctx, K_3D, pos, nullptr, state.d, GGML_ROPE_TYPE_NEOX, model.globals.context_length, model.globals.rope_freq_base, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+    Q_3D = ggml_rope_ext(temp_ctx, Q_3D, pos, model.global_tensors.rope_freq_weights, state.d, GGML_ROPE_TYPE_NEOX, model.globals.context_length, model.globals.rope_freq_base, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+    K_3D = ggml_rope_ext(temp_ctx, K_3D, pos, model.global_tensors.rope_freq_weights, state.d, GGML_ROPE_TYPE_NEOX, model.globals.context_length, model.globals.rope_freq_base, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
     //Q_3D = ggml_cont(temp_ctx, ggml_permute(temp_ctx, Q_3D, 0, 2, 1, 3));
     //K_3D = ggml_cont(temp_ctx, ggml_permute(temp_ctx, K_3D, 0, 2, 1, 3));
@@ -82,7 +89,15 @@ ggml_tensor* forward(
 
   embeddings = ggml_rms_norm_inplace(temp_ctx,embeddings,model.globals.attention_layer_norm_rms_epsilon);
   embeddings = ggml_mul(temp_ctx, embeddings,model.global_tensors.output_norm_weights);
-  embeddings = ggml_mul_mat(temp_ctx, model.global_tensors.output_weights, embeddings);
+  if(model.global_tensors.output_weights != nullptr){
+    embeddings = ggml_mul_mat(temp_ctx, model.global_tensors.output_weights, embeddings);
+  }else{
+    debug_print(embeddings , "Embedding");
+    debug_print(model.global_tensors.token_embd_weights , "Embedding weights");
+    embeddings = ggml_mul(temp_ctx, model.global_tensors.token_embd_weights , embeddings);
+  }
 
   return embeddings;
 }
+
+
