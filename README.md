@@ -83,5 +83,3 @@ Cli flag and there meaning
 | --- | --- |
 | --model | To specify the model path |
 | --thread | The mazimum number of thread that the backend should use |
-
-

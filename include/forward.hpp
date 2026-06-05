@@ -13,7 +13,7 @@ ggml_tensor* forward(
     Model& model,
     KVCache& cache,
     EngineState& state
-    ){
+){
   for(size_t i = 0 ; i < model.blocks.size() ; i++){
     auto& block = model.blocks[i];
 

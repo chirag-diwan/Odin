@@ -85,92 +85,92 @@ class QwenStyleTokenizer{
       eos_token_id(globals.ggml_eos_token_id) ,
       vocab(globals.token_vocab->size()) ,
       merge_priority(globals.token_merges->size())
-  
-  {
-      if(globals.token_vocab == nullptr){
-        Log(ERROR , "globals.token_vocab is a nullptr");
-        return;
-      }
 
-      if(globals.token_merges == nullptr){
-        Log(ERROR , "globals.token_merges is a nullptr");
-        return;
-      }
-
-
-
-      for(size_t i = 0 ; i < globals.token_vocab->size() ; i++){
-        if(__builtin_expect(!vocab.insert(globals.token_vocab->at(i), i) , false)){
-          Log(ERROR , "cannot insert key value" , globals.token_vocab->at(i), i);
+      {
+        if(globals.token_vocab == nullptr){
+          Log(ERROR , "globals.token_vocab is a nullptr");
+          return;
         }
-      }
 
-      for(size_t i = 0 ; i < globals.token_merges->size() ; i++){
-        std::string_view merge_pair = globals.token_merges->at(i);
-        auto split_point = merge_pair.find(' ');
-        std::string_view first = merge_pair.substr(0 , split_point);
-        std::string_view second = merge_pair.substr(split_point + 1);
-        auto first_idx = vocab.getValueOf(first);
-        auto second_idx = vocab.getValueOf(second);
-
-        if(__builtin_expect(!first_idx.has_value(),false)){
-          Log(ERROR , "value not found for key" , first);
-          continue;
-        }
-        if (__builtin_expect(!second_idx.has_value(),false)) {
-          Log(ERROR , "value not found for key" , second);
-          continue;
+        if(globals.token_merges == nullptr){
+          Log(ERROR , "globals.token_merges is a nullptr");
+          return;
         }
 
 
-        auto key = getKey(*first_idx, *second_idx);
-        std::string result;
-        result.reserve(first.size() + second.size());
 
-        result.append(first);
-        result.append(second);
-
-        auto merge_result = vocab.getValueOf(result);
-        if(__builtin_expect(!merge_result.has_value(),false)){
-          Log(ERROR , "value not found for key" , result);
-          continue;
+        for(size_t i = 0 ; i < globals.token_vocab->size() ; i++){
+          if(__builtin_expect(!vocab.insert(globals.token_vocab->at(i), i) , false)){
+            Log(ERROR , "cannot insert key value" , globals.token_vocab->at(i), i);
+          }
         }
 
-        merge_priority.insert(key , { .merge_rank = static_cast<uint32_t>(i) , .merge_result = *merge_result });
-      } 
+        for(size_t i = 0 ; i < globals.token_merges->size() ; i++){
+          std::string_view merge_pair = globals.token_merges->at(i);
+          auto split_point = merge_pair.find(' ');
+          std::string_view first = merge_pair.substr(0 , split_point);
+          std::string_view second = merge_pair.substr(split_point + 1);
+          auto first_idx = vocab.getValueOf(first);
+          auto second_idx = vocab.getValueOf(second);
+
+          if(__builtin_expect(!first_idx.has_value(),false)){
+            Log(ERROR , "value not found for key" , first);
+            continue;
+          }
+          if (__builtin_expect(!second_idx.has_value(),false)) {
+            Log(ERROR , "value not found for key" , second);
+            continue;
+          }
+
+
+          auto key = getKey(*first_idx, *second_idx);
+          std::string result;
+          result.reserve(first.size() + second.size());
+
+          result.append(first);
+          result.append(second);
+
+          auto merge_result = vocab.getValueOf(result);
+          if(__builtin_expect(!merge_result.has_value(),false)){
+            Log(ERROR , "value not found for key" , result);
+            continue;
+          }
+
+          merge_priority.insert(key , { .merge_rank = static_cast<uint32_t>(i) , .merge_result = *merge_result });
+        } 
 
 
 
-      int errornumber;
-      PCRE2_SIZE erroroffset;
+        int errornumber;
+        PCRE2_SIZE erroroffset;
 
-      compiled_regex = pcre2_compile(
-          reinterpret_cast<PCRE2_SPTR>(regex_str.c_str()),
-          PCRE2_ZERO_TERMINATED,
-          PCRE2_UTF | PCRE2_UCP, 
-          &errornumber,
-          &erroroffset,
-          NULL
-          );
+        compiled_regex = pcre2_compile(
+            reinterpret_cast<PCRE2_SPTR>(regex_str.c_str()),
+            PCRE2_ZERO_TERMINATED,
+            PCRE2_UTF | PCRE2_UCP, 
+            &errornumber,
+            &erroroffset,
+            NULL
+            );
 
-      if (compiled_regex == NULL) {
-        Log(ERROR , "PCRE2 compilation failed.");
-        return; 
+        if (compiled_regex == NULL) {
+          Log(ERROR , "PCRE2 compilation failed.");
+          return; 
+        }
+
+
+        generate_byte_to_unicode();
+        generate_unicode_to_byte();
+
+
+        format_block_1.push_back(bos_token_id);
+        Tokenise("user\n", format_block_1); 
+
+        format_block_2.push_back(eos_token_id); 
+        Tokenise("\n", format_block_2);
+        format_block_2.push_back(eos_token_id);
+        Tokenise("assistant\n", format_block_2);
       }
-
-
-      generate_byte_to_unicode();
-      generate_unicode_to_byte();
-
-
-      format_block_1.push_back(bos_token_id);
-      Tokenise("user\n", format_block_1); 
-
-      format_block_2.push_back(eos_token_id); 
-      Tokenise("\n", format_block_2);
-      format_block_2.push_back(eos_token_id);
-      Tokenise("assistant\n", format_block_2);
-    }
 
     void TokeniseFormatted(const std::string& prompt_str , std::vector<uint32_t>& tokens){
       tokens.insert(tokens.end() , format_block_1.begin() , format_block_1.end());
@@ -278,7 +278,7 @@ class QwenStyleTokenizer{
     }
 
 
-    void Decode(int32_t token_id){
+    void Decode(uint32_t token_id){
       auto token_opt = vocab.getKeyOf(token_id);
       if(__builtin_expect(!token_opt.has_value(),false)){
         Log(ERROR , "key not found for ", token_id);

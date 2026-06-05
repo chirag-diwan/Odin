@@ -40,9 +40,9 @@ int main(int argc , char **argv) {
   ggml_context* static_ctx = ggml_init(static_ctx_params);
 
   auto globals = GetModelGlobals(reader.metadata_key_values);
-  auto model_ = CreateModel(static_ctx, reader);
+  auto model = CreateModel(static_ctx, reader);
 
-  Engine engine(model_ , static_ctx , backend);
+  Engine engine(model , static_ctx , backend);
   engine.ReservePrefillMemory();
   engine.ReserveDecodeMemory();
 

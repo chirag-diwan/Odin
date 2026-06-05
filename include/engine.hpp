@@ -29,7 +29,7 @@ class Engine{
     static constexpr size_t context_arena_size = 10*1024*1024;
 
 
-    Engine(Model& model ,ggml_context* state_ctx ,  ggml_backend_t target_backend) :
+    Engine(Model& model ,ggml_context* state_ctx,  ggml_backend_t target_backend) :
       model(model) ,
       backend(target_backend),
       prefill_allocr(ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend))),
