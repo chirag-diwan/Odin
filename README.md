@@ -20,6 +20,33 @@ make -j$(nproc)
 
 ### Benchmark Results (Qwen2)
 
+**Example Output**
+```bash
+================================================
+             ADVANCED ENGINE METRICS
+================================================
+ [ EXECUTION PROFILE ]
+   - Prefill Workload      : 22 tokens
+   - Time-to-First-Token   : 229.058 ms
+   - Prefill Speed         : 96.046 tokens/sec
+   - Decode Workload       : 262 tokens
+   - Total Decode Duration : 6483.314 ms
+   - Decode Speed          : 40.411 tokens/sec
+ -----------------------------------------------
+ [ LATENCY VARIABILITY & QoS ]
+   - Avg Inter-Token (ITL) : 24.745 ms/token
+   - ITL Jitter (Std Dev)  : 8.646 ms
+   - p50 (Median Latency)  : 19.613 ms
+   - p95 (Tail Latency)    : 39.453 ms
+   - p99 (Worst Spikes)    : 45.055 ms
+ -----------------------------------------------
+ [ HARDWARE & CONTEXT RESOURCE ]
+   - Est. Memory Bandwidth : 161.645726 GB/s
+   - Sequence Length       : 285 tokens
+   - KV Saturation         : 0.870 %
+================================================
+```
+
 **Hardware Profile:** AMD Ryzen 5 7520U (4C/8T) @ 4.38GHz
 
 | Metric | Result |
