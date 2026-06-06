@@ -1,3 +1,4 @@
+#pragma once
 #include "errors.hpp"
 #include <cstdint>
 #include <filesystem>

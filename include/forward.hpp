@@ -2,7 +2,6 @@
 
 #include "block.hpp"
 #include "ggml.h"
-#include "debug.hpp"
 #include "types.hpp"
 
 ggml_tensor* forward(
@@ -25,14 +24,17 @@ ggml_tensor* forward(
     if(block.attn_k_b != nullptr){
       K = ggml_add_inplace(temp_ctx, K, block.attn_k_b); 
     }
+
     ggml_tensor* Q = ggml_mul_mat(temp_ctx, block.attn_q_w, normed);
     if(block.attn_q_b != nullptr){
       Q = ggml_add_inplace(temp_ctx, Q, block.attn_q_b);
     }
-    ggml_tensor* V = ggml_mul_mat(temp_ctx, block.attn_v_w, normed);
+
+    ggml_tensor* V = ggml_mul_mat(temp_ctx, block.attn_v_w, normed); 
     if(block.attn_v_b != nullptr){
       V = ggml_add_inplace(temp_ctx, V, block.attn_v_b);
     }
+
 
     ggml_tensor* Q_3D = ggml_reshape_3d(temp_ctx, Q, state.d, model.globals.attention_head_count, s);
     ggml_tensor* K_3D = ggml_reshape_3d(temp_ctx, K, state.d, model.globals.attention_head_count_kv, s);
@@ -78,7 +80,7 @@ ggml_tensor* forward(
     ggml_tensor* ffn_gate = ggml_mul_mat(temp_ctx, block.ffn_gate_w, ffn_in);
     ggml_tensor* ffn_gate_swish = ggml_silu(temp_ctx, ffn_gate);
     ggml_tensor* ffn_gate_out = ggml_mul(temp_ctx, ffn_gate_swish, ffn_up);
-    ggml_tensor* ffn_down = ggml_mul_mat(temp_ctx, block.ffn_down_w, ffn_gate_out);
+    ggml_tensor* ffn_down = ggml_mul_mat(temp_ctx, block.ffn_down_w, ffn_gate_out);//Potential Error
 
     embeddings = ggml_add(temp_ctx, embeddings, ffn_down);
   }
@@ -92,9 +94,7 @@ ggml_tensor* forward(
   if(model.global_tensors.output_weights != nullptr){
     embeddings = ggml_mul_mat(temp_ctx, model.global_tensors.output_weights, embeddings);
   }else{
-    debug_print(embeddings , "Embedding");
-    debug_print(model.global_tensors.token_embd_weights , "Embedding weights");
-    embeddings = ggml_mul(temp_ctx, model.global_tensors.token_embd_weights , embeddings);
+    embeddings = ggml_mul_mat(temp_ctx, model.global_tensors.token_embd_weights , embeddings);
   }
 
   return embeddings;

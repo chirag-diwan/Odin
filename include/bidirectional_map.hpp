@@ -21,6 +21,7 @@ struct bid_value_t {
   bool occupied = false;
 };
 
+
 template <typename key_type , typename value_type>
 class bidirectional_map {
   private:
@@ -38,6 +39,48 @@ class bidirectional_map {
     }
 
   public:
+
+    class iterator {
+      using key_ptr = bid_key_t<key_type>*;
+      using value_ptr = bid_value_t<value_type>*;
+
+      private:
+      key_ptr keys;
+      value_ptr values;
+      size_t index;
+      size_t capacity;
+
+      void skip_invalid() {
+        while (index < capacity && !keys[index].occupied) {
+          ++index;
+        }
+      }
+
+      public:
+      iterator(key_ptr k, value_ptr v, size_t i, size_t cap)
+        : keys(k), values(v), index(i), capacity(cap) {
+          skip_invalid();
+        }
+
+      iterator& operator++() {
+        ++index;
+        skip_invalid();
+        return *this;
+      }
+
+      bool operator!=(const iterator& other) const {
+        return index != other.index;
+      }
+
+      std::pair<const key_type&, const value_type&> operator*() const {
+        const auto& k = keys[index];
+        const auto& v = values[k.value_index];
+        return {k.key, v.value};
+      }
+    };
+
+
+
     explicit bidirectional_map() {
       capacity = 0;
       current_size = 0;
@@ -137,5 +180,13 @@ class bidirectional_map {
 
     size_t max_size() const {
       return capacity;
+    }
+
+    iterator begin() {
+      return iterator(keys.get(), values.get(), 0, capacity);
+    }
+
+    iterator end() {
+      return iterator(keys.get(), values.get(), capacity, capacity);
     }
 };

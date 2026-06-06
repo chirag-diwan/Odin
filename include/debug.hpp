@@ -8,6 +8,7 @@
 
 void debug_print(ggml_tensor* t , const char* name){
   Log(name , t->ne[0] , t->ne[1] , t->ne[2] , t->ne[3]);
+  Log(ggml_type_name(t->type));
 }
 
 void debug_print(const GGufValue& val){
@@ -46,7 +47,7 @@ void debug_print(const GGufValue& val){
 
 void debug_print(const GGufTensor& tensor){
   Log("tensor.name",tensor.name);
-  Log("  tensor.tensor_type",tensor.tensor_type);
+  Log("  tensor.tensor_type",ggml_type_name(tensor.tensor_type));
   Log("  tensor.dimension_count",tensor.dimension_count);
   std::cout << "   tensor.dimension ";
   std::cout << "[";

@@ -28,7 +28,6 @@ int main(int argc , char **argv) {
   reader.ParseAllKeyValues();
   reader.ParseAllTensors();
 
-
   ggml_backend_t backend = ggml_backend_cpu_init();
   ggml_backend_cpu_set_n_threads(backend, config.thread_count);
 
