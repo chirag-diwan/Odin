@@ -15,7 +15,7 @@
 
 int main(int argc , char **argv) {
   if(argc < 2){
-    Log("Usage : \n\t ./odin --model /path/to/model --thread /num_threads/ --tokeniser-json /path/to/tokeniser/json \n");
+    Log("Usage : \n\t ./odin --model /path/to/model --thread 3 --tokeniser-json /path/to/tok/json\n");
     return 0;
   }
   Config config = ParseConfig(argc, argv);
@@ -54,18 +54,11 @@ int main(int argc , char **argv) {
 
   while(true){
     if (infer_complete) {
-      std::string prompt;
-      prompt.reserve(1024);
+      std::string prompt = "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\nYou are a strictly deterministic mathematical parsing engine. You will only output valid JSON.<|eot_id|><|start_header_id|>user<|end_header_id|> \n\n Extract the numerical values from this text and return them in a JSON array: \"The inference engine processed 4096 tokens in 12 seconds using 8 threads.\"<|eot_id|><|start_header_id|>assistant<|end_header_id|>";
 
-      std::cout << "\n $ ";
-
-      std::string line;
-      while(std::getline(std::cin, line)){
-        if(line.find("!exit") == 0)goto free;
-        if(line.find("!submit") == 0)break;
-        prompt += line;
+      if (prompt == "!exit") {
+        break;
       }
-
 
       last_index = tokens.size();
 
@@ -77,11 +70,11 @@ int main(int argc , char **argv) {
       auto next_token = engine.Prefill(tokens_view);
       tokens.emplace_back(next_token);
 
-
       tokeniser.Decode(next_token);
 
       infer_complete = false;
     }else{
+
       auto next_token = engine.Infer(tokens.back());
       tokens.emplace_back(next_token);
 
@@ -94,7 +87,7 @@ int main(int argc , char **argv) {
     }
   }
 
-free:
+
   ggml_free(static_ctx);
   munmap(addr, len);
 

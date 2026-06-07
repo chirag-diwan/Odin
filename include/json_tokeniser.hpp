@@ -47,7 +47,11 @@ class BPETokeniser{
     const padded_string json;
 
     bidirectional_map<std::string_view, uint32_t> vocab;
+
+  public:
     bidirectional_map<std::string_view, uint32_t> special_tokens;
+  private:
+
     unidirectional_map<uint64_t, merge_rank_result> merges;
 
     pcre2_code* pre_tok_regex;
@@ -189,9 +193,9 @@ class BPETokeniser{
       special_tokens_str.reserve(special_tokens.size()*10);
 
       special_tokens_str.append("(?:");
-      for(const auto& special_tok_id_pair : special_tokens){
+      for(const auto& [tok , _] : special_tokens){
         special_tokens_str += "\\Q";
-        special_tokens_str.append(special_tok_id_pair.first.data() , special_tok_id_pair.first.size());
+        special_tokens_str.append(tok.data() , tok.size());
         special_tokens_str += "\\E|";
       }
       special_tokens_str.pop_back();
@@ -213,18 +217,14 @@ class BPETokeniser{
       pcre2_match_data* match_data = pcre2_match_data_create_from_pattern(special_tok_regex ,NULL);
       PCRE2_SIZE start_offset = 0;
 
-
       while (pcre2_match(special_tok_regex, reinterpret_cast<PCRE2_SPTR>(prompt_str.c_str()), prompt.length(), start_offset, 0, match_data, NULL) >= 0) {
         PCRE2_SIZE* ovector = pcre2_get_ovector_pointer(match_data);
+        special_seprate_tokens.push_back(prompt.substr(start_offset, ovector[0] - start_offset));
         special_seprate_tokens.push_back(prompt.substr(ovector[0], ovector[1] - ovector[0]));
         start_offset = ovector[1]; 
       }
 
       pcre2_match_data_free(match_data);
-
-      for(const auto& foo : special_seprate_tokens){
-        Log(foo);
-      }
 
       match_data = pcre2_match_data_create_from_pattern(pre_tok_regex, NULL);
       start_offset = 0;
@@ -300,7 +300,6 @@ class BPETokeniser{
     void Decode(uint32_t token_id){
       auto token_opt = vocab.getKeyOf(token_id);
       if(__builtin_expect(!token_opt.has_value(),false)){
-        Log(ERROR , "key not found for ", token_id);
         return;
       }
 

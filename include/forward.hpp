@@ -3,6 +3,7 @@
 #include "block.hpp"
 #include "ggml.h"
 #include "types.hpp"
+#include <string_view>
 
 ggml_tensor* forward(
     ggml_context* temp_ctx,
@@ -40,8 +41,14 @@ ggml_tensor* forward(
     ggml_tensor* K_3D = ggml_reshape_3d(temp_ctx, K, state.d, model.globals.attention_head_count_kv, s);
     ggml_tensor* V_3D = ggml_reshape_3d(temp_ctx, V, state.d, model.globals.attention_head_count_kv, s);
 
-    Q_3D = ggml_rope_ext(temp_ctx, Q_3D, pos, model.global_tensors.rope_freq_weights, state.d, GGML_ROPE_TYPE_NEOX, model.globals.context_length, model.globals.rope_freq_base, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-    K_3D = ggml_rope_ext(temp_ctx, K_3D, pos, model.global_tensors.rope_freq_weights, state.d, GGML_ROPE_TYPE_NEOX, model.globals.context_length, model.globals.rope_freq_base, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+    if(model.globals.general_model_architecture.find("llama") != std::string_view::npos){
+      Q_3D = ggml_rope_ext(temp_ctx, Q_3D, pos, model.global_tensors.rope_freq_weights, state.d, GGML_ROPE_TYPE_NORMAL, model.globals.context_length, model.globals.rope_freq_base, 1.0f, 32.0f, 1.0f, 4.0f, 1.0f);
+      K_3D = ggml_rope_ext(temp_ctx, K_3D, pos, model.global_tensors.rope_freq_weights, state.d, GGML_ROPE_TYPE_NORMAL, model.globals.context_length, model.globals.rope_freq_base, 1.0f, 32.0f, 1.0f, 4.0f, 1.0f);
+
+    }else{
+      Q_3D = ggml_rope_ext(temp_ctx, Q_3D, pos, model.global_tensors.rope_freq_weights, state.d, GGML_ROPE_TYPE_NEOX, model.globals.context_length, model.globals.rope_freq_base, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+      K_3D = ggml_rope_ext(temp_ctx, K_3D, pos, model.global_tensors.rope_freq_weights, state.d, GGML_ROPE_TYPE_NEOX, model.globals.context_length, model.globals.rope_freq_base, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+    }
 
     //Q_3D = ggml_cont(temp_ctx, ggml_permute(temp_ctx, Q_3D, 0, 2, 1, 3));
     //K_3D = ggml_cont(temp_ctx, ggml_permute(temp_ctx, K_3D, 0, 2, 1, 3));

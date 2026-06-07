@@ -1,9 +1,10 @@
-/home/chirag/models/llama-3.2-1b.q4_k_m.gguf (ver 3): 29 key-value pairs, 147 tensors
+/home/chirag/Models/Llama-3.2-1B-Instruct-Q4_0.gguf (ver 3): 35 key-value pairs, 147 tensors
 general.architecture: [string] llama
 general.type: [string] model
-general.name: [string] llama 3.2 1b
-general.basename: [string] llama-3.2
-general.size_label: [string] 1b
+general.name: [string] Llama 3.2 1B Instruct
+general.finetune: [string] Instruct
+general.basename: [string] Llama-3.2
+general.size_label: [string] 1B
 general.license: [string] llama3.2
 general.tags: [array] [facebook, meta, pytorch, llama, llama-3, text-generation]
 general.languages: [array] [en, de, fr, it, pt, hi, es, th]
@@ -17,164 +18,262 @@ llama.rope.freq_base: [float32] 500000.000000
 llama.attention.layer_norm_rms_epsilon: [float32] 0.000010
 llama.attention.key_length: [uint32] 64
 llama.attention.value_length: [uint32] 64
-general.file_type: [uint32] 15
+general.file_type: [uint32] 2
 llama.vocab_size: [uint32] 128256
 llama.rope.dimension_count: [uint32] 64
 tokenizer.ggml.model: [string] gpt2
 tokenizer.ggml.pre: [string] llama-bpe
 tokenizer.ggml.tokens: [array] [!, ", #, $, %, &, ', (, ), *, +, ,, -, ., /, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, :, ;, <, =, >, ... 128226 more items of 128256]
 tokenizer.ggml.token_type: [array] [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ... 128226 more items of 128256]
-tokenizer.ggml.merges: [array] [ġ ġ, ġ ġġġ, ġġ ġġ, ġġġ ġ, i n, ġ t, ġ ġġġġġġġ, ġġ ġġġġġġ, ġġġġ ġġġġ, ġġġ ġġġġġ, ġġġġġġġ ġ, ġġġġġ ġġġ, ġġġġġġ ġġ, e r, ġ ġġ, ġġ ġ, o n, ġ a, r e, a t, s t, e n, o r, ġ th, ġt h, ċ ċ, ġ c, l e, ġ s, i t, ... 280117 more items of 280147]
+tokenizer.ggml.merges: [array] [Ġ Ġ, Ġ ĠĠĠ, ĠĠ ĠĠ, ĠĠĠ Ġ, i n, Ġ t, Ġ ĠĠĠĠĠĠĠ, ĠĠ ĠĠĠĠĠĠ, ĠĠĠĠ ĠĠĠĠ, ĠĠĠ ĠĠĠĠĠ, ĠĠĠĠĠĠĠ Ġ, ĠĠĠĠĠ ĠĠĠ, ĠĠĠĠĠĠ ĠĠ, e r, Ġ ĠĠ, ĠĠ Ġ, o n, Ġ a, r e, a t, s t, e n, o r, Ġ th, Ġt h, Ċ Ċ, Ġ c, l e, Ġ s, i t, ... 280117 more items of 280147]
 tokenizer.ggml.bos_token_id: [uint32] 128000
-tokenizer.ggml.eos_token_id: [uint32] 128001
+tokenizer.ggml.eos_token_id: [uint32] 128009
+tokenizer.chat_template: [string] {{- bos_token }}
+{%- if custom_tools is defined %}
+    {%- set tools = custom_tools %}
+{%- endif %}
+{%- if not tools_in_user_message is defined %}
+    {%- set tools_in_user_message = true %}
+{%- endif %}
+{%- if not date_string is defined %}
+    {%- if strftime_now is defined %}
+        {%- set date_string = strftime_now("%d %b %Y") %}
+    {%- else %}
+        {%- set date_string = "26 Jul 2024" %}
+    {%- endif %}
+{%- endif %}
+{%- if not tools is defined %}
+    {%- set tools = none %}
+{%- endif %}
+
+{#- This block extracts the system message, so we can slot it into the right place. #}
+{%- if messages[0]['role'] == 'system' %}
+    {%- set system_message = messages[0]['content']|trim %}
+    {%- set messages = messages[1:] %}
+{%- else %}
+    {%- set system_message = "" %}
+{%- endif %}
+
+{#- System message #}
+{{- "<|start_header_id|>system<|end_header_id|>\n\n" }}
+{%- if tools is not none %}
+    {{- "Environment: ipython\n" }}
+{%- endif %}
+{{- "Cutting Knowledge Date: December 2023\n" }}
+{{- "Today Date: " + date_string + "\n\n" }}
+{%- if tools is not none and not tools_in_user_message %}
+    {{- "You have access to the following functions. To call a function, please respond with JSON for a function call." }}
+    {{- 'Respond in the format {"name": function name, "parameters": dictionary of argument name and its value}.' }}
+    {{- "Do not use variables.\n\n" }}
+    {%- for t in tools %}
+        {{- t | tojson(indent=4) }}
+        {{- "\n\n" }}
+    {%- endfor %}
+{%- endif %}
+{{- system_message }}
+{{- "<|eot_id|>" }}
+
+{#- Custom tools are passed in a user message with some extra guidance #}
+{%- if tools_in_user_message and not tools is none %}
+    {#- Extract the first user message so we can plug it in here #}
+    {%- if messages | length != 0 %}
+        {%- set first_user_message = messages[0]['content']|trim %}
+        {%- set messages = messages[1:] %}
+    {%- else %}
+        {{- raise_exception("Cannot put tools in the first user message when there's no first user message!") }}
+{%- endif %}
+    {{- '<|start_header_id|>user<|end_header_id|>\n\n' -}}
+    {{- "Given the following functions, please respond with a JSON for a function call " }}
+    {{- "with its proper arguments that best answers the given prompt.\n\n" }}
+    {{- 'Respond in the format {"name": function name, "parameters": dictionary of argument name and its value}.' }}
+    {{- "Do not use variables.\n\n" }}
+    {%- for t in tools %}
+        {{- t | tojson(indent=4) }}
+        {{- "\n\n" }}
+    {%- endfor %}
+    {{- first_user_message + "<|eot_id|>"}}
+{%- endif %}
+
+{%- for message in messages %}
+    {%- if not (message.role == 'ipython' or message.role == 'tool' or 'tool_calls' in message) %}
+        {{- '<|start_header_id|>' + message['role'] + '<|end_header_id|>\n\n'+ message['content'] | trim + '<|eot_id|>' }}
+    {%- elif 'tool_calls' in message %}
+        {%- if not message.tool_calls|length == 1 %}
+            {{- raise_exception("This model only supports single tool-calls at once!") }}
+        {%- endif %}
+        {%- set tool_call = message.tool_calls[0].function %}
+        {{- '<|start_header_id|>assistant<|end_header_id|>\n\n' -}}
+        {{- '{"name": "' + tool_call.name + '", ' }}
+        {{- '"parameters": ' }}
+        {{- tool_call.arguments | tojson }}
+        {{- "}" }}
+        {{- "<|eot_id|>" }}
+    {%- elif message.role == "tool" or message.role == "ipython" %}
+        {{- "<|start_header_id|>ipython<|end_header_id|>\n\n" }}
+        {%- if message.content is mapping or message.content is iterable %}
+            {{- message.content | tojson }}
+        {%- else %}
+            {{- message.content }}
+        {%- endif %}
+        {{- "<|eot_id|>" }}
+    {%- endif %}
+{%- endfor %}
+{%- if add_generation_prompt %}
+    {{- '<|start_header_id|>assistant<|end_header_id|>\n\n' }}
+{%- endif %}
+
 general.quantization_version: [uint32] 2
-kv-metadata ends 7818648 
-rope_freqs.weight @7827328, 32 weights, dims [32], 128 bytes
-token_embd.weight @7827456, 262668288 weights, dims [2048,128256], 215470080 bytes
-blk.0.attn_norm.weight @223297536, 2048 weights, dims [2048], 8192 bytes
-blk.0.ffn_down.weight @223305728, 16777216 weights, dims [8192,2048], 13762560 bytes
-blk.0.ffn_gate.weight @237068288, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.0.ffn_up.weight @246505472, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.0.ffn_norm.weight @255942656, 2048 weights, dims [2048], 8192 bytes
-blk.0.attn_k.weight @255950848, 1048576 weights, dims [2048,512], 589824 bytes
-blk.0.attn_output.weight @256540672, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.0.attn_q.weight @258899968, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.0.attn_v.weight @261259264, 1048576 weights, dims [2048,512], 860160 bytes
-blk.1.attn_norm.weight @262119424, 2048 weights, dims [2048], 8192 bytes
-blk.1.ffn_down.weight @262127616, 16777216 weights, dims [8192,2048], 13762560 bytes
-blk.1.ffn_gate.weight @275890176, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.1.ffn_up.weight @285327360, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.1.ffn_norm.weight @294764544, 2048 weights, dims [2048], 8192 bytes
-blk.1.attn_k.weight @294772736, 1048576 weights, dims [2048,512], 589824 bytes
-blk.1.attn_output.weight @295362560, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.1.attn_q.weight @297721856, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.1.attn_v.weight @300081152, 1048576 weights, dims [2048,512], 860160 bytes
-blk.10.attn_norm.weight @300941312, 2048 weights, dims [2048], 8192 bytes
-blk.10.ffn_down.weight @300949504, 16777216 weights, dims [8192,2048], 9437184 bytes
-blk.10.ffn_gate.weight @310386688, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.10.ffn_up.weight @319823872, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.10.ffn_norm.weight @329261056, 2048 weights, dims [2048], 8192 bytes
-blk.10.attn_k.weight @329269248, 1048576 weights, dims [2048,512], 589824 bytes
-blk.10.attn_output.weight @329859072, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.10.attn_q.weight @332218368, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.10.attn_v.weight @334577664, 1048576 weights, dims [2048,512], 589824 bytes
-blk.11.attn_norm.weight @335167488, 2048 weights, dims [2048], 8192 bytes
-blk.11.ffn_down.weight @335175680, 16777216 weights, dims [8192,2048], 9437184 bytes
-blk.11.ffn_gate.weight @344612864, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.11.ffn_up.weight @354050048, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.11.ffn_norm.weight @363487232, 2048 weights, dims [2048], 8192 bytes
-blk.11.attn_k.weight @363495424, 1048576 weights, dims [2048,512], 589824 bytes
-blk.11.attn_output.weight @364085248, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.11.attn_q.weight @366444544, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.11.attn_v.weight @368803840, 1048576 weights, dims [2048,512], 589824 bytes
-blk.12.attn_norm.weight @369393664, 2048 weights, dims [2048], 8192 bytes
-blk.12.ffn_down.weight @369401856, 16777216 weights, dims [8192,2048], 13762560 bytes
-blk.12.ffn_gate.weight @383164416, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.12.ffn_up.weight @392601600, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.12.ffn_norm.weight @402038784, 2048 weights, dims [2048], 8192 bytes
-blk.12.attn_k.weight @402046976, 1048576 weights, dims [2048,512], 589824 bytes
-blk.12.attn_output.weight @402636800, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.12.attn_q.weight @404996096, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.12.attn_v.weight @407355392, 1048576 weights, dims [2048,512], 860160 bytes
-blk.13.attn_norm.weight @408215552, 2048 weights, dims [2048], 8192 bytes
-blk.13.ffn_down.weight @408223744, 16777216 weights, dims [8192,2048], 9437184 bytes
-blk.13.ffn_gate.weight @417660928, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.13.ffn_up.weight @427098112, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.13.ffn_norm.weight @436535296, 2048 weights, dims [2048], 8192 bytes
-blk.13.attn_k.weight @436543488, 1048576 weights, dims [2048,512], 589824 bytes
-blk.13.attn_output.weight @437133312, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.13.attn_q.weight @439492608, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.13.attn_v.weight @441851904, 1048576 weights, dims [2048,512], 589824 bytes
-blk.14.attn_norm.weight @442441728, 2048 weights, dims [2048], 8192 bytes
-blk.14.ffn_down.weight @442449920, 16777216 weights, dims [8192,2048], 9437184 bytes
-blk.14.ffn_gate.weight @451887104, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.14.ffn_up.weight @461324288, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.14.ffn_norm.weight @470761472, 2048 weights, dims [2048], 8192 bytes
-blk.14.attn_k.weight @470769664, 1048576 weights, dims [2048,512], 589824 bytes
-blk.14.attn_output.weight @471359488, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.14.attn_q.weight @473718784, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.14.attn_v.weight @476078080, 1048576 weights, dims [2048,512], 589824 bytes
-blk.15.attn_norm.weight @476667904, 2048 weights, dims [2048], 8192 bytes
-blk.15.ffn_down.weight @476676096, 16777216 weights, dims [8192,2048], 13762560 bytes
-blk.15.ffn_gate.weight @490438656, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.15.ffn_up.weight @499875840, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.15.ffn_norm.weight @509313024, 2048 weights, dims [2048], 8192 bytes
-blk.15.attn_k.weight @509321216, 1048576 weights, dims [2048,512], 589824 bytes
-blk.15.attn_output.weight @509911040, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.15.attn_q.weight @512270336, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.15.attn_v.weight @514629632, 1048576 weights, dims [2048,512], 860160 bytes
-blk.2.attn_norm.weight @515489792, 2048 weights, dims [2048], 8192 bytes
-blk.2.ffn_down.weight @515497984, 16777216 weights, dims [8192,2048], 9437184 bytes
-blk.2.ffn_gate.weight @524935168, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.2.ffn_up.weight @534372352, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.2.ffn_norm.weight @543809536, 2048 weights, dims [2048], 8192 bytes
-blk.2.attn_k.weight @543817728, 1048576 weights, dims [2048,512], 589824 bytes
-blk.2.attn_output.weight @544407552, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.2.attn_q.weight @546766848, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.2.attn_v.weight @549126144, 1048576 weights, dims [2048,512], 589824 bytes
-blk.3.attn_norm.weight @549715968, 2048 weights, dims [2048], 8192 bytes
-blk.3.ffn_down.weight @549724160, 16777216 weights, dims [8192,2048], 9437184 bytes
-blk.3.ffn_gate.weight @559161344, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.3.ffn_up.weight @568598528, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.3.ffn_norm.weight @578035712, 2048 weights, dims [2048], 8192 bytes
-blk.3.attn_k.weight @578043904, 1048576 weights, dims [2048,512], 589824 bytes
-blk.3.attn_output.weight @578633728, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.3.attn_q.weight @580993024, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.3.attn_v.weight @583352320, 1048576 weights, dims [2048,512], 589824 bytes
-blk.4.attn_norm.weight @583942144, 2048 weights, dims [2048], 8192 bytes
-blk.4.ffn_down.weight @583950336, 16777216 weights, dims [8192,2048], 13762560 bytes
-blk.4.ffn_gate.weight @597712896, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.4.ffn_up.weight @607150080, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.4.ffn_norm.weight @616587264, 2048 weights, dims [2048], 8192 bytes
-blk.4.attn_k.weight @616595456, 1048576 weights, dims [2048,512], 589824 bytes
-blk.4.attn_output.weight @617185280, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.4.attn_q.weight @619544576, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.4.attn_v.weight @621903872, 1048576 weights, dims [2048,512], 860160 bytes
-blk.5.attn_norm.weight @622764032, 2048 weights, dims [2048], 8192 bytes
-blk.5.ffn_down.weight @622772224, 16777216 weights, dims [8192,2048], 9437184 bytes
-blk.5.ffn_gate.weight @632209408, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.5.ffn_up.weight @641646592, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.5.ffn_norm.weight @651083776, 2048 weights, dims [2048], 8192 bytes
-blk.5.attn_k.weight @651091968, 1048576 weights, dims [2048,512], 589824 bytes
-blk.5.attn_output.weight @651681792, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.5.attn_q.weight @654041088, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.5.attn_v.weight @656400384, 1048576 weights, dims [2048,512], 589824 bytes
-blk.6.attn_norm.weight @656990208, 2048 weights, dims [2048], 8192 bytes
-blk.6.ffn_down.weight @656998400, 16777216 weights, dims [8192,2048], 9437184 bytes
-blk.6.ffn_gate.weight @666435584, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.6.ffn_up.weight @675872768, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.6.ffn_norm.weight @685309952, 2048 weights, dims [2048], 8192 bytes
-blk.6.attn_k.weight @685318144, 1048576 weights, dims [2048,512], 589824 bytes
-blk.6.attn_output.weight @685907968, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.6.attn_q.weight @688267264, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.6.attn_v.weight @690626560, 1048576 weights, dims [2048,512], 589824 bytes
-blk.7.attn_norm.weight @691216384, 2048 weights, dims [2048], 8192 bytes
-blk.7.ffn_down.weight @691224576, 16777216 weights, dims [8192,2048], 13762560 bytes
-blk.7.ffn_gate.weight @704987136, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.7.ffn_up.weight @714424320, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.7.ffn_norm.weight @723861504, 2048 weights, dims [2048], 8192 bytes
-blk.7.attn_k.weight @723869696, 1048576 weights, dims [2048,512], 589824 bytes
-blk.7.attn_output.weight @724459520, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.7.attn_q.weight @726818816, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.7.attn_v.weight @729178112, 1048576 weights, dims [2048,512], 860160 bytes
-blk.8.attn_norm.weight @730038272, 2048 weights, dims [2048], 8192 bytes
-blk.8.ffn_down.weight @730046464, 16777216 weights, dims [8192,2048], 13762560 bytes
-blk.8.ffn_gate.weight @743809024, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.8.ffn_up.weight @753246208, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.8.ffn_norm.weight @762683392, 2048 weights, dims [2048], 8192 bytes
-blk.8.attn_k.weight @762691584, 1048576 weights, dims [2048,512], 589824 bytes
-blk.8.attn_output.weight @763281408, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.8.attn_q.weight @765640704, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.8.attn_v.weight @768000000, 1048576 weights, dims [2048,512], 860160 bytes
-blk.9.attn_norm.weight @768860160, 2048 weights, dims [2048], 8192 bytes
-blk.9.ffn_down.weight @768868352, 16777216 weights, dims [8192,2048], 13762560 bytes
-blk.9.ffn_gate.weight @782630912, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.9.ffn_up.weight @792068096, 16777216 weights, dims [2048,8192], 9437184 bytes
-blk.9.ffn_norm.weight @801505280, 2048 weights, dims [2048], 8192 bytes
-blk.9.attn_k.weight @801513472, 1048576 weights, dims [2048,512], 589824 bytes
-blk.9.attn_output.weight @802103296, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.9.attn_q.weight @804462592, 4194304 weights, dims [2048,2048], 2359296 bytes
-blk.9.attn_v.weight @806821888, 1048576 weights, dims [2048,512], 860160 bytes
-output_norm.weight @807682048, 2048 weights, dims [2048], 8192 bytes
-data off 7827328 
-gguf-tools.info.parameters: 1.24b
+quantize.imatrix.file: [string] /models_out/Llama-3.2-1B-Instruct-GGUF/Llama-3.2-1B-Instruct.imatrix
+quantize.imatrix.dataset: [string] /training_dir/calibration_datav3.txt
+quantize.imatrix.entries_count: [int32] 112
+quantize.imatrix.chunks_count: [int32] 125
+kv-metadata ends 7822851 
+rope_freqs.weight @7831552, 32 weights, dims [32], 128 bytes
+token_embd.weight @7831680, 262668288 weights, dims [2048,128256], 215470080 bytes
+blk.0.attn_norm.weight @223301760, 2048 weights, dims [2048], 8192 bytes
+blk.0.ffn_down.weight @223309952, 16777216 weights, dims [8192,2048], 10485760 bytes
+blk.0.ffn_gate.weight @233795712, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.0.ffn_up.weight @243232896, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.0.ffn_norm.weight @252670080, 2048 weights, dims [2048], 8192 bytes
+blk.0.attn_k.weight @252678272, 1048576 weights, dims [2048,512], 589824 bytes
+blk.0.attn_output.weight @253268096, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.0.attn_q.weight @255627392, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.0.attn_v.weight @257986688, 1048576 weights, dims [2048,512], 589824 bytes
+blk.1.attn_norm.weight @258576512, 2048 weights, dims [2048], 8192 bytes
+blk.1.ffn_down.weight @258584704, 16777216 weights, dims [8192,2048], 10485760 bytes
+blk.1.ffn_gate.weight @269070464, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.1.ffn_up.weight @278507648, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.1.ffn_norm.weight @287944832, 2048 weights, dims [2048], 8192 bytes
+blk.1.attn_k.weight @287953024, 1048576 weights, dims [2048,512], 589824 bytes
+blk.1.attn_output.weight @288542848, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.1.attn_q.weight @290902144, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.1.attn_v.weight @293261440, 1048576 weights, dims [2048,512], 589824 bytes
+blk.10.attn_norm.weight @293851264, 2048 weights, dims [2048], 8192 bytes
+blk.10.ffn_down.weight @293859456, 16777216 weights, dims [8192,2048], 9437184 bytes
+blk.10.ffn_gate.weight @303296640, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.10.ffn_up.weight @312733824, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.10.ffn_norm.weight @322171008, 2048 weights, dims [2048], 8192 bytes
+blk.10.attn_k.weight @322179200, 1048576 weights, dims [2048,512], 589824 bytes
+blk.10.attn_output.weight @322769024, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.10.attn_q.weight @325128320, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.10.attn_v.weight @327487616, 1048576 weights, dims [2048,512], 589824 bytes
+blk.11.attn_norm.weight @328077440, 2048 weights, dims [2048], 8192 bytes
+blk.11.ffn_down.weight @328085632, 16777216 weights, dims [8192,2048], 9437184 bytes
+blk.11.ffn_gate.weight @337522816, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.11.ffn_up.weight @346960000, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.11.ffn_norm.weight @356397184, 2048 weights, dims [2048], 8192 bytes
+blk.11.attn_k.weight @356405376, 1048576 weights, dims [2048,512], 589824 bytes
+blk.11.attn_output.weight @356995200, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.11.attn_q.weight @359354496, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.11.attn_v.weight @361713792, 1048576 weights, dims [2048,512], 589824 bytes
+blk.12.attn_norm.weight @362303616, 2048 weights, dims [2048], 8192 bytes
+blk.12.ffn_down.weight @362311808, 16777216 weights, dims [8192,2048], 9437184 bytes
+blk.12.ffn_gate.weight @371748992, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.12.ffn_up.weight @381186176, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.12.ffn_norm.weight @390623360, 2048 weights, dims [2048], 8192 bytes
+blk.12.attn_k.weight @390631552, 1048576 weights, dims [2048,512], 589824 bytes
+blk.12.attn_output.weight @391221376, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.12.attn_q.weight @393580672, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.12.attn_v.weight @395939968, 1048576 weights, dims [2048,512], 589824 bytes
+blk.13.attn_norm.weight @396529792, 2048 weights, dims [2048], 8192 bytes
+blk.13.ffn_down.weight @396537984, 16777216 weights, dims [8192,2048], 9437184 bytes
+blk.13.ffn_gate.weight @405975168, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.13.ffn_up.weight @415412352, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.13.ffn_norm.weight @424849536, 2048 weights, dims [2048], 8192 bytes
+blk.13.attn_k.weight @424857728, 1048576 weights, dims [2048,512], 589824 bytes
+blk.13.attn_output.weight @425447552, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.13.attn_q.weight @427806848, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.13.attn_v.weight @430166144, 1048576 weights, dims [2048,512], 589824 bytes
+blk.14.attn_norm.weight @430755968, 2048 weights, dims [2048], 8192 bytes
+blk.14.ffn_down.weight @430764160, 16777216 weights, dims [8192,2048], 9437184 bytes
+blk.14.ffn_gate.weight @440201344, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.14.ffn_up.weight @449638528, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.14.ffn_norm.weight @459075712, 2048 weights, dims [2048], 8192 bytes
+blk.14.attn_k.weight @459083904, 1048576 weights, dims [2048,512], 589824 bytes
+blk.14.attn_output.weight @459673728, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.14.attn_q.weight @462033024, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.14.attn_v.weight @464392320, 1048576 weights, dims [2048,512], 589824 bytes
+blk.15.attn_norm.weight @464982144, 2048 weights, dims [2048], 8192 bytes
+blk.15.ffn_down.weight @464990336, 16777216 weights, dims [8192,2048], 9437184 bytes
+blk.15.ffn_gate.weight @474427520, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.15.ffn_up.weight @483864704, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.15.ffn_norm.weight @493301888, 2048 weights, dims [2048], 8192 bytes
+blk.15.attn_k.weight @493310080, 1048576 weights, dims [2048,512], 589824 bytes
+blk.15.attn_output.weight @493899904, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.15.attn_q.weight @496259200, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.15.attn_v.weight @498618496, 1048576 weights, dims [2048,512], 589824 bytes
+blk.2.attn_norm.weight @499208320, 2048 weights, dims [2048], 8192 bytes
+blk.2.ffn_down.weight @499216512, 16777216 weights, dims [8192,2048], 9437184 bytes
+blk.2.ffn_gate.weight @508653696, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.2.ffn_up.weight @518090880, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.2.ffn_norm.weight @527528064, 2048 weights, dims [2048], 8192 bytes
+blk.2.attn_k.weight @527536256, 1048576 weights, dims [2048,512], 589824 bytes
+blk.2.attn_output.weight @528126080, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.2.attn_q.weight @530485376, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.2.attn_v.weight @532844672, 1048576 weights, dims [2048,512], 589824 bytes
+blk.3.attn_norm.weight @533434496, 2048 weights, dims [2048], 8192 bytes
+blk.3.ffn_down.weight @533442688, 16777216 weights, dims [8192,2048], 9437184 bytes
+blk.3.ffn_gate.weight @542879872, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.3.ffn_up.weight @552317056, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.3.ffn_norm.weight @561754240, 2048 weights, dims [2048], 8192 bytes
+blk.3.attn_k.weight @561762432, 1048576 weights, dims [2048,512], 589824 bytes
+blk.3.attn_output.weight @562352256, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.3.attn_q.weight @564711552, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.3.attn_v.weight @567070848, 1048576 weights, dims [2048,512], 589824 bytes
+blk.4.attn_norm.weight @567660672, 2048 weights, dims [2048], 8192 bytes
+blk.4.ffn_down.weight @567668864, 16777216 weights, dims [8192,2048], 9437184 bytes
+blk.4.ffn_gate.weight @577106048, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.4.ffn_up.weight @586543232, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.4.ffn_norm.weight @595980416, 2048 weights, dims [2048], 8192 bytes
+blk.4.attn_k.weight @595988608, 1048576 weights, dims [2048,512], 589824 bytes
+blk.4.attn_output.weight @596578432, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.4.attn_q.weight @598937728, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.4.attn_v.weight @601297024, 1048576 weights, dims [2048,512], 589824 bytes
+blk.5.attn_norm.weight @601886848, 2048 weights, dims [2048], 8192 bytes
+blk.5.ffn_down.weight @601895040, 16777216 weights, dims [8192,2048], 9437184 bytes
+blk.5.ffn_gate.weight @611332224, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.5.ffn_up.weight @620769408, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.5.ffn_norm.weight @630206592, 2048 weights, dims [2048], 8192 bytes
+blk.5.attn_k.weight @630214784, 1048576 weights, dims [2048,512], 589824 bytes
+blk.5.attn_output.weight @630804608, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.5.attn_q.weight @633163904, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.5.attn_v.weight @635523200, 1048576 weights, dims [2048,512], 589824 bytes
+blk.6.attn_norm.weight @636113024, 2048 weights, dims [2048], 8192 bytes
+blk.6.ffn_down.weight @636121216, 16777216 weights, dims [8192,2048], 9437184 bytes
+blk.6.ffn_gate.weight @645558400, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.6.ffn_up.weight @654995584, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.6.ffn_norm.weight @664432768, 2048 weights, dims [2048], 8192 bytes
+blk.6.attn_k.weight @664440960, 1048576 weights, dims [2048,512], 589824 bytes
+blk.6.attn_output.weight @665030784, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.6.attn_q.weight @667390080, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.6.attn_v.weight @669749376, 1048576 weights, dims [2048,512], 589824 bytes
+blk.7.attn_norm.weight @670339200, 2048 weights, dims [2048], 8192 bytes
+blk.7.ffn_down.weight @670347392, 16777216 weights, dims [8192,2048], 9437184 bytes
+blk.7.ffn_gate.weight @679784576, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.7.ffn_up.weight @689221760, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.7.ffn_norm.weight @698658944, 2048 weights, dims [2048], 8192 bytes
+blk.7.attn_k.weight @698667136, 1048576 weights, dims [2048,512], 589824 bytes
+blk.7.attn_output.weight @699256960, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.7.attn_q.weight @701616256, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.7.attn_v.weight @703975552, 1048576 weights, dims [2048,512], 589824 bytes
+blk.8.attn_norm.weight @704565376, 2048 weights, dims [2048], 8192 bytes
+blk.8.ffn_down.weight @704573568, 16777216 weights, dims [8192,2048], 9437184 bytes
+blk.8.ffn_gate.weight @714010752, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.8.ffn_up.weight @723447936, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.8.ffn_norm.weight @732885120, 2048 weights, dims [2048], 8192 bytes
+blk.8.attn_k.weight @732893312, 1048576 weights, dims [2048,512], 589824 bytes
+blk.8.attn_output.weight @733483136, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.8.attn_q.weight @735842432, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.8.attn_v.weight @738201728, 1048576 weights, dims [2048,512], 589824 bytes
+blk.9.attn_norm.weight @738791552, 2048 weights, dims [2048], 8192 bytes
+blk.9.ffn_down.weight @738799744, 16777216 weights, dims [8192,2048], 9437184 bytes
+blk.9.ffn_gate.weight @748236928, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.9.ffn_up.weight @757674112, 16777216 weights, dims [2048,8192], 9437184 bytes
+blk.9.ffn_norm.weight @767111296, 2048 weights, dims [2048], 8192 bytes
+blk.9.attn_k.weight @767119488, 1048576 weights, dims [2048,512], 589824 bytes
+blk.9.attn_output.weight @767709312, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.9.attn_q.weight @770068608, 4194304 weights, dims [2048,2048], 2359296 bytes
+blk.9.attn_v.weight @772427904, 1048576 weights, dims [2048,512], 589824 bytes
+output_norm.weight @773017728, 2048 weights, dims [2048], 8192 bytes
+data off 7831552 
+gguf-tools.info.parameters: 1.24B
