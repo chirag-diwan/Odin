@@ -2,11 +2,6 @@
 
 Odin is a CPU-optimized inference engine designed for edge hardware. The primary objective is to maximize inference throughput on resource-constrained devices using quantized models (GGUF) with minimal accuracy degradation.
 
-## Current State
-
-**Alpha / Active Development**
-Odin currently supports the **Qwen2** architecture class. Support for additional architectures is actively being implemented.
-
 ## Performance Metrics
 
 To generate a metric-logging build of the engine:
@@ -81,7 +76,7 @@ make -j$(nproc)
 Odin requires model weights in the GGUF format.
 
 ```bash
-./odin --model "/path/to/qwen2-model.gguf" --thread $(nproc)
+./odin --model "/path/to/qwen2-model.gguf" --thread $(nproc) --tokeniser-json "/path/to/qwen-tokeniser/json"
 
 ```
 
@@ -91,5 +86,11 @@ Odin requires model weights in the GGUF format.
 | --- | --- |
 | `--model` | **Required.** Absolute or relative path to the `.gguf` model file. |
 | `--thread` | **Optional.** Maximum number of threads allocated to the backend for computation. |
+| `--tokeniser-json` | **Required.** The path to tokeniser.json for the specific model you are using. |
 
-```
+
+## Current State
+
+**Alpha / Active Development**
+Odin currently supports the **Qwen2** architecture class. Support for additional architectures is actively being implemented.
+Support for **LLama** architecture is being developed currently
