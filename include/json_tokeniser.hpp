@@ -16,6 +16,7 @@
 
 using namespace simdjson;
 
+
 pcre2_code* compile_regex(const std::string_view& regex){
   int errornumber;
   PCRE2_SIZE erroroffset;
@@ -37,6 +38,7 @@ pcre2_code* compile_regex(const std::string_view& regex){
   }
   return comp_regex;
 }
+
 
 class BPETokeniser{
   protected:
@@ -227,10 +229,10 @@ class BPETokeniser{
       pcre2_match_data_free(match_data);
 
       match_data = pcre2_match_data_create_from_pattern(pre_tok_regex, NULL);
-      start_offset = 0;
 
       std::vector<std::string_view> chunks;
       for(const auto& raw_prompt : special_seprate_tokens){
+        start_offset = 0;
         if(special_tokens.contains_key(raw_prompt)){
           chunks.push_back(raw_prompt);
           continue;
