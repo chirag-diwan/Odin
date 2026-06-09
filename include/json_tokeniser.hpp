@@ -16,16 +16,13 @@
 
 using namespace simdjson;
 
-
 pcre2_code* compile_regex(const std::string_view& regex){
   int errornumber;
   PCRE2_SIZE erroroffset;
 
-  auto regex_str = std::string(regex.data() , regex.size());
-
   auto comp_regex = pcre2_compile_8(
-      reinterpret_cast<PCRE2_SPTR>(regex_str.c_str()),
-      PCRE2_ZERO_TERMINATED,
+      reinterpret_cast<PCRE2_SPTR>(regex.data()),
+      regex.size(),
       PCRE2_UTF | PCRE2_UCP, 
       &errornumber,
       &erroroffset,
@@ -36,11 +33,29 @@ pcre2_code* compile_regex(const std::string_view& regex){
     Log(ERROR , "PCRE2 compilation failed.");
     return nullptr; 
   }
+
+  int jit_result = pcre2_jit_compile(
+      comp_regex,
+      PCRE2_JIT_COMPLETE
+      );
+
+  if (jit_result != 0) {
+    Log(WARN, "JIT compilation failed:", jit_result);
+  }
+
+  return comp_regex;
+
   return comp_regex;
 }
 
 
 class BPETokeniser{
+  private:
+    std::vector<std::string_view> chunks;
+    std::vector<std::string_view> special_seprate_tokens;
+    std::vector<uint32_t> bytes;
+
+
   protected:
     TokeniserConfig config;
     PreTokeniser split_tokeniser;
@@ -49,16 +64,14 @@ class BPETokeniser{
     const padded_string json;
 
     bidirectional_map<std::string_view, uint32_t> vocab;
-
-  public:
     bidirectional_map<std::string_view, uint32_t> special_tokens;
-  private:
-
     unidirectional_map<uint64_t, merge_rank_result> merges;
 
     pcre2_code* pre_tok_regex;
     pcre2_code* special_tok_regex;
 
+    pcre2_jit_stack* jit_stack;
+    pcre2_match_context* match_context;
 
     std::vector<std::string> byte_to_unicode_table;
     uint8_t unicode_to_byte_table[65];
@@ -104,10 +117,7 @@ class BPETokeniser{
       return (static_cast<uint64_t>(first) << 32) ^ static_cast<uint64_t>(second);
     }
 
-  public:
-    BPETokeniser(const std::string& tokeniser_json) : json(padded_string::load(tokeniser_json)) {
-      auto doc = parser.iterate(json);
-
+    void init_maps(simdjson_result<ondemand::document>& doc){
       auto added_token = doc["added_tokens"]->get_array();
       size_t added_token_size = added_token->count_elements();
       special_tokens = bidirectional_map<std::string_view, uint32_t>(added_token_size);
@@ -121,17 +131,10 @@ class BPETokeniser{
       size_t merges_size = merges_array->count_elements();
       merges = unidirectional_map<uint64_t , merge_rank_result>(merges_size);
 
-      //Re iterate
-      auto doc_reinit = parser.iterate(json);
+    }
 
-      added_token = doc_reinit["added_tokens"]->get_array();
-      for(auto obj : added_token){
-        uint32_t id = obj["id"]->get_uint32();
-        std::string_view token = obj["content"]->get_string();
-        special_tokens.insert(token, id);
-      }
-
-      auto pretokenizers = doc_reinit["pre_tokenizer"]["pretokenizers"];
+    void init_pre_tokeniser(simdjson_result<ondemand::document>& doc){
+      auto pretokenizers = doc["pre_tokenizer"]["pretokenizers"];
       for(auto obj : pretokenizers){
         std::string_view type = obj["type"]->get_string();
         if(type == "Split"){
@@ -143,17 +146,30 @@ class BPETokeniser{
           Log(ERROR , "PreTokeniser type Split not found");
         }
       }
+    }
+
+    void fill_added_tokens(simdjson_result<ondemand::document>& doc){
+      auto added_token = doc["added_tokens"]->get_array();
+      for(auto obj : added_token){
+        uint32_t id = obj["id"]->get_uint32();
+        std::string_view token = obj["content"]->get_string();
+        special_tokens.insert(token, id);
+      }
+    }
 
 
-      vocab_obj = doc_reinit["model"]["vocab"].get_object();
+    void fill_vocab_tokens(simdjson_result<ondemand::document>& doc){
+      auto vocab_obj = doc["model"]["vocab"].get_object();
       for (auto field : vocab_obj) {
         std::string_view key = field->unescaped_key();
         uint32_t value = uint32_t(field.value());
         vocab.insert(key, value);
       }
+    }
 
 
-      merges_array = doc_reinit["model"]["merges"]->get_array();
+    void fill_merges_tokens(simdjson_result<ondemand::document>& doc){
+      auto merges_array = doc["model"]["merges"]->get_array();
       size_t i = 0;
       for(auto element : merges_array){
         std::string_view merge_pair = element.get_string();
@@ -185,12 +201,13 @@ class BPETokeniser{
           Log(ERROR , "value not found for key" , result);
           continue;
         }
+
         merges.insert(key , { .merge_rank = static_cast<uint32_t>(i) , .merge_result = *merge_result });
         i++;
       }
+    }
 
-      pre_tok_regex = compile_regex(split_tokeniser.regex);
-
+    std::string create_search_regex(){
       std::string special_tokens_str;
       special_tokens_str.reserve(special_tokens.size()*10);
 
@@ -202,42 +219,65 @@ class BPETokeniser{
       }
       special_tokens_str.pop_back();
       special_tokens_str.push_back(')');
+      return special_tokens_str;
+    }
 
+  public:
+    BPETokeniser(const std::string& tokeniser_json) : json(padded_string::load(tokeniser_json)) {
+      auto doc = parser.iterate(json);
+      init_maps(doc);
 
-      special_tok_regex = compile_regex(special_tokens_str);
+      //Re iterate
+      auto doc_reinit = parser.iterate(json);
 
+      fill_added_tokens(doc_reinit);
+      init_pre_tokeniser(doc_reinit);
+      fill_vocab_tokens(doc_reinit);
+      fill_merges_tokens(doc_reinit);
+
+      pre_tok_regex = compile_regex(split_tokeniser.regex);
+      special_tok_regex = compile_regex(create_search_regex());
 
       generate_byte_to_unicode();
       generate_unicode_to_byte();
+
+      jit_stack = pcre2_jit_stack_create_8(32*1024, 512*1024, nullptr);
+      match_context = pcre2_match_context_create_8(nullptr);
+      pcre2_jit_stack_assign_8(match_context, nullptr , jit_stack);
     }
 
     void Tokenise(const std::string& prompt_str , std::vector<uint32_t>& tokens){
       std::string_view prompt = prompt_str;
 
-      std::vector<std::string_view> special_seprate_tokens;
+      special_seprate_tokens.clear();
 
       pcre2_match_data* match_data = pcre2_match_data_create_from_pattern(special_tok_regex ,NULL);
       PCRE2_SIZE start_offset = 0;
 
-      while (pcre2_match(special_tok_regex, reinterpret_cast<PCRE2_SPTR>(prompt_str.c_str()), prompt.length(), start_offset, 0, match_data, NULL) >= 0) {
+      while (pcre2_jit_match_8(special_tok_regex, reinterpret_cast<PCRE2_SPTR>(prompt_str.c_str()), prompt.size(), start_offset, 0, match_data, match_context) >= 0) {
         PCRE2_SIZE* ovector = pcre2_get_ovector_pointer(match_data);
-        special_seprate_tokens.push_back(prompt.substr(start_offset, ovector[0] - start_offset));
-        special_seprate_tokens.push_back(prompt.substr(ovector[0], ovector[1] - ovector[0]));
+        special_seprate_tokens.emplace_back(prompt.substr(start_offset, ovector[0] - start_offset));
+        special_seprate_tokens.emplace_back(prompt.substr(ovector[0], ovector[1] - ovector[0]));
         start_offset = ovector[1]; 
+      }
+
+      if(start_offset < prompt.size()){
+        special_seprate_tokens.emplace_back(prompt.substr(start_offset, prompt.size() - start_offset));
       }
 
       pcre2_match_data_free(match_data);
 
       match_data = pcre2_match_data_create_from_pattern(pre_tok_regex, NULL);
 
-      std::vector<std::string_view> chunks;
+
+      chunks.clear();
       for(const auto& raw_prompt : special_seprate_tokens){
         start_offset = 0;
         if(special_tokens.contains_key(raw_prompt)){
           chunks.push_back(raw_prompt);
           continue;
         }
-        while (pcre2_match(pre_tok_regex, reinterpret_cast<PCRE2_SPTR>(raw_prompt.data()), raw_prompt.length(), start_offset, 0, match_data, NULL) >= 0) {
+        while (pcre2_jit_match_8(pre_tok_regex, reinterpret_cast<PCRE2_SPTR>(raw_prompt.data()), raw_prompt.size(), start_offset, 0, match_data, match_context) >= 0) {
           PCRE2_SIZE* ovector = pcre2_get_ovector_pointer(match_data);
 
           chunks.push_back(raw_prompt.substr(ovector[0], ovector[1] - ovector[0]));
@@ -253,8 +293,8 @@ class BPETokeniser{
           tokens.emplace_back(*special_tokens.getValueOf(chunk));
           continue;
         }
-        std::vector<uint32_t> bytes;
-        bytes.reserve(chunk.size());
+
+        bytes.clear();
 
         for (size_t i = 0; i < chunk.size(); i++) {
           uint8_t raw_byte = static_cast<uint8_t>(chunk[i]);
