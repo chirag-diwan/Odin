@@ -1,9 +1,9 @@
 #pragma once
 
-#include "logging.hpp"
-#include "types.hpp"
-#include "unidirectional_map.hpp"
-#include "bidirectional_map.hpp"
+#include "../logging.hpp"
+#include "../types.hpp"
+#include "../data_structures/unidirectional_map.hpp"
+#include "../data_structures/bidirectional_map.hpp"
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>

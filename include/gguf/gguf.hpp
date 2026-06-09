@@ -1,7 +1,7 @@
 #pragma once
 
-#include "./types.hpp"
-#include "./logging.hpp"
+#include "../types.hpp"
+#include "../logging.hpp"
 #include <cstring>
 #include <type_traits>
 

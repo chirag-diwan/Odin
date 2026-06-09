@@ -1,5 +1,5 @@
 #pragma once
-#include "errors.hpp"
+#include "../errors.hpp"
 #include <cstdint>
 #include <filesystem>
 #include <fstream>

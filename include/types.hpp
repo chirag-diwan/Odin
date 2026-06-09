@@ -1,6 +1,6 @@
 #pragma once
-#include "block.hpp"
-#include "errors.hpp"
+#include "./block.hpp"
+#include "./errors.hpp"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml.h"

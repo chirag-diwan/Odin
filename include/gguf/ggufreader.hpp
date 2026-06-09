@@ -1,8 +1,8 @@
 #pragma once
 
-#include "errors.hpp"
-#include "gguf.hpp"
-#include "types.hpp"
+#include "../errors.hpp"
+#include "./gguf.hpp"
+#include "../types.hpp"
 #include <cstdint>
 #include <fcntl.h>
 #include <string_view>

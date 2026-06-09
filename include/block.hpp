@@ -1,6 +1,6 @@
 #pragma once
 
-#include "logging.hpp"
+#include "./logging.hpp"
 #include <string>
 #include <string_view>
 

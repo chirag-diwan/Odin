@@ -1,12 +1,12 @@
 #pragma once
-#include "block.hpp"
-#include "forward.hpp"
+#include "./forward.hpp"
+#include "../block.hpp"
+#include "../data_structures/span.hpp"
+#include "../logging.hpp"
+#include "../types.hpp"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml.h"
-#include "logging.hpp"
-#include "span.hpp"
-#include "types.hpp"
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>

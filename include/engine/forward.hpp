@@ -1,8 +1,8 @@
 #pragma  once
 
-#include "block.hpp"
+#include "../block.hpp"
 #include "ggml.h"
-#include "types.hpp"
+#include "../types.hpp"
 #include <string_view>
 
 ggml_tensor* forward(

@@ -2,10 +2,10 @@
 
 #include <cstdint>
 #include <string_view>
-#include "block.hpp"
-#include "gguf.hpp"
-#include "ggufreader.hpp"
-#include "types.hpp"
+#include "./block.hpp"
+#include "./types.hpp"
+#include "gguf/gguf.hpp"
+#include "gguf/ggufreader.hpp"
 
 
 uint64_t calculateKeyValueCacheByteSize(ModelGlobals& global_struct) {

@@ -1,10 +1,7 @@
-#include "../include/json_tokeniser.hpp"
-
 #include <chrono>
-#include <fstream>
 #include <iostream>
-#include <iterator>
 #include <vector>
+#include "../include/tokeniser/json_tokeniser.hpp"
 
 int main() {
   const std::string tokenizer_path =
@@ -13,16 +10,7 @@ int main() {
   BPETokeniser tokeniser(tokenizer_path);
 
   // Read the tokenizer file into memory
-  auto test_path = "/home/chirag/Models/train.jsonl";
-  std::ifstream file(test_path, std::ios::binary);
-  if (!file) {
-    std::cerr << "Failed to open " << test_path << '\n';
-    return 1;
-  }
-
-  std::string contents(
-      (std::istreambuf_iterator<char>(file)),
-      std::istreambuf_iterator<char>());
+  std::string contents = "This has to be tokenised";
 
   std::vector<uint32_t> tokens;
 
