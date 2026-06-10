@@ -40,13 +40,11 @@ target_include_directories(${TARGET_NAME} PRIVATE ${PCRE2_INCLUDE_DIRS})
 target_include_directories(${TARGET_NAME}
     PRIVATE
     ${EXTERNAL_DIR}/simdjson
-    ${EXTERNAL_DIR}/linenoise
 )
 
 target_sources(${TARGET_NAME}
     PRIVATE
     ${EXTERNAL_DIR}/simdjson/simdjson.cpp
-    ${EXTERNAL_DIR}/linenoise/linenoise.c
 )
 
 target_link_libraries(${TARGET_NAME}

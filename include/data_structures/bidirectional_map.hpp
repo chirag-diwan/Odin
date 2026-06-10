@@ -1,11 +1,12 @@
 #pragma once
-#include "../logging.hpp"
+
+#include <sys/types.h>
 #include <cstddef>
 #include <cstdlib>
 #include <functional>
 #include <memory>
 #include <optional>
-#include <sys/types.h>
+#include "../logging.hpp"
 
 template <typename key_type>
 struct bid_key_t {
@@ -21,8 +22,7 @@ struct bid_value_t {
   bool occupied = false;
 };
 
-
-template <typename key_type , typename value_type>
+template <typename key_type, typename value_type>
 class bidirectional_map {
   private:
     std::unique_ptr<bid_key_t<key_type>[]> keys;
@@ -39,7 +39,6 @@ class bidirectional_map {
     }
 
   public:
-
     class iterator {
       using key_ptr = bid_key_t<key_type>*;
       using value_ptr = bid_value_t<value_type>*;
@@ -79,8 +78,6 @@ class bidirectional_map {
       }
     };
 
-
-
     explicit bidirectional_map() {
       capacity = 0;
       current_size = 0;
@@ -108,21 +105,21 @@ class bidirectional_map {
       values = std::make_unique<bid_value_t<value_type>[]>(capacity);
     }
 
-    bool insert(key_type key,value_type value) {
+    bool insert(key_type key, value_type value) {
       if (current_size >= capacity / 2) {
         Log("Current size greator than capacity/2");
-        std::exit(-1);
-        return false; 
-      }
-
-      if(getKeyOf(value).has_value()) {
-        Log("Value already present" , value);
         std::exit(-1);
         return false;
       }
 
-      if (getValueOf(key).has_value()){
-        Log("Key already present" , key);
+      if (getKeyOf(value).has_value()) {
+        Log("Value already present", value);
+        std::exit(-1);
+        return false;
+      }
+
+      if (getValueOf(key).has_value()) {
+        Log("Key already present", key);
         std::exit(-1);
         return false;
       }
@@ -137,8 +134,10 @@ class bidirectional_map {
         value_idx = (value_idx + 1) % capacity;
       }
 
-      keys[key_idx] = bid_key_t<key_type>{.key = std::move(key), .value_index = value_idx, .occupied = true};
-      values[value_idx] = bid_value_t<value_type>{.value = std::move(value), .key_index = key_idx, .occupied = true};
+      keys[key_idx] = bid_key_t<key_type>{
+        .key = std::move(key), .value_index = value_idx, .occupied = true};
+      values[value_idx] = bid_value_t<value_type>{
+        .value = std::move(value), .key_index = key_idx, .occupied = true};
       current_size++;
 
       return true;
@@ -155,11 +154,9 @@ class bidirectional_map {
       return std::nullopt;
     }
 
-    bool contains_key(key_type key) const{
-      return getValueOf(key).has_value();
-    }
+    bool contains_key(key_type key) const { return getValueOf(key).has_value(); }
 
-    bool contains_value(value_type value) const{
+    bool contains_value(value_type value) const {
       return getKeyOf(value).has_value();
     }
 
@@ -174,17 +171,11 @@ class bidirectional_map {
       return std::nullopt;
     }
 
-    size_t size() const {
-      return current_size;
-    }
+    size_t size() const { return current_size; }
 
-    size_t max_size() const {
-      return capacity;
-    }
+    size_t max_size() const { return capacity; }
 
-    iterator begin() {
-      return iterator(keys.get(), values.get(), 0, capacity);
-    }
+    iterator begin() { return iterator(keys.get(), values.get(), 0, capacity); }
 
     iterator end() {
       return iterator(keys.get(), values.get(), capacity, capacity);
