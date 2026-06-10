@@ -275,3 +275,16 @@ struct PreTokeniser{
   bool invert;
 };
 
+enum Stage : uint8_t{
+  PROMPT_INGESTION,
+  PROMPT_PROCESSING
+};
+
+struct ApplicationState{
+  Stage stage;
+  size_t last_token_index;
+  ApplicationState(){
+    stage = PROMPT_INGESTION;
+    last_token_index = 0;
+  }
+};

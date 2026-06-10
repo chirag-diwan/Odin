@@ -1,17 +1,22 @@
 cmake_minimum_required(VERSION 3.16)
 project(Odin)
 
+include("cmake/downloadFile.cmake")
+include("cmake/downloads.cmake")
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(EXTERNAL_DIR ${CMAKE_SOURCE_DIR}/external)
 
-add_subdirectory(./external/ggml)
+set(MINJA_TEST_ENABLED OFF CACHE BOOL "" FORCE)
+
+add_subdirectory("${EXTERNAL_DIR}/ggml")
+add_subdirectory("${EXTERNAL_DIR}/minja")
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(PCRE2 REQUIRED libpcre2-8)
-
 
 option(ENABLE_TESTS "Build the test suite" OFF)
 set(TEST_FILE "" CACHE FILEPATH "Path to test source file")
@@ -34,17 +39,20 @@ target_include_directories(${TARGET_NAME} PRIVATE ${PCRE2_INCLUDE_DIRS})
 
 target_include_directories(${TARGET_NAME}
     PRIVATE
-    ${CMAKE_SOURCE_DIR}/external/simdjson
+    ${EXTERNAL_DIR}/simdjson
+    ${EXTERNAL_DIR}/linenoise
 )
 
 target_sources(${TARGET_NAME}
     PRIVATE
-    ${CMAKE_SOURCE_DIR}/external/simdjson/simdjson.cpp
+    ${EXTERNAL_DIR}/simdjson/simdjson.cpp
+    ${EXTERNAL_DIR}/linenoise/linenoise.c
 )
 
 target_link_libraries(${TARGET_NAME}
   PRIVATE
   ggml
+  minja
   ${PCRE2_LIBRARIES}
 )
 

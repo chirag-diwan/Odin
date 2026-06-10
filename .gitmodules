@@ -1,3 +1,9 @@
 [submodule "external/ggml"]
 	path = external/ggml
 	url = https://github.com/ggml-org/ggml.git
+[submodule "external/minja"]
+	path = external/minja
+	url = https://github.com/google/minja.git
+[submodule "external/jonoton_cpp_tui"]
+	path = external/jonoton_cpp_tui
+	url = https://github.com/jonoton/cpp-tui.git
