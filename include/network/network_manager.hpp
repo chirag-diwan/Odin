@@ -4,18 +4,27 @@
 #include <sys/un.h>
 #include <unistd.h>
 #include <condition_variable>
+#include <cstdint>
 #include <cstring>
 #include <mutex>
+#include <optional>
+#include <string>
 #include <thread>
 #include "../data_structures/lock_free_ring_buffer.hpp"
 #include "../logging.hpp"
 #include "./stream_buffer.hpp"
 
+struct Client{
+  stream_buffer buffer_;
+  int socket_;
+  uint32_t len_;
+  uint32_t id;
+  Client(int fd) : buffer_(fd) , socket_(fd) , len_(UINT32_MAX){ }
+};
 
 class NetworkManager{
   private:
-    static constexpr size_t max_clients = 30;
-    std::vector<int> client_sockets;
+    std::vector<Client> client;
   private:
     void handle_client(){
       int max_fd = 0;
@@ -24,11 +33,13 @@ class NetworkManager{
 
         fd_set read_set; FD_ZERO(&read_set);
         FD_SET(server_socket, &read_set);
+
         max_fd = server_socket;
 
         for (size_t i = 0; i < max_clients; i++) {
-          int sd = client_sockets[i];
-          if (sd > 0) {
+          if(i >= client.size()) break;
+          int sd = client[i].socket_;
+          if (sd >= 0) {
             FD_SET(sd, &read_set);
           }
           if (sd > max_fd) {
@@ -38,57 +49,79 @@ class NetworkManager{
 
         int activity = select(max_fd + 1, &read_set, NULL, NULL, NULL);
         if (activity < 0) {
-          perror("Select error");
+          if (errno == EINTR)
+            continue;
+          Log(ERROR , "Select error" , strerror(errno));
         }
 
         if (FD_ISSET(server_socket, &read_set)) {
           int new_socket = accept(server_socket, NULL, NULL);
           if ((new_socket ) < 0) {
-            perror("Accept error");
+            Log(ERROR , "Accept error" , strerror(errno));
             exit(EXIT_FAILURE);
           }
 
+          if (client.size() >= max_clients) {
+            close(new_socket);
+            continue;
+          }
+
+          uint32_t client_id = client.size();
+
+          send(new_socket, &client_id, sizeof(client_id), 0);
+
           for (size_t i = 0; i < max_clients; i++) {
-            if (client_sockets[i] == 0) {
-              client_sockets[i] = new_socket;
+            if(client.size() < max_clients){
+              client.emplace_back(Client(new_socket));
+              break;
+            }
+            if (client[i].socket_ == 0) {
+              client[i] = Client(new_socket);
               break;
             }
           }
         }
 
-        for (size_t i = 0; i < max_clients; i++) {
-          int sd = client_sockets[i];
+        for (size_t i = 0 ; i < client.size() ; i++) {
+          auto& c = client[i];
+          int sd = c.socket_;
 
           if (FD_ISSET(sd, &read_set)) {
-            stream_buffer buf(sd);
+            stream_buffer& buf = c.buffer_;
 
-            while(!buf.is_readable(sizeof(uint32_t))){
-              if(!buf.fill(sizeof(uint32_t)))break;
-            }
+            if(c.len_ == UINT32_MAX){
 
-            auto len = buf.read_u32();
-            if(!len.has_value())continue;
-
-            while(!buf.is_readable(*len)){
-              if(!buf.fill(*len)) {
-                close(sd);
-                client_sockets[i] = 0;
-              }
-            }
-
-            std::string prompt_str;
-            prompt_str.insert(prompt_str.end() , buf.begin() , buf.end());
-
-            if(!prompt_str.empty()){
-              bool ret = false;
-              {
-                std::lock_guard<std::mutex> lock(prompt_mutex_);
-                ret = prompt.push(prompt_str) ;
-              }
-              if(!ret){
-                Log(ERROR, "Push failed to prompt" , strerror(errno));
+              if(buf.is_readable(sizeof(uint32_t))){
+                auto len = buf.read_u32();
+                if(len){
+                  c.len_ = *len;
+                }else{
+                  Log(ERROR , "buf.read_u32 failed" , strerror(errno));
+                }
               }else{
-                condition_prompt_empty_.notify_one();
+                if(!buf.fill(sizeof(uint32_t))){
+                  close(c.socket_);
+                  c.socket_ = 0;
+                }
+              }
+            }else{
+              if(!buf.is_readable(c.len_)){
+                if(!buf.fill()){
+                  close(c.socket_);
+                  c.socket_ = -1;
+                  c.len_ = UINT32_MAX;
+                }
+              }else{
+                auto temp = buf.read_str(c.len_);
+                if(!temp.has_value())continue;
+
+                auto ret = prompts.push(*temp);
+                c.len_ = UINT32_MAX;
+                if(!ret){
+                  Log(ERROR, "Push failed to prompt" , strerror(errno));
+                }else{
+                  condition_prompt_empty_.notify_one();
+                }
               }
             }
           }
@@ -102,16 +135,18 @@ class NetworkManager{
 
     const std::string path_;
 
-    ringbuffer<std::string> prompt;
+    ringbuffer<std::string> prompts;
     ringbuffer<std::string> infered;
 
     std::thread client_handlers;
 
     std::atomic<bool> stop_ = false;
   public:
+    static constexpr size_t max_clients = 30;
+    static constexpr char client_base_name[] = "client_no_";
 
     int server_socket = -1;
-    NetworkManager(const char * path = "/tmp/odin0000.socket") :client_sockets(max_clients), path_(path) {
+    NetworkManager(const char * path = "/tmp/odin0000.socket") : path_(path) {
       unlink(path_.c_str());
       server_socket = socket(AF_LOCAL, SOCK_STREAM, 0);
       if(server_socket == -1){
@@ -140,9 +175,9 @@ class NetworkManager{
     std::optional<std::string> read_prompt(){
       std::unique_lock<std::mutex> lock(prompt_mutex_);
       condition_prompt_empty_.wait(lock , [this](){
-          return stop_ || !this->prompt.empty();
+          return stop_ || !this->prompts.empty();
           });
-      return prompt.pop();
+      return prompts.pop();
     }
 
     ~NetworkManager(){
