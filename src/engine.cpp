@@ -31,7 +31,7 @@ using UniqueGgmlContext = std::unique_ptr<ggml_context, GgmlDeleter>;
 
 std::string FetchPrompt(bool use_network, NetworkManager& manager) {
   if (use_network) {
-    return *manager.read_input();
+    return *manager.read_prompt();
   }
 
   std::cout << "\n $ ";
@@ -124,3 +124,4 @@ int main(int argc, char** argv) {
 
   return EXIT_SUCCESS;
 }
+

@@ -10,14 +10,14 @@ class ringbuffer{
   private:
     static constexpr size_t mask = init_capacity - 1;
   public:
-    size_t capacity;
+    size_t capacity_;
     std::unique_ptr<T[]> data_;
     std::atomic<size_t> head_;
     std::atomic<size_t> tail_;
 
     explicit ringbuffer() :
-      capacity(init_capacity),
-      data_(std::make_unique<T[]>(capacity)),
+      capacity_(init_capacity),
+      data_(std::make_unique<T[]>(capacity_)),
       head_(0),
       tail_(0) {
         static_assert(!(init_capacity & (init_capacity - 1)), "init capacity must be power of two");
@@ -28,7 +28,7 @@ class ringbuffer{
         auto tail = tail_.load(std::memory_order_relaxed);
         auto head = head_.load(std::memory_order_acquire);
 
-        if((tail - head) == capacity){
+        if((tail - head) == capacity_){
           return false;
         }
 
@@ -63,6 +63,21 @@ class ringbuffer{
         return false;
       }
 
+
+    [[nodiscard]]
+      size_t size(){
+        auto tail = tail_.load(std::memory_order_relaxed);
+        auto head = head_.load(std::memory_order_acquire);
+
+        return tail - head;
+      }
+
+
+    [[nodiscard]]
+      size_t capacity(){
+        return capacity_ - size();
+      }
+  
     ringbuffer(ringbuffer& buffer) = delete;
     ringbuffer(ringbuffer&& buffer) = default;
 };

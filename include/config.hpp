@@ -27,8 +27,12 @@ Config ParseConfig(int argc , char ** argv){
       Errorif(i + 1 > argc, "Expected tokeniser json file path after --tokeniser-json");
       config.tokeniser_json_path = argv[i + 1];
     }else if(strcmp(argv[i], "--use-network") == 0){
-      Errorif(i + 1 > argc, "Expected boolean after --use-network");
-      config.use_network = argv[i + 1];
+      Errorif(i + 1 > argc, "Expected true or false after --use-network");
+      if(strcmp(argv[i + 1] ,"true") == 0){
+        config.use_network = true;
+      }else{
+        config.use_network = false;
+      }
     }
   }
   return config;

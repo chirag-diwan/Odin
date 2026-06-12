@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <optional>
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
 #include <string>
@@ -339,18 +340,20 @@ class BPETokeniser{
       }
     }
 
-    void Decode(uint32_t token_id){
+    std::optional<std::string> Decode(uint32_t token_id){
       auto token_opt = vocab.getKeyOf(token_id);
       if(__builtin_expect(!token_opt.has_value(),false)){
-        return;
+        return std::nullopt;
       }
 
       auto token_str = *token_opt;
+      std::string token = "";
+      token.reserve(token_str.size());
       for (size_t i = 0; i < token_str.size(); ) {
         unsigned char c = token_str[i];
 
         if ((c & 0x80) == 0) {
-          std::putchar(c); 
+          token.push_back(c); 
           i++;
         } 
         else if ((c & 0xE0) == 0xC0) {
@@ -358,7 +361,7 @@ class BPETokeniser{
           uint16_t unicode_val = ((c & 0x1F) << 6) | (c2 & 0x3F);
 
           uint8_t original_byte = unicode_to_byte_table[unicode_val - 256];
-          std::putchar(original_byte);
+          token.push_back(original_byte);
 
           i += 2; 
         } 
@@ -367,7 +370,7 @@ class BPETokeniser{
           break;
         }
       }
-      std::fflush(stdout); 
+      return token;
     }
 
     ~BPETokeniser(){
