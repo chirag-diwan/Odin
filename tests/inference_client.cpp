@@ -3,13 +3,11 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-#include <chrono>
 #include <cstdint>
 #include <cstring>
 #include <iostream>
 #include <string>
 #include <cerrno>
-#include <thread>
 
 static bool send_all(int fd, const void* data, size_t len) {
   const char* ptr = static_cast<const char*>(data);
@@ -134,72 +132,25 @@ class OdinClient {
     uint32_t id_ = 0;
 };
 
-static constexpr size_t NUM_CLIENTS = 30;
-static constexpr size_t MSGS_PER_CLIENT = 100000;
-
-std::atomic<uint64_t> total_sent{0};
-std::atomic<uint64_t> total_failed{0};
-
-void client_worker(size_t worker_id)
-{
+void client_worker() {
   OdinClient client("/tmp/odin0000.socket");
 
   if (!client.connect_to_server()) {
-    std::cerr << "Worker " << worker_id
-      << " failed to connect\n";
+    std::cerr << "Worker " << " failed to connect\n";
     return;
   }
 
-  for (size_t i = 0; i < MSGS_PER_CLIENT; ++i) {
-    std::string msg =
-      "CLIENT[" + std::to_string(worker_id) +
-      "] MSG[" + std::to_string(i) + "]";
+  std::string input = "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nCutting Knowledge Date: December 2023\nToday Date: 26 Jul 2024\n\nYou are a help full agent<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nWrite a c++ program to print hello world<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n";
 
-    if (client.send_message(msg)) {
-      ++total_sent;
-    } else {
-      ++total_failed;
-      break;
-    }
+
+  if (!client.send_message(input)) {
+    return;
   }
-
   client.close_conn();
 }
 
-int main()
-{
-  auto start = std::chrono::steady_clock::now();
-
-  std::vector<std::thread> workers;
-  workers.reserve(NUM_CLIENTS);
-
-  for (size_t i = 0; i < NUM_CLIENTS; ++i) {
-    workers.emplace_back(client_worker, i);
-  }
-
-  for (auto& t : workers) {
-    t.join();
-  }
-
-  auto end = std::chrono::steady_clock::now();
-
-  auto ms = std::chrono::duration_cast<
-    std::chrono::milliseconds>(end - start);
-
-  std::cout << "\n===== RESULTS =====\n";
-  std::cout << "Clients      : " << NUM_CLIENTS << "\n";
-  std::cout << "Messages Sent: " << total_sent.load() << "\n";
-  std::cout << "Failures     : " << total_failed.load() << "\n";
-  std::cout << "Duration(ms) : " << ms.count() << "\n";
-
-  if (ms.count() > 0) {
-    double mps =
-      (double)total_sent.load() * 1000.0 /
-      (double)ms.count();
-
-    std::cout << "Msg/sec      : "
-      << mps << "\n";
-  }
+int main() {
+  client_worker();
 
   return 0;
 }

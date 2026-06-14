@@ -1,7 +1,9 @@
 #include <netinet/in.h>
 #include <sys/ioctl.h>
+#include <sys/socket.h>
 #include <unistd.h>
 #include <algorithm>
+#include <cerrno>
 #include <cstdint>
 #include <cstring>
 #include <iterator>
@@ -9,10 +11,17 @@
 #include <optional>
 #include <vector>
 
+enum FillStatus : uint8_t{
+  DATA_PRESENT = 1 << 0,
+  DATA_NOT_PRESENT = 1 << 1,
+  CLIENT_OPEN = 1 << 2,
+  CLIENT_CLOSED = 1 << 3
+};
+
 class stream_buffer{
   private:
     static constexpr size_t min_bytes_read = 256;
-    static constexpr size_t init_capacity = 1024;
+    static constexpr size_t init_capacity = 4096;
     uint32_t size_;
     uint32_t capacity_;
     std::unique_ptr<uint8_t[]> data_;
@@ -63,6 +72,8 @@ class stream_buffer{
       read_fd_(fd)
   {}
 
+
+
     [[nodiscard]]
       size_t bytes_available(){
         size_t bytes_available = 0;
@@ -105,25 +116,39 @@ class stream_buffer{
         }
       }
 
-    bool fill(size_t size = min_bytes_read){
-
-      if(!bytes_available())return false;
-
-      size_t total_bytes = 0;
-      uint8_t buffer[min_bytes_read];
-
-      while(total_bytes < size){
-        memset(buffer, 0,sizeof(buffer));
-        auto bytes_read = ::read(read_fd_, buffer,sizeof(buffer));
-        if(bytes_read == -1 || bytes_read == 0){
-          return false;
-        }
-        insert(std::begin(buffer), std::begin(buffer) + bytes_read);
-        total_bytes += bytes_read;
-      }
-      return true;
+    void clear(int new_fd){
+      read_fd_ = new_fd;
+      read_head = 0;
+      size_ = 0;
     }
 
+
+    uint8_t fill() {
+      uint8_t buffer[4096]; 
+      bool data_read = false;
+
+      while (true) {
+        ssize_t bytes_read = recv(read_fd_, buffer, sizeof(buffer), MSG_DONTWAIT);
+        if(bytes_read > 0){
+          data_read = true;
+          insert(std::begin(buffer), std::begin(buffer) + bytes_read);
+        }else if (bytes_read == 0) {
+          return data_read ? FillStatus::DATA_PRESENT | FillStatus::CLIENT_CLOSED : FillStatus::DATA_NOT_PRESENT | FillStatus::CLIENT_CLOSED; 
+        }else if (bytes_read < 0) {
+          if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            return data_read ? FillStatus::DATA_PRESENT | FillStatus::CLIENT_OPEN : FillStatus::DATA_NOT_PRESENT | FillStatus::CLIENT_OPEN; 
+          }
+
+          if (errno == EINTR) {
+            continue;
+          }
+
+          if(errno == ECONNRESET){
+            return FillStatus::DATA_NOT_PRESENT | FillStatus::CLIENT_CLOSED;
+          }
+        }
+      }
+    }
 
     decltype(auto) begin(){
       return data_.get() + read_head;
@@ -132,7 +157,7 @@ class stream_buffer{
     decltype(auto) end(){
       return data_.get() + size_;
     }
-    
+
     std::optional<std::string> read_str(size_t s){
       if(is_readable(s)){
         std::string buf(begin() , begin() + s);

@@ -31,7 +31,11 @@ using UniqueGgmlContext = std::unique_ptr<ggml_context, GgmlDeleter>;
 
 std::string FetchPrompt(bool use_network, NetworkManager& manager) {
   if (use_network) {
-    return *manager.read_prompt();
+    auto prompt = manager.read_prompt();
+    if(prompt.has_value()){
+      return *prompt;
+    }
+    return "";
   }
 
   std::cout << "\n $ ";
@@ -45,6 +49,7 @@ std::string FetchPrompt(bool use_network, NetworkManager& manager) {
 }
 
 int main(int argc, char** argv) {
+  std::cout << std::unitbuf; //To avoid buffer
   Log(
       "Usage:\n"
       "\t./odin --model <model_path> --thread <num_threads> --tokeniser-json <tokeniser_json_path>\n"
@@ -54,7 +59,7 @@ int main(int argc, char** argv) {
       "\t--thread           Number of threads to use (required)\n"
       "\t--tokeniser-json   Path to tokenizer JSON file (required)\n"
       "\t--network-path     Path or endpoint for network input/output (optional)\n"
-      "\t--use-network      Enable/disable network mode (0 = off, 1 = on)\n"
+      "\t--use-network      Enable/disable network mode (\"false\" = off, \"true\" = on)\n"
      );
 
   if (argc < 2) {
@@ -66,7 +71,7 @@ int main(int argc, char** argv) {
   GGufReader reader;
 
   auto [addr, len] = reader.OpenFile(config.model_path);
-  MmapGuard mmap_guard(addr, len); // Replaces manual munmap
+  MmapGuard mmap_guard(addr, len); 
 
   reader.ParseHeader();
   reader.ParseAllKeyValues();
@@ -93,13 +98,14 @@ int main(int argc, char** argv) {
   BPETokeniser tokeniser(config.tokeniser_json_path);
   std::vector<uint32_t> tokens;
 
-  NetworkManager manager(config.network_path.c_str());
+  NetworkManager manager;
   if (config.use_network) {
     manager.start_listen();
   }
 
   while (true) {
     std::string prompt = FetchPrompt(config.use_network, manager);
+    Log(prompt);
     if (prompt == "!exit") break;
 
     size_t last_index = tokens.size();
@@ -117,7 +123,8 @@ int main(int argc, char** argv) {
       tokens.push_back(next_token);
 
       if (next_token != globals.ggml_eos_token_id) {
-        tokeniser.Decode(next_token);
+        auto tok = tokeniser.Decode(next_token);
+        if(tok.has_value())Log(*tok);
       }
     }
   }

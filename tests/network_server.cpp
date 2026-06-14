@@ -1,7 +1,7 @@
 #include <ios>
 #include <iostream>
 #include "../include/network/network_manager.hpp"
-#include "logging.hpp"
+#include "../include/logging.hpp"
 
 int main() {
   NetworkManager manager;
@@ -19,7 +19,6 @@ int main() {
     if (*prompt == "!exit") {
       break;
     }
-
     Log(*prompt);
   }
 
