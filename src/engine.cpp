@@ -124,7 +124,7 @@ int main(int argc, char** argv) {
 
       if (next_token != globals.ggml_eos_token_id) {
         auto tok = tokeniser.Decode(next_token);
-        if(tok.has_value())Log(*tok);
+        if(tok.has_value())std::cout << (*tok);
       }
     }
   }
