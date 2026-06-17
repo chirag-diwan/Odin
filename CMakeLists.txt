@@ -11,10 +11,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(EXTERNAL_DIR ${CMAKE_SOURCE_DIR}/external)
 
-set(MINJA_TEST_ENABLED OFF CACHE BOOL "" FORCE)
 
 add_subdirectory("${EXTERNAL_DIR}/ggml")
-add_subdirectory("${EXTERNAL_DIR}/minja")
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(PCRE2 REQUIRED libpcre2-8)
@@ -39,19 +37,18 @@ target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(${TARGET_NAME} PRIVATE ${PCRE2_INCLUDE_DIRS})
 
 target_include_directories(${TARGET_NAME}
-    PRIVATE
-    ${EXTERNAL_DIR}/simdjson
+  PRIVATE
+  ${EXTERNAL_DIR}/simdjson
 )
 
 target_sources(${TARGET_NAME}
-    PRIVATE
-    ${EXTERNAL_DIR}/simdjson/simdjson.cpp
+  PRIVATE
+  ${EXTERNAL_DIR}/simdjson/simdjson.cpp
 )
 
 target_link_libraries(${TARGET_NAME}
   PRIVATE
   ggml
-  minja
   ${PCRE2_LIBRARIES}
 )
 

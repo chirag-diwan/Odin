@@ -1,5 +1,5 @@
 #include "../include/engine/engine.hpp"
-#include "../include/network/network_manager.hpp"
+#include "../include/network/multiclient/network_manager.hpp"
 #include "../include/model_utils.hpp"
 #include "../include/tokeniser/json_tokeniser.hpp"
 #include "../include/gguf/ggufreader.hpp"

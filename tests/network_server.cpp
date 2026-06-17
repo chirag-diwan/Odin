@@ -1,12 +1,9 @@
-#include <ios>
-#include <iostream>
-#include "../include/network/network_manager.hpp"
+#include "../include/network/multiclient/network_manager.hpp"
 #include "../include/logging.hpp"
 
 int main() {
   NetworkManager manager;
 
-  std::cout << std::unitbuf;
   manager.start_listen();
 
   while (true) {
@@ -20,6 +17,8 @@ int main() {
       break;
     }
     Log(*prompt);
+
+    manager.write_infered("THIS IS A TEST TOKEN");
   }
 
   return 0;
