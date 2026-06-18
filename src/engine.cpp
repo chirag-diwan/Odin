@@ -6,9 +6,12 @@
 #include "../include/config.hpp"
 #include "../include/logging.hpp"
 #include "../include/types.hpp"
+#include "../external/replxx/include/replxx.hxx"
 #include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-cpu.h"
+#include <atomic>
+#include <csignal>
 #include <cstdint>
 #include <cstdlib>
 #include <string>
@@ -29,7 +32,7 @@ struct GgmlDeleter {
 };
 using UniqueGgmlContext = std::unique_ptr<ggml_context, GgmlDeleter>;
 
-std::string FetchPrompt(bool use_network, NetworkManager& manager) {
+std::string FetchPrompt(bool use_network, NetworkManager& manager , replxx::Replxx& rx) {
   if (use_network) {
     auto prompt = manager.read_prompt();
     if(prompt.has_value()){
@@ -38,25 +41,31 @@ std::string FetchPrompt(bool use_network, NetworkManager& manager) {
     return "";
   }
 
-  std::cout << "\n $ ";
-  std::string prompt, line;
-  while (std::getline(std::cin, line)) {
-    if (line.find("!exit") == 0) return "!exit";
-    if (line.find("!submit") == 0) break;
-    prompt += line + "\n";
+  const char* c_input = rx.input("\n $ ");
+
+  if (c_input == nullptr) {
+    std::cerr << "\nBye!\n";
+    return "!exit";
   }
-  return prompt;
+
+  return std::string{c_input};
+}
+
+static std::atomic<bool> stop = false;
+
+void sigint_handler(int){
+  stop.store(true);
 }
 
 int main(int argc, char** argv) {
-  std::cout << std::unitbuf; //To avoid buffer
+  std::signal(SIGINT , sigint_handler);
   Log(
       "Usage:\n"
       "\t./odin --model <model_path> --thread <num_threads> --tokeniser-json <tokeniser_json_path>\n"
       "\t[--network-path <path>] [--use-network <0|1>] [--temp <float>] [--top-k <int>]\n\n"
       "Options:\n"
       "\t--model            Path to the model file (required)\n"
-      "\t--thread           Number of threads to use (required)\n"
+      "\t--thread           Number of threads to use (optional)\n"
       "\t--tokeniser-json   Path to tokenizer JSON file (required)\n"
       "\t--network-path     Path or endpoint for network input/output (optional)\n"
       "\t--use-network      Enable/disable network mode (\"false\" = off, \"true\" = on)\n"
@@ -103,9 +112,35 @@ int main(int argc, char** argv) {
     manager.start_listen();
   }
 
-  while (true) {
-    std::string prompt = FetchPrompt(config.use_network, manager);
-    Log(prompt);
+
+  replxx::Replxx rx;
+
+  rx.history_load("history.txt");
+  rx.install_window_change_handler();
+  rx.set_max_history_size(1000);
+
+  rx.bind_key(
+      replxx::Replxx::KEY::ENTER,
+      [&rx](char32_t) {
+      rx.invoke(replxx::Replxx::ACTION::INSERT_CHARACTER, '\n');
+      return replxx::Replxx::ACTION_RESULT::CONTINUE;
+      }
+      );
+
+  rx.bind_key(
+      replxx::Replxx::KEY::control('S'),
+      [](char32_t) {
+      return replxx::Replxx::ACTION_RESULT::RETURN;
+      }
+      );
+
+  while (!stop) {
+    std::string prompt = FetchPrompt(config.use_network, manager , rx);
+    if (prompt.empty()) {
+      continue;
+    }
+    rx.history_add(prompt);
+
     if (prompt == "!exit") break;
 
     size_t last_index = tokens.size();
@@ -116,7 +151,8 @@ int main(int argc, char** argv) {
 
     uint32_t next_token = engine.Prefill(tokens_view);
     tokens.push_back(next_token);
-    tokeniser.Decode(next_token);
+    auto tok = tokeniser.Decode(next_token);
+    if(tok.has_value())std::cerr << *tok;
 
     while (next_token != globals.ggml_eos_token_id) {
       next_token = engine.Infer(tokens.back());
@@ -124,11 +160,12 @@ int main(int argc, char** argv) {
 
       if (next_token != globals.ggml_eos_token_id) {
         auto tok = tokeniser.Decode(next_token);
-        if(tok.has_value())std::cout << (*tok);
+        if(tok.has_value())std::cerr << (*tok);
       }
     }
   }
 
+  rx.history_save("history.txt");
   return EXIT_SUCCESS;
 }
 

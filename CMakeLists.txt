@@ -13,12 +13,17 @@ set(EXTERNAL_DIR ${CMAKE_SOURCE_DIR}/external)
 
 
 add_subdirectory("${EXTERNAL_DIR}/ggml")
+add_subdirectory("${EXTERNAL_DIR}/replxx")
 
 find_package(PkgConfig REQUIRED)
+find_package(Curses REQUIRED)
+
 pkg_check_modules(PCRE2 REQUIRED libpcre2-8)
 
 option(ENABLE_TESTS "Build the test suite" OFF)
 set(TEST_FILE "" CACHE FILEPATH "Path to test source file")
+
+
 
 
 if(ENABLE_TESTS)
@@ -49,8 +54,11 @@ target_sources(${TARGET_NAME}
 target_link_libraries(${TARGET_NAME}
   PRIVATE
   ggml
+  replxx
   ${PCRE2_LIBRARIES}
 )
+
+target_link_libraries(${TARGET_NAME} PRIVATE ${CURSES_LIBRARIES})
 
 target_compile_options(${TARGET_NAME} PRIVATE
   -Wall

@@ -53,7 +53,6 @@ pcre2_code* compile_regex(const std::string_view& regex){
 class BPETokeniser{
   private:
     std::vector<std::string_view> chunks;
-    std::vector<std::string_view> special_seprate_tokens;
     std::vector<uint32_t> bytes;
 
 
@@ -224,6 +223,8 @@ class BPETokeniser{
     }
 
   public:
+    std::vector<std::string_view> special_seprate_tokens;
+
     BPETokeniser(const std::string& tokeniser_json) : json(padded_string::load(tokeniser_json)) {
       auto doc = parser.iterate(json);
       init_maps(doc);
