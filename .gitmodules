@@ -1,9 +1,6 @@
 [submodule "external/ggml"]
 	path = external/ggml
 	url = https://github.com/ggml-org/ggml.git
-[submodule "external/jonoton_cpp_tui"]
-	path = external/jonoton_cpp_tui
-	url = https://github.com/jonoton/cpp-tui.git
 [submodule "external/replxx"]
 	path = external/replxx
 	url = https://github.com/AmokHuginnsson/replxx
