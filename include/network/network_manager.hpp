@@ -119,7 +119,7 @@ class NetworkManager {
 
   public:
 
-    NetworkManager(const char * path = "/tmp/odin0000.socket") : path_(path) {
+    NetworkManager(const std::string& path = "/tmp/odin0000.socket") : path_(path) {
       unlink(path_.c_str());
       server_socket = socket(AF_LOCAL, SOCK_STREAM, 0);
       if(server_socket == -1){
