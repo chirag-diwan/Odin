@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
       }
       );
 
-  NetworkManager manager;
+  NetworkManager manager(config.network_path);
   if (config.use_network) {
     manager.start_listen();
   }

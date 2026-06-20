@@ -12,7 +12,7 @@ Config ParseConfig(int argc , char ** argv){
       Errorif(i + 1 > argc, "Expected thread count after --thread");
       config.thread_count = std::stoi(argv[i + 1]);
     }else if(strcmp(argv[i], "--network-path") == 0){
-      Errorif(i + 1 > argc, "Expected port after --network-path");
+      Errorif(i + 1 > argc, "Expected path after --network-path");
       config.network_path = argv[i + 1];
     }else if(strcmp(argv[i], "--model") == 0){
       Errorif(i + 1 > argc, "Expected model path after --model");
