@@ -37,7 +37,7 @@ make -j$(nproc)
 Odin requires model weights in the GGUF format.
 
 ```bash
-./odin --model "/path/to/model.gguf" --thread $(nproc) --tokeniser-json "/path/to/tokeniser/json" --use-network false --network-path /tmp/odin0000.socket
+./odin --model "/path/to/model.gguf" --thread $(nproc) --tokeniser-json "/path/to/tokeniser/json" --use-ipc false --ipc-path /tmp/odin0000.socket
 ```
 
 ### CLI Arguments
@@ -47,8 +47,8 @@ Odin requires model weights in the GGUF format.
 | `--model` | **Required.** Absolute or relative path to the `.gguf` model file. |
 | `--tokeniser-json` | **Required.** The path to tokeniser.json for the specific model you are using. |
 | `--thread` | **Optional.** Maximum number of threads allocated to the backend for computation. |
-|`--network-path` | **Optional** Path or endpoint for network input/output.|
-|`--use-network` |**Optional** Enable/disable network mode (false = off, true = on).|
+|`--ipc-path` | **Optional** Path or endpoint for ipc input/output.|
+|`--use-ipc` |**Optional** Enable/disable ipc mode (false = off, true = on).|
 
 
 

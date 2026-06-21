@@ -30,8 +30,8 @@ struct GgmlDeleter {
 };
 using UniqueGgmlContext = std::unique_ptr<ggml_context, GgmlDeleter>;
 
-std::string FetchPrompt(bool use_network, NetworkManager& manager , replxx::Replxx& rx) {
-  if (use_network) {
+std::string FetchPrompt(bool use_ipc, NetworkManager& manager , replxx::Replxx& rx) {
+  if (use_ipc) {
     auto prompt = manager.read_prompt();
     return prompt;
   }
@@ -50,13 +50,13 @@ int main(int argc, char** argv) {
   Log(
       "Usage:\n"
       "\t./odin --model <model_path> --thread <num_threads> --tokeniser-json <tokeniser_json_path>\n"
-      "\t[--network-path <path>] [--use-network <0|1>] [--temp <float>] [--top-k <int>]\n\n"
+      "\t[--ipc-path <path>] [--use-ipc <0|1>] [--temp <float>] [--top-k <int>]\n\n"
       "Options:\n"
       "\t--model            Path to the model file (required)\n"
       "\t--thread           Number of threads to use (optional)\n"
       "\t--tokeniser-json   Path to tokenizer JSON file (required)\n"
-      "\t--network-path     Path or endpoint for network input/output (optional)\n"
-      "\t--use-network      Enable/disable network mode (\"false\" = off, \"true\" = on)\n"
+      "\t--ipc-path     Path or endpoint for ipc input/output (optional)\n"
+      "\t--use-ipc      Enable/disable ipc mode (\"false\" = off, \"true\" = on)\n"
      );
 
   if (argc < 2) {
@@ -118,13 +118,13 @@ int main(int argc, char** argv) {
       }
       );
 
-  NetworkManager manager(config.network_path);
-  if (config.use_network) {
+  NetworkManager manager(config.ipc_path);
+  if (config.use_ipc) {
     manager.start_listen();
   }
 
   while (true) {
-    std::string prompt = FetchPrompt(config.use_network, manager , rx);
+    std::string prompt = FetchPrompt(config.use_ipc, manager , rx);
     if (prompt.empty()) {
       continue;
     }
@@ -143,7 +143,7 @@ int main(int argc, char** argv) {
     tokens.push_back(next_token);
     auto tok = tokeniser.Decode(next_token);
     if(tok.has_value()){
-      if(config.use_network){
+      if(config.use_ipc){
         manager.write_infered(*tok);
       }
       std::cerr << *tok;
@@ -156,7 +156,7 @@ int main(int argc, char** argv) {
       if (next_token != globals.ggml_eos_token_id) {
         auto tok = tokeniser.Decode(next_token);
         if(tok.has_value()){
-          if(config.use_network){
+          if(config.use_ipc){
             manager.write_infered(*tok);
           }
           std::cerr << *tok;

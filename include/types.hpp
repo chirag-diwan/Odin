@@ -168,16 +168,16 @@ struct rank_index_pair{
 
 
 struct Config{
-  std::string network_path;
+  std::string ipc_path;
   std::string model_path;
   std::string tokeniser_json_path;
-  bool use_network;
+  bool use_ipc;
   float temperature ;
   uint32_t k ;
   uint8_t thread_count;
   Config(){
-    network_path = "/tmp/odin0000.socket";
-    use_network = false;
+    ipc_path = "/tmp/odin0000.socket";
+    use_ipc = false;
     thread_count = std::thread::hardware_concurrency();
     model_path = "NOT PROVIDED";
     tokeniser_json_path = "NOT PROVIDED";
