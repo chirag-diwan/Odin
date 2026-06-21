@@ -13,7 +13,7 @@
 #include <atomic>
 #include "../../data_structures/lock_free_ring_buffer.hpp"
 #include "../../logging.hpp"
-#include "../stream_buffer.hpp"
+#include "../../stream_buffer.hpp"
 
 enum class ClientState : uint8_t{
   READING_LENGTH,
@@ -30,7 +30,7 @@ struct Client{
   Client(int fd , uint32_t id) : buffer_(fd) , socket_(fd) , len_(UINT32_MAX) , id_(id) , state_(ClientState::READING_LENGTH){ }
 };
 
-class NetworkManager{
+class IPCManager{
   private:
     std::vector<Client> client;
 
@@ -194,7 +194,7 @@ class NetworkManager{
     static constexpr size_t max_clients = 30;
 
     int server_socket = -1;
-    NetworkManager(const char * path = "/tmp/odin0000.socket") : path_(path) {
+    IPCManager(const char * path = "/tmp/odin0000.socket") : path_(path) {
       unlink(path_.c_str());
       server_socket = socket(AF_LOCAL, SOCK_STREAM, 0);
       if(server_socket == -1){
@@ -217,7 +217,7 @@ class NetworkManager{
       if(ret == -1 ){
         Log(ERROR, "Cannot listen to server fd" , server_socket);
       }
-      client_handlers = std::thread(&NetworkManager::handle_client , this);
+      client_handlers = std::thread(&IPCManager::handle_client , this);
     }
 
     std::optional<std::string> read_prompt(){
@@ -240,7 +240,7 @@ class NetworkManager{
       return infered.push(token);
     }
 
-    ~NetworkManager(){
+    ~IPCManager(){
       stop_.store(true);
       push_sequence_.fetch_add(1, std::memory_order_release);
       push_sequence_.notify_all();

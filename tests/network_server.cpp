@@ -1,7 +1,7 @@
-#include "../include/network/network_manager.hpp"
+#include "../include/ipc/ipc_manager.hpp"
 
 int main() {
-  NetworkManager server("/tmp/odin0000.socket");
+  IPCManager server("/tmp/odin0000.socket");
 
   server.start_listen();
 

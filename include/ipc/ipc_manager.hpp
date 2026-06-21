@@ -11,7 +11,7 @@
 #include <thread>
 #include "../logging.hpp"
 #include "../data_structures/lock_free_ring_buffer.hpp"
-#include "stream_buffer.hpp"
+#include "../stream_buffer.hpp"
 
 
 enum class ClientState : uint8_t{
@@ -29,7 +29,7 @@ struct Client{
   Client(int fd) : buffer_(fd) , fd_(fd) , state_(ClientState::READING_LENGTH){ }
 }; 
 
-class NetworkManager {
+class IPCManager {
   private:
     std::string path_;
     int server_socket;
@@ -119,7 +119,7 @@ class NetworkManager {
 
   public:
 
-    NetworkManager(const std::string& path = "/tmp/odin0000.socket") : path_(path) {
+    IPCManager(const std::string& path = "/tmp/odin0000.socket") : path_(path) {
       unlink(path_.c_str());
       server_socket = socket(AF_LOCAL, SOCK_STREAM, 0);
       if(server_socket == -1){
@@ -143,7 +143,7 @@ class NetworkManager {
         Log(ERROR , "Listen failed for" , server_socket);
         return;
       }
-      handler = std::thread(&NetworkManager::handle_client , this );
+      handler = std::thread(&IPCManager::handle_client , this );
     }
 
 
@@ -159,7 +159,7 @@ class NetworkManager {
       return infered.push(tok);
     }
 
-    ~NetworkManager(){
+    ~IPCManager(){
       if(handler.joinable())handler.join();
       close(server_socket);
       unlink(path_.c_str());

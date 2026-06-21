@@ -1,5 +1,5 @@
 #include "../include/engine/engine.hpp"
-#include "../include/network/network_manager.hpp"
+#include "../include/ipc/ipc_manager.hpp"
 #include "../include/model_utils.hpp"
 #include "../include/tokeniser/json_tokeniser.hpp"
 #include "../include/gguf/ggufreader.hpp"
@@ -30,7 +30,7 @@ struct GgmlDeleter {
 };
 using UniqueGgmlContext = std::unique_ptr<ggml_context, GgmlDeleter>;
 
-std::string FetchPrompt(bool use_ipc, NetworkManager& manager , replxx::Replxx& rx) {
+std::string FetchPrompt(bool use_ipc, IPCManager& manager , replxx::Replxx& rx) {
   if (use_ipc) {
     auto prompt = manager.read_prompt();
     return prompt;
@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
       }
       );
 
-  NetworkManager manager(config.ipc_path);
+  IPCManager manager(config.ipc_path);
   if (config.use_ipc) {
     manager.start_listen();
   }
