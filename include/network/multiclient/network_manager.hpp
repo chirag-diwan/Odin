@@ -1,3 +1,5 @@
+#pragma once
+
 #include <netinet/in.h>
 #include <sys/select.h>
 #include <sys/socket.h>
@@ -31,6 +33,7 @@ struct Client{
 class NetworkManager{
   private:
     std::vector<Client> client;
+
   private:
     void handle_client(){
       int max_fd = 0;
@@ -148,7 +151,9 @@ class NetworkManager{
         for(size_t i = 0 ; i < client.size() ; i++){
           auto& c = client[i];
 
-          if(infered.empty()) continue;
+          if(infered.empty()){
+            continue;
+          } 
           if(c.fill_status_&CLIENT_CLOSED)continue;
 
           auto tokens = *infered.pop();
@@ -170,7 +175,6 @@ class NetworkManager{
 
             total_bytes_sent += ret;
           }
-
         }
       }
     }
@@ -188,7 +192,6 @@ class NetworkManager{
 
   public:
     static constexpr size_t max_clients = 30;
-    static constexpr char client_base_name[] = "client_no_";
 
     int server_socket = -1;
     NetworkManager(const char * path = "/tmp/odin0000.socket") : path_(path) {
@@ -233,6 +236,7 @@ class NetworkManager{
     }
 
     bool write_infered(const std::string& token){
+      if(token.size() == 0)return true;
       return infered.push(token);
     }
 

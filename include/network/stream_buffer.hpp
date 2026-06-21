@@ -1,3 +1,5 @@
+#pragma once
+
 #include <netinet/in.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
@@ -67,7 +69,7 @@ class stream_buffer{
     stream_buffer(int fd) :
       size_(0),
       capacity_(init_capacity),
-      data_(std::make_unique<uint8_t[]>(capacity_)),
+      data_(std::make_unique<uint8_t[]>(init_capacity)),
       read_head(0),
       read_fd_(fd)
   {}
@@ -109,7 +111,6 @@ class stream_buffer{
           memcpy(&val , data_.get() + read_head, sizeof(val));
           read_head += sizeof(val);
 
-          val = ntohl(val);
           return val;
         }else{
           return std::nullopt;

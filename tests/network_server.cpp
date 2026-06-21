@@ -1,24 +1,15 @@
-#include "../include/network/multiclient/network_manager.hpp"
-#include "../include/logging.hpp"
+#include "../include/network/network_manager.hpp"
 
 int main() {
-  NetworkManager manager;
+  NetworkManager server("/tmp/odin0000.socket");
 
-  manager.start_listen();
+  server.start_listen();
 
   while (true) {
-    auto prompt = manager.read_prompt();
-
-    if (!prompt.has_value()) {
-      continue;
-    }
-
-    if (*prompt == "!exit") {
-      break;
-    }
-    Log(*prompt);
-
-    manager.write_infered("THIS IS A TEST TOKEN");
+    Log(server.read_prompt());
+    server.write_infered("THIS IS JUST A TEST");
+    server.write_infered("THIS IS JUST A TEST 2");
+    server.write_infered("THIS IS JUST A TEST 3");
   }
 
   return 0;
