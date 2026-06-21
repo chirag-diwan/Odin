@@ -1,5 +1,5 @@
 #include "../include/engine/engine.hpp"
-#include "../include/network/multiclient/network_manager.hpp"
+#include "../include/network/network_manager.hpp"
 #include "../include/model_utils.hpp"
 #include "../include/tokeniser/json_tokeniser.hpp"
 #include "../include/gguf/ggufreader.hpp"
@@ -10,8 +10,6 @@
 #include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-cpu.h"
-#include <atomic>
-#include <csignal>
 #include <cstdint>
 #include <cstdlib>
 #include <string>
@@ -35,10 +33,7 @@ using UniqueGgmlContext = std::unique_ptr<ggml_context, GgmlDeleter>;
 std::string FetchPrompt(bool use_network, NetworkManager& manager , replxx::Replxx& rx) {
   if (use_network) {
     auto prompt = manager.read_prompt();
-    if(prompt.has_value()){
-      return *prompt;
-    }
-    return "";
+    return prompt;
   }
 
   const char* c_input = rx.input("\n $ ");
@@ -51,14 +46,7 @@ std::string FetchPrompt(bool use_network, NetworkManager& manager , replxx::Repl
   return std::string{c_input};
 }
 
-static std::atomic<bool> stop = false;
-
-void sigint_handler(int){
-  stop.store(true);
-}
-
 int main(int argc, char** argv) {
-  std::signal(SIGINT , sigint_handler);
   Log(
       "Usage:\n"
       "\t./odin --model <model_path> --thread <num_threads> --tokeniser-json <tokeniser_json_path>\n"
@@ -107,10 +95,6 @@ int main(int argc, char** argv) {
   BPETokeniser tokeniser(config.tokeniser_json_path);
   std::vector<uint32_t> tokens;
 
-  NetworkManager manager;
-  if (config.use_network) {
-    manager.start_listen();
-  }
 
 
   replxx::Replxx rx;
@@ -134,11 +118,17 @@ int main(int argc, char** argv) {
       }
       );
 
-  while (!stop) {
+  NetworkManager manager;
+  if (config.use_network) {
+    manager.start_listen();
+  }
+
+  while (true) {
     std::string prompt = FetchPrompt(config.use_network, manager , rx);
     if (prompt.empty()) {
       continue;
     }
+
     rx.history_add(prompt);
 
     if (prompt == "!exit") break;
@@ -152,15 +142,25 @@ int main(int argc, char** argv) {
     uint32_t next_token = engine.Prefill(tokens_view);
     tokens.push_back(next_token);
     auto tok = tokeniser.Decode(next_token);
-    if(tok.has_value())std::cerr << *tok;
+    if(tok.has_value()){
+      if(config.use_network){
+        manager.write_infered(*tok);
+      }
+      std::cerr << *tok;
+    }
 
-    while (next_token != globals.ggml_eos_token_id) {
+    while ((next_token != globals.ggml_eos_token_id)) {
       next_token = engine.Infer(tokens.back());
       tokens.push_back(next_token);
 
       if (next_token != globals.ggml_eos_token_id) {
         auto tok = tokeniser.Decode(next_token);
-        if(tok.has_value())std::cerr << (*tok);
+        if(tok.has_value()){
+          if(config.use_network){
+            manager.write_infered(*tok);
+          }
+          std::cerr << *tok;
+        }
       }
     }
   }

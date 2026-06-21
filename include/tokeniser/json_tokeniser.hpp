@@ -11,7 +11,7 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
 #include <string>
-#include <simdjson.h>
+#include "../../external/simdjson/simdjson.h"
 #include <string_view>
 #include <type_traits>
 
@@ -344,7 +344,10 @@ class BPETokeniser{
     std::optional<std::string> Decode(uint32_t token_id){
       auto token_opt = vocab.getKeyOf(token_id);
       if(__builtin_expect(!token_opt.has_value(),false)){
-        return std::nullopt;
+        token_opt = special_tokens.getKeyOf(token_id);
+        if(!token_opt.has_value()){
+          return std::nullopt;
+        }
       }
 
       auto token_str = *token_opt;

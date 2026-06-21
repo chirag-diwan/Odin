@@ -9,19 +9,19 @@ enum LogLevel {
 template<typename ...Pack>
 __attribute__((always_inline)) inline void Log(LogLevel l , Pack ...args){
   if(l == WARN){
-    std::cout << "[WARN]";
+    std::cerr << "[WARN]";
   }else if(l == ERROR) {
-    std::cout << "[ERROR]";
+    std::cerr << "[ERROR]";
   }else if(l == INFO) {
-    std::cout << "[INFO]";
+    std::cerr << "[INFO]";
   }
-  ((std::cout << args << ' '), ...);
-  std::cout << '\n';
+  ((std::cerr << args << ' '), ...);
+  std::cerr << '\n';
 }
 
 
 template<typename ...Pack>
 __attribute__((always_inline)) inline void Log(Pack ...args){
-  ((std::cout << args << ' '), ...);
-  std::cout << '\n';
+  ((std::cerr << args << ' '), ...);
+  std::cerr << '\n';
 }
