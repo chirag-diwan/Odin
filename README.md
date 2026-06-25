@@ -1,5 +1,7 @@
 # Odin
 
+![Odin Showcase](./assets/showcase.png)
+
 Odin is a CPU-optimized inference engine designed for edge hardware. The primary objective is to maximize inference throughput on resource-constrained devices using quantized models (GGUF) with minimal accuracy degradation.
 
 **Hardware Profile:** AMD Ryzen 5 7520U (4C/8T) @ 4.38GHz , Qwen 2.5 Instruct (0.5 billion parameter)

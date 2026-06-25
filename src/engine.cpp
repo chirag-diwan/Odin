@@ -6,6 +6,7 @@
 #include "../include/config.hpp"
 #include "../include/logging.hpp"
 #include "../include/types.hpp"
+#include "../include/welcome.hpp"
 #include "../external/replxx/include/replxx.hxx"
 #include "ggml.h"
 #include "ggml-alloc.h"
@@ -55,18 +56,6 @@ std::string FetchPrompt(bool use_ipc, IPCManager& manager , replxx::Replxx& rx) 
 int main(int argc, char** argv) {
   std::signal(SIGINT , sig_int_handler);
 
-  Log(
-      "Usage:\n"
-      "\t./odin --model <model_path> --thread <num_threads> --tokeniser-json <tokeniser_json_path>\n"
-      "\t[--ipc-path <path>] [--use-ipc <0|1>]\n\n"
-      "Options:\n"
-      "\t--model            Path to the model file (required)\n"
-      "\t--thread           Number of threads to use (optional)\n"
-      "\t--tokeniser-json   Path to tokenizer JSON file (required)\n"
-      "\t--ipc-path     Path or endpoint for ipc input/output (optional)\n"
-      "\t--use-ipc      Enable/disable ipc mode (\"false\" = off, \"true\" = on)\n"
-     );
-
   if (argc < 2) {
     return EXIT_FAILURE;
   }
@@ -107,9 +96,15 @@ int main(int argc, char** argv) {
 
   replxx::Replxx rx;
 
-  rx.history_load("history.txt");
+  rx.history_load(config.history_path);
   rx.install_window_change_handler();
   rx.set_max_history_size(1000);
+
+  rx.clear_screen();
+
+  Log(logo);
+  Log(usage);
+
 
   rx.bind_key(
       replxx::Replxx::KEY::ENTER,
@@ -140,7 +135,7 @@ int main(int argc, char** argv) {
 
     rx.history_add(prompt);
 
-    if (prompt == "!exit") break;
+    if (prompt.starts_with("!exit")) break;
 
     size_t last_index = tokens.size();
     tokeniser.Tokenise(prompt, tokens);
@@ -172,12 +167,14 @@ int main(int argc, char** argv) {
         }
       }
     }
+    interupt = false;
   }
   Log("\nBye!\n");
 
   manager.stop();
 
-  rx.history_save("history.txt");
+  rx.history_save(config.history_path);
+
   return EXIT_SUCCESS;
 }
 

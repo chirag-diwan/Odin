@@ -171,12 +171,15 @@ struct Config{
   std::string ipc_path;
   std::string model_path;
   std::string tokeniser_json_path;
+  std::string history_path;
+
   bool use_ipc;
   float temperature ;
   uint32_t k ;
   uint8_t thread_count;
   Config(){
     ipc_path = "/tmp/odin0000.socket";
+    history_path = "/tmp/odin-prompt-history.txt";
     use_ipc = false;
     thread_count = std::thread::hardware_concurrency();
     model_path = "NOT PROVIDED";

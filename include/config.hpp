@@ -33,6 +33,9 @@ Config ParseConfig(int argc , char ** argv){
       }else{
         config.use_ipc = false;
       }
+    } else if(strcmp(argv[i], "--history") == 0){
+      Errorif(i + 1 > argc, "Expected file path after --history");
+      config.history_path = argv[i + 1];
     }
   }
   return config;
