@@ -15,7 +15,13 @@ class Formatter{
         case Architecture::LLAMA3:
           return std::format("<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n{}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n" , system , user);
         case Architecture::QWEN2:
-          return std::format( "<|im_begin|>{}<|im_end|><|im_begin|> User , {} <|im_begin|>Assistant " , system , user);
+          return std::format(
+              "<|im_start|>system\n{}\n<|im_end|>\n"
+              "<|im_start|>user\n{}\n<|im_end|>\n"
+              "<|im_start|>assistant\n",
+              system,
+              user
+              );
         default:
           Errorif(true, "Invalid model architecture");
           return "";
