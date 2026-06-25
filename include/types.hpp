@@ -103,8 +103,15 @@ struct GGufTensor {
 };
 
 
+enum class Architecture : uint8_t{
+  QWEN2,
+  LLAMA3,
+  UNKNOWN
+};
+
 struct ModelGlobals{
-  std::string_view general_model_architecture;
+  Architecture general_model_architecture;
+  std::string_view full_architecture_name;
   uint32_t block_count;
   uint32_t embedding_length;
   uint32_t feed_forward_length;
@@ -121,7 +128,7 @@ struct ModelGlobals{
 
 
   ModelGlobals(){
-    general_model_architecture = "";
+    general_model_architecture = Architecture::UNKNOWN;
     block_count = 0;
     embedding_length = 0;
     feed_forward_length = 0;

@@ -59,8 +59,12 @@ ModelGlobals GetModelGlobals(metadatakv_t& metadata_key_values ){
       global_struct.token_merges = &kv.value.array.strings;
 
     }else if(kv.name.find("general.architecture") != std::string_view::npos){
-      global_struct.general_model_architecture = kv.value.string;
-
+      global_struct.full_architecture_name = kv.value.string;
+      if(kv.value.string == "llama"){
+        global_struct.general_model_architecture = Architecture::LLAMA3;
+      }else if(kv.value.string == "qwen2"){
+        global_struct.general_model_architecture = Architecture::QWEN2;
+      }
     }
   }
   return global_struct;

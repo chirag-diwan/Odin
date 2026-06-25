@@ -11,6 +11,7 @@
 #include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-cpu.h"
+#include "../include/tokeniser/formatter.hpp"
 #include <csignal>
 #include <cstdint>
 #include <cstdlib>
@@ -83,6 +84,11 @@ int main(int argc, char** argv) {
   UniqueGgmlContext static_ctx(ggml_init(static_ctx_params));
 
   auto globals = GetModelGlobals(reader.metadata_key_values);
+  if(globals.general_model_architecture == Architecture::UNKNOWN){
+    //TODO Try and get more information about the Architecture using the full name.
+    Log(ERROR , "Unknown model architecture" , globals.full_architecture_name);
+    return -1;
+  }
   auto model = CreateModel(static_ctx.get(), reader);
 
   Engine engine(model, static_ctx.get(), backend);
@@ -102,9 +108,7 @@ int main(int argc, char** argv) {
 
   rx.clear_screen();
 
-  printLogo();
-  Log(usage);
-
+  PrintHome();
 
   rx.bind_key(
       replxx::Replxx::KEY::ENTER,
@@ -127,15 +131,23 @@ int main(int argc, char** argv) {
     manager.start_listen();
   }
 
+  std::string system_prompt = "You are a helpfull AI agent";
+
   while (!interupt) {
-    std::string prompt = FetchPrompt(config.use_ipc, manager , rx);
-    if (prompt.empty()) {
+    std::string raw_prompt = FetchPrompt(config.use_ipc, manager , rx);
+    if (raw_prompt.empty()) {
       continue;
     }
 
-    rx.history_add(prompt);
+    rx.history_add(raw_prompt);
 
-    if (prompt.starts_with("!exit")) break;
+    if (raw_prompt.starts_with("!exit")) break;
+    if(raw_prompt.starts_with("!system")) {
+      //Update the system prompt
+      system_prompt = raw_prompt.substr(7);
+    }
+
+    auto prompt = Formatter::GetFormatted(model.globals.general_model_architecture,system_prompt, raw_prompt);
 
     size_t last_index = tokens.size();
     tokeniser.Tokenise(prompt, tokens);
