@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
 
   rx.clear_screen();
 
-  Log(logo);
+  printLogo();
   Log(usage);
 
 
