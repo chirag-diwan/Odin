@@ -17,7 +17,8 @@ enum FillStatus : uint8_t{
   DATA_PRESENT = 1 << 0,
   DATA_NOT_PRESENT = 1 << 1,
   CLIENT_OPEN = 1 << 2,
-  CLIENT_CLOSED = 1 << 3
+  CLIENT_CLOSED = 1 << 3,
+  INTERUPT = 1 << 4
 };
 
 class stream_buffer{
@@ -141,7 +142,7 @@ class stream_buffer{
           }
 
           if (errno == EINTR) {
-            continue;
+            return FillStatus::INTERUPT;
           }
 
           if(errno == ECONNRESET){

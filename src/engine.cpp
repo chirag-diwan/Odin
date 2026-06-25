@@ -10,12 +10,19 @@
 #include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-cpu.h"
+#include <csignal>
 #include <cstdint>
 #include <cstdlib>
 #include <string>
 #include <sys/mman.h>
 #include <memory>
 #include <iostream>
+
+static std::sig_atomic_t interupt = false;
+
+void sig_int_handler(int){
+  interupt = true;
+}
 
 class MmapGuard {
   void* addr;
@@ -39,7 +46,6 @@ std::string FetchPrompt(bool use_ipc, IPCManager& manager , replxx::Replxx& rx) 
   const char* c_input = rx.input("\n $ ");
 
   if (c_input == nullptr) {
-    std::cerr << "\nBye!\n";
     return "!exit";
   }
 
@@ -47,10 +53,12 @@ std::string FetchPrompt(bool use_ipc, IPCManager& manager , replxx::Replxx& rx) 
 }
 
 int main(int argc, char** argv) {
+  std::signal(SIGINT , sig_int_handler);
+
   Log(
       "Usage:\n"
       "\t./odin --model <model_path> --thread <num_threads> --tokeniser-json <tokeniser_json_path>\n"
-      "\t[--ipc-path <path>] [--use-ipc <0|1>] [--temp <float>] [--top-k <int>]\n\n"
+      "\t[--ipc-path <path>] [--use-ipc <0|1>]\n\n"
       "Options:\n"
       "\t--model            Path to the model file (required)\n"
       "\t--thread           Number of threads to use (optional)\n"
@@ -118,12 +126,13 @@ int main(int argc, char** argv) {
       }
       );
 
-  IPCManager manager(config.ipc_path);
+  IPCManager manager(interupt , config.ipc_path);
+
   if (config.use_ipc) {
     manager.start_listen();
   }
 
-  while (true) {
+  while (!interupt) {
     std::string prompt = FetchPrompt(config.use_ipc, manager , rx);
     if (prompt.empty()) {
       continue;
@@ -149,7 +158,7 @@ int main(int argc, char** argv) {
       std::cerr << *tok;
     }
 
-    while ((next_token != globals.ggml_eos_token_id)) {
+    while (!interupt && (next_token != globals.ggml_eos_token_id)) {
       next_token = engine.Infer(tokens.back());
       tokens.push_back(next_token);
 
@@ -164,6 +173,9 @@ int main(int argc, char** argv) {
       }
     }
   }
+  Log("\nBye!\n");
+
+  manager.stop();
 
   rx.history_save("history.txt");
   return EXIT_SUCCESS;
