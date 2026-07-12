@@ -79,7 +79,7 @@ class stream_buffer{
 
     [[nodiscard]]
       size_t bytes_available(){
-        size_t bytes_available = 0;
+        int bytes_available = 0;
         ioctl(read_fd_, FIONREAD, &bytes_available);
         return bytes_available;
       }
@@ -118,6 +118,18 @@ class stream_buffer{
         }
       }
 
+    [[nodiscard]]
+      bool cmp_last_few(const char *val) {
+        size_t val_len  = strlen(val);
+
+        if (val_len <= size_)
+        {
+          return memcmp(data_.get() + size_ - val_len, val, val_len) == 0;
+        }
+
+        return false;
+      }
+
     void clear(int new_fd){
       read_fd_ = new_fd;
       read_head = 0;
@@ -142,10 +154,13 @@ class stream_buffer{
           }
 
           if (errno == EINTR) {
-            return FillStatus::INTERUPT;
+            continue;
           }
 
           if(errno == ECONNRESET){
+            if(data_read){
+              return FillStatus::DATA_PRESENT | FillStatus::CLIENT_CLOSED;
+            }
             return FillStatus::DATA_NOT_PRESENT | FillStatus::CLIENT_CLOSED;
           }
         }
@@ -158,6 +173,16 @@ class stream_buffer{
 
     decltype(auto) end(){
       return data_.get() + size_;
+    }
+
+
+    std::optional<std::string> read_all_as_str(){
+      if(size_ == 0){
+        return std::nullopt;
+      }
+      std::string buf(begin() , end());
+      read_head = size_;
+      return buf;
     }
 
     std::optional<std::string> read_str(size_t s){

@@ -52,7 +52,7 @@ ggml_tensor* forward(
     //Q_3D = ggml_cont(temp_ctx, ggml_permute(temp_ctx, Q_3D, 0, 2, 1, 3));
     //K_3D = ggml_cont(temp_ctx, ggml_permute(temp_ctx, K_3D, 0, 2, 1, 3));
     //V_3D = ggml_cont(temp_ctx, ggml_permute(temp_ctx, V_3D, 0, 2, 1, 3));
-    Q_3D = ggml_permute(temp_ctx, Q_3D, 0, 2, 1, 3);
+    Q_3D = ggml_permute(temp_ctx, Q_3D, 0, 2, 1, 3); //dhs -> dsh
     K_3D = ggml_permute(temp_ctx, K_3D, 0, 2, 1, 3);
     V_3D = ggml_permute(temp_ctx, V_3D, 0, 2, 1, 3);
 
@@ -65,7 +65,7 @@ ggml_tensor* forward(
     ggml_tensor* K_view = ggml_view_3d(temp_ctx, cache.K, state.d, active_tokens, model.globals.attention_head_count_kv, cache.K->nb[1], cache.K->nb[2], layer_offset);
     ggml_tensor* V_view = ggml_view_3d(temp_ctx, cache.V, active_tokens, state.d, model.globals.attention_head_count_kv, cache.V->nb[1], cache.V->nb[2], layer_offset);
 
-    auto qk_t = ggml_mul_mat(temp_ctx, K_view, Q_3D);
+    auto qk_t = ggml_mul_mat(temp_ctx, K_view, Q_3D);//dch_kv , dsh -> cdh_kv , dsh -> sch
     qk_t = ggml_scale(temp_ctx, qk_t, state.scale_factor);
     qk_t = ggml_diag_mask_inf(temp_ctx, qk_t,  state.n_past);
     qk_t = ggml_soft_max(temp_ctx, qk_t);

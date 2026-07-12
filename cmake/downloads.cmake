@@ -9,3 +9,7 @@ download_file(
   "${CMAKE_SOURCE_DIR}/external/simdjson/simdjson.cpp"
 )
 
+download_file(
+  "https://raw.githubusercontent.com/yhirose/cpp-httplib/refs/heads/master/httplib.h"
+  "${CMAKE_SOURCE_DIR}/external/httplib/httplib.h"
+)

@@ -101,7 +101,7 @@ ret_type Extract(const T* data , GGufValueType type){
     case GGUF_VALUE_TYPE_FLOAT64:
       return static_cast<ret_type>(reinterpret_cast<const double*>(data)[0]);
     default:
-      Log(ERROR , "Unsupported extraction for %?" , GGufValueName(type));
+      Log(ERROR , "Unsupported extraction for" , GGufValueName(type));
       std::exit(-1);
   }
 }

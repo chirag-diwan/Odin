@@ -144,7 +144,7 @@ class IPCManager {
                 uint32_t len = static_cast<uint32_t>(token.size());
 
                 while(total_bytes_sent < sizeof(len)){
-                  auto ret = send(client_fd, &len, sizeof(len), MSG_NOSIGNAL);
+                  auto ret = send(client_fd, &len + total_bytes_sent, sizeof(len) - total_bytes_sent, MSG_NOSIGNAL);
                   if(ret > 0)total_bytes_sent += ret;
                 }
 
@@ -290,10 +290,14 @@ class IPCManager {
 
 
     bool write_infered(const std::string& tok){
-      uint64_t ret = 1;
-      write(infered_event_fd_, &ret, sizeof(ret));
+      auto ok = infered_.push(tok);
 
-      return infered_.push(tok);
+      if(ok){
+        uint64_t ret = 1;
+        write(infered_event_fd_, &ret, sizeof(ret));
+      }
+
+      return ok;
     }
 
 

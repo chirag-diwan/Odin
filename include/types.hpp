@@ -181,18 +181,19 @@ struct Config{
   std::string history_path;
 
   bool use_ipc;
-  float temperature ;
-  uint32_t k ;
+  bool use_http;
+  uint32_t port;
   uint8_t thread_count;
+
   Config(){
     ipc_path = "/tmp/odin0000.socket";
     history_path = "/tmp/odin-prompt-history.txt";
     use_ipc = false;
+    use_http = false;
+    port = 8080;
     thread_count = std::thread::hardware_concurrency();
     model_path = "NOT PROVIDED";
     tokeniser_json_path = "NOT PROVIDED";
-    temperature = 1;
-    k = 10;
   }
 };
 
@@ -273,7 +274,6 @@ struct KVCache{
 };
 
 
-
 struct TokeniserConfig{
   bool turnacation;
   bool padding;
@@ -287,16 +287,21 @@ struct PreTokeniser{
   bool invert;
 };
 
-enum Stage : uint8_t{
-  PROMPT_INGESTION,
-  PROMPT_PROCESSING
+enum class PageType : uint8_t {
+  KEY,
+  VALUE
 };
 
-struct ApplicationState{
-  Stage stage;
-  size_t last_token_index;
-  ApplicationState(){
-    stage = PROMPT_INGESTION;
-    last_token_index = 0;
+struct Page{
+  static constexpr size_t PAGE_SIZE = 32;
+  ggml_tensor* data;
+  size_t size;
+
+  Page(): data(nullptr) , size(0){ }
+  Page(ggml_tensor* data): data(data) , size(0){ }
+
+  bool full(){
+    return size >= PAGE_SIZE;
   }
 };
+

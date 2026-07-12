@@ -1,5 +1,4 @@
 #include "../include/engine/engine.hpp"
-#include "../include/ipc/ipc_manager.hpp"
 #include "../include/model_utils.hpp"
 #include "../include/tokeniser/json_tokeniser.hpp"
 #include "../include/gguf/ggufreader.hpp"
@@ -8,10 +7,10 @@
 #include "../include/types.hpp"
 #include "../include/welcome.hpp"
 #include "../include/tokeniser/formatter.hpp"
-#include "../external/replxx/include/replxx.hxx"
 #include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-cpu.h"
+#include "http/http-manager.hpp"
 #include "main-utility.hpp"
 #include <csignal>
 #include <cstdint>
@@ -24,21 +23,6 @@ static std::sig_atomic_t interupt = false;
 
 void sig_int_handler(int){
   interupt = true;
-}
-
-std::string FetchPrompt(bool use_ipc,IPCManager& manager , replxx::Replxx& rx) {
-  if (use_ipc) {
-    auto prompt = manager.read_prompt();
-    return prompt;
-  }
-
-  const char* c_input = rx.input("\n $ ");
-
-  if (c_input == nullptr) {
-    return "!exit";
-  }
-
-  return std::string{c_input};
 }
 
 void abort_callback(const char * message){
@@ -54,7 +38,6 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
-
   Config config = ParseConfig(argc, argv);
   GGufReader reader;
 
@@ -69,7 +52,7 @@ int main(int argc, char** argv) {
   auto threadpool_params = ggml_threadpool_params_default(std::thread::hardware_concurrency());
 
   UniqueThreadpool threadpool(ggml_threadpool_new(&threadpool_params));
-  
+
   ggml_backend_cpu_set_threadpool(backend, threadpool.get());
 
   ggml_init_params static_ctx_params = {
@@ -96,50 +79,22 @@ int main(int argc, char** argv) {
   std::vector<uint32_t> tokens;
 
 
-  replxx::Replxx rx;
-
-  rx.history_load(config.history_path);
-  rx.install_window_change_handler();
-  rx.set_max_history_size(1000);
-
-  rx.clear_screen();
-
   PrintHome();
 
-  rx.bind_key(
-      replxx::Replxx::KEY::ENTER,
-      [&rx](char32_t) {
-      rx.invoke(replxx::Replxx::ACTION::INSERT_CHARACTER, '\n');
-      return replxx::Replxx::ACTION_RESULT::CONTINUE;
-      }
-      );
+  HttpManager manager(interupt);
 
-  rx.bind_key(
-      replxx::Replxx::KEY::control('S'),
-      [](char32_t) {
-      return replxx::Replxx::ACTION_RESULT::RETURN;
-      }
-      );
-
-  IPCManager manager(interupt , config.ipc_path);
-
-  if (config.use_ipc) {
-    manager.start_listen();
-  }
+  manager.start_listen();
 
   std::string system_prompt = "You are a helpfull AI agent";
 
   while (!interupt) {
-    std::string raw_prompt = FetchPrompt(config.use_ipc, manager , rx);
+    std::string raw_prompt = manager.read_prompt();
     if (raw_prompt.empty()) {
       continue;
     }
 
-    rx.history_add(raw_prompt);
-
     if (raw_prompt.starts_with("!exit")) break;
     if(raw_prompt.starts_with("!system")) {
-      //Update the system prompt
       system_prompt = raw_prompt.substr(7);
     }
     if(raw_prompt.starts_with("!clear-context")){
@@ -158,9 +113,7 @@ int main(int argc, char** argv) {
     tokens.push_back(next_token);
     auto tok = tokeniser.Decode(next_token);
     if(tok.has_value()){
-      if(config.use_ipc){
-        manager.write_infered(*tok);
-      }
+      manager.write_infered(*tok);
       std::cerr << *tok;
     }
 
@@ -171,9 +124,7 @@ int main(int argc, char** argv) {
       if (next_token != globals.ggml_eos_token_id) {
         auto tok = tokeniser.Decode(next_token);
         if(tok.has_value()){
-          if(config.use_ipc){
-            manager.write_infered(*tok);
-          }
+          manager.write_infered(*tok);
           std::cerr << *tok;
         }
       }
@@ -184,8 +135,5 @@ int main(int argc, char** argv) {
 
   manager.stop();
 
-  rx.history_save(config.history_path);
-
   return EXIT_SUCCESS;
 }
-

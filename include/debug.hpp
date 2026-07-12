@@ -2,13 +2,12 @@
 
 
 #include "ggml.h"
-#include "gguf.hpp"
+#include "./gguf/gguf.hpp"
 #include "logging.hpp"
 #include "types.hpp"
 
 void debug_print(ggml_tensor* t , const char* name){
-  Log(name , t->ne[0] , t->ne[1] , t->ne[2] , t->ne[3]);
-  Log(ggml_type_name(t->type));
+  Log(name ,ggml_type_name(t->type), t->ne[0] , t->ne[1] , t->ne[2] , t->ne[3]);
 }
 
 void debug_print(const GGufValue& val){
