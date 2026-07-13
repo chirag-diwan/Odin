@@ -1,5 +1,6 @@
 #pragma once
 
+#define CPPHTTPLIB_NO_MULTI_THREAD_SUPPORT
 #include "../../external/httplib/httplib.h"
 #include "../data_structures/unidirectional_map.hpp"
 #include "../data_structures/lock_free_ring_buffer.hpp"

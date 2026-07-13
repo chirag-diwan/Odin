@@ -4,11 +4,11 @@
   var ChatMessage = class extends HTMLElement {
     constructor(type) {
       super();
+      this.last_markdown = null;
       this.row = document.createElement("div");
       this.row.className = `message-row ${type}`;
       this.bubble = document.createElement("div");
       this.bubble.classList.add("message-bubble");
-      this.bubble.classList.add("markdown-body");
       this.row.appendChild(this.bubble);
       this.appendChild(this.row);
     }
@@ -17,6 +17,14 @@
     }
     updateHTML(html) {
       this.bubble.innerHTML = html;
+    }
+    updateLastMarkdown(html) {
+      if (this.last_markdown === null) {
+        this.last_markdown = document.createElement("div");
+        this.last_markdown.className = "markdown-body";
+        this.bubble.appendChild(this.last_markdown);
+      }
+      this.last_markdown.innerHTML = html;
     }
     clear() {
       this.bubble.textContent = "";
@@ -1350,18 +1358,16 @@ Please report this to https://github.com/markedjs/marked.`, e) {
         if (renderPending) return;
         renderPending = true;
         requestAnimationFrame(async () => {
-          last_chat_bubble.innerHTML = await g.parse(textContent);
+          last_chat_bubble.updateLastMarkdown(await g.parse(textContent));
           renderPending = false;
         });
       };
       try {
         for await (const token of sse) {
           if (token === "[EOS]") {
-            console.log(token);
             break;
           }
           const parsed_token = await JSON.parse(token);
-          console.log(parsed_token.token);
           textContent += parsed_token.token;
           updateMarkdown();
         }

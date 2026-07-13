@@ -60,6 +60,7 @@ void printLogo() {
 }
 
 void PrintHome(){
+  Log("\033[H\033[2J");
   printLogo();
   static const auto usage =
     "Usage:\n"
