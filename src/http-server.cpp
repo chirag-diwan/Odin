@@ -17,7 +17,6 @@
 #include <cstdlib>
 #include <string>
 #include <sys/mman.h>
-#include <iostream>
 
 static std::sig_atomic_t interupt = false;
 
@@ -114,7 +113,6 @@ int main(int argc, char** argv) {
     auto tok = tokeniser.Decode(next_token);
     if(tok.has_value()){
       manager.write_infered(*tok);
-      std::cerr << *tok;
     }
 
     while (!interupt && (next_token != globals.ggml_eos_token_id)) {
@@ -125,10 +123,11 @@ int main(int argc, char** argv) {
         auto tok = tokeniser.Decode(next_token);
         if(tok.has_value()){
           manager.write_infered(*tok);
-          std::cerr << *tok;
         }
       }
     }
+
+    manager.write_infered(manager.EOS);
     interupt = false;
   }
   Log("\nBye!\n");

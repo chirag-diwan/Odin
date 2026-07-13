@@ -24,7 +24,7 @@ function(add_odin_target target_name source_file)
   target_compile_options(${target_name} PRIVATE
     -Wall
     -Wextra
-    $<$<CONFIG:Debug>:-O0 -g3 -pthread>
+    $<$<CONFIG:Debug>:-O0 -ggdb -pthread>
     $<$<CONFIG:Release>:-O3>
   )
 endfunction()

@@ -9,7 +9,6 @@ int main() {
 
   BPETokeniser tokeniser(tokenizer_path);
 
-  // Read the tokenizer file into memory
   std::string contents = "This has to be tokenised";
 
   std::vector<uint32_t> tokens;

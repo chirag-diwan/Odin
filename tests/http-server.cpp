@@ -14,11 +14,11 @@ int main(){
   server.start_listen();
   while(!interupt){
     Log(server.read_prompt());
-    for(int i = 0 ; i < 20 ; i++){
+    for(int i = 0 ; i < 5 ; i++){
       server.write_infered("TEST");
       std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
-    //Log(server.read_prompt());
+    server.write_infered("[EOS]");
   }
   server.stop();
 }

@@ -166,3 +166,230 @@ body {
     margin-top: 12px;
 }
 
+.markdown-body {
+  line-height: 1.6;
+  font-size: 15px;
+  color: #e5e7eb;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 {
+  margin: 1.2em 0 0.5em;
+  font-weight: 600;
+}
+
+.markdown-body p {
+  margin: 0.7em 0;
+}
+
+.markdown-body code {
+  background: #1f2937;
+  padding: 0.15rem 0.35rem;
+  border-radius: 5px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.9em;
+}
+
+.markdown-body pre {
+  background: #111827;
+  padding: 1rem;
+  border-radius: 10px;
+  overflow-x: auto;
+}
+
+.markdown-body pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.markdown-body blockquote {
+  border-left: 4px solid #6366f1;
+  padding-left: 1rem;
+  color: #9ca3af;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: 1.5rem;
+}
+
+.markdown-body table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid #374151;
+  padding: 8px;
+}
+
+
+/*
+  LLM generated
+
+  Responsive Design
+  
+  ========================= */
+
+/* Tablets and smaller laptops */
+@media (max-width: 1024px) {
+
+    .chat-header {
+        padding: 14px 20px;
+    }
+
+    .chat-history {
+        padding: 24px;
+        gap: 24px;
+    }
+
+    .message-bubble {
+        max-width: 80%;
+        padding: 14px 18px;
+    }
+
+    .chat-input-area {
+        padding: 18px;
+    }
+
+    .input-wrapper {
+        max-width: 100%;
+    }
+}
+
+
+/* Mobile devices */
+@media (max-width: 640px) {
+
+    .chat-container {
+        height: 100dvh;
+    }
+
+    .chat-header {
+        padding: 12px 16px;
+    }
+
+    .chat-header h1 {
+        font-size: 12px;
+    }
+
+    .status-indicator {
+        width: 7px;
+        height: 7px;
+    }
+
+
+    .chat-history {
+        padding: 16px;
+        gap: 16px;
+    }
+
+
+    .message-row {
+        width: 100%;
+    }
+
+    .message-bubble {
+        max-width: 90%;
+        padding: 12px 14px;
+        font-size: 13px;
+        line-height: 1.5;
+        border-radius: 14px;
+    }
+
+    .message-row.user .message-bubble {
+        border-bottom-right-radius: 4px;
+    }
+
+    .message-row.assistant .message-bubble {
+        border-bottom-left-radius: 4px;
+    }
+
+
+    .chat-input-area {
+        padding: 12px;
+    }
+
+    .input-wrapper {
+        border-radius: 10px;
+    }
+
+    .input-wrapper textarea {
+        font-size: 14px;
+        padding: 14px 44px 14px 14px;
+    }
+
+    .input-wrapper button {
+        right: 6px;
+        bottom: 6px;
+        padding: 7px;
+    }
+
+    .input-hint {
+        font-size: 11px;
+        margin-top: 8px;
+    }
+
+
+    /* Markdown mobile adjustments */
+    .markdown-body {
+        font-size: 14px;
+    }
+
+    .markdown-body pre {
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 12px;
+    }
+
+    .markdown-body table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}
+
+
+/* Very small phones */
+@media (max-width: 380px) {
+
+    .chat-history {
+        padding: 12px;
+    }
+
+    .message-bubble {
+        max-width: 95%;
+        font-size: 12.5px;
+    }
+
+    .chat-input-area {
+        padding: 10px;
+    }
+
+    .input-wrapper textarea {
+        padding-right: 40px;
+    }
+}
+
+
+/* Landscape mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+
+    .chat-header {
+        padding: 8px 16px;
+    }
+
+    .chat-history {
+        padding: 12px;
+    }
+
+    .chat-input-area {
+        padding: 10px 16px;
+    }
+
+    .input-hint {
+        display: none;
+    }
+}
