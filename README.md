@@ -29,7 +29,7 @@ Odin is a CPU-optimized inference engine designed for hosting on edge hardware. 
 
 ```bash
 
-git clone --recurse-submodules [https://github.com/chirag-diwan/Odin.git](https://github.com/chirag-diwan/Odin.git)
+git clone --recurse-submodules https://github.com/chirag-diwan/Odin.git
 cd Odin
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
