@@ -1,9 +1,9 @@
 #pragma once
 #include "./block.hpp"
 #include "./errors.hpp"
-#include "ggml-alloc.h"
-#include "ggml-backend.h"
-#include "ggml.h"
+#include "../external/ggml/include/ggml-alloc.h"
+#include "../external/ggml/include/ggml-backend.h"
+#include "../external/ggml/include/ggml.h"
 #include <cstdint>
 #include <netinet/in.h>
 #include <string>

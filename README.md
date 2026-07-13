@@ -2,7 +2,10 @@
 
 ![Odin Showcase](./assets/showcase.png)
 
-Odin is a CPU-optimized inference engine designed for edge hardware. The primary objective is to maximize inference throughput on resource-constrained devices using quantized models (GGUF) with minimal accuracy degradation.
+
+![Odin Browser Interface Showcase](./assets/showcase_brow.png)
+
+Odin is a CPU-optimized inference engine designed for hosting on edge hardware. The primary objective is to maximize inference throughput on resource-constrained devices using quantized models (GGUF) with minimal accuracy degradation.
 
 **Hardware Profile:** AMD Ryzen 5 7520U (4C/8T) @ 4.38GHz , Qwen 2.5 Instruct (0.5 billion parameter)
 
@@ -42,6 +45,17 @@ Odin requires model weights in the GGUF format.
 ./odin --model "/path/to/model.gguf" --thread $(nproc) --tokeniser-json "/path/to/tokeniser/json" --use-ipc false --ipc-path /tmp/odin0000.socket
 ```
 
+## HTTP server
+> [!WARNING]
+> This is a experimental feature and thus only available on the `dev` branch.
+
+The HTTP server is hosted at `localhost:8080`(not change able)
+As of the current status the server dosen't supports refreshing the context .Though on reloading the page the history will be gone from the frontend but not from the engine side. 
+
+```bash
+./odin-http-server --model "/path/to/model.gguf" --tokeniser-json "/path/to/tokeniser/json"
+```
+
 ### CLI Arguments
 
 | Argument | Description |
@@ -58,4 +72,4 @@ Odin requires model weights in the GGUF format.
 
 **Alpha / Active Development**
 Odin currently supports the **Qwen2** and **LLama3** architecture class. Support for additional architectures is actively being implemented.
-Support for more architecture is being developed currently
+The engine is under active development and new feature will be added in future.

@@ -1,8 +1,4 @@
-#pragma  once
-
-#include "../block.hpp"
-#include "ggml.h"
-#include "../types.hpp"
+#include "../../include/forward.hpp"
 
 ggml_tensor* forward(
     ggml_context* temp_ctx,

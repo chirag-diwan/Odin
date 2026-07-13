@@ -12,6 +12,17 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(EXTERNAL_DIR ${CMAKE_SOURCE_DIR}/external)
 
+file(GLOB_RECURSE COMMON_SOURCES CONFIGURE_DEPENDS
+  "${CMAKE_SOURCE_DIR}/src/*.cpp"
+)
+
+list(REMOVE_ITEM COMMON_SOURCES
+  "${CMAKE_SOURCE_DIR}/src/engine.cpp"
+  "${CMAKE_SOURCE_DIR}/src/http-server.cpp"
+)
+
+add_library(common ${COMMON_SOURCES})
+
 add_subdirectory("${EXTERNAL_DIR}/ggml")
 add_subdirectory("${EXTERNAL_DIR}/replxx")
 

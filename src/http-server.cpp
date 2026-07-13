@@ -1,16 +1,17 @@
-#include "../include/engine/engine.hpp"
+#include "../include/engine.hpp"
 #include "../include/model_utils.hpp"
-#include "../include/tokeniser/json_tokeniser.hpp"
-#include "../include/gguf/ggufreader.hpp"
+#include "../include/json_tokeniser.hpp"
+#include "../include/ggufreader.hpp"
 #include "../include/config.hpp"
 #include "../include/logging.hpp"
 #include "../include/types.hpp"
 #include "../include/welcome.hpp"
-#include "../include/tokeniser/formatter.hpp"
+#include "../include/formatter.hpp"
+#include "../include/http-manager.hpp"
+
 #include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-cpu.h"
-#include "http/http-manager.hpp"
 #include "main-utility.hpp"
 #include <csignal>
 #include <cstdint>
