@@ -286,22 +286,3 @@ struct PreTokeniser{
   std::string_view behavior;
   bool invert;
 };
-
-enum class PageType : uint8_t {
-  KEY,
-  VALUE
-};
-
-struct Page{
-  static constexpr size_t PAGE_SIZE = 32;
-  ggml_tensor* data;
-  size_t size;
-
-  Page(): data(nullptr) , size(0){ }
-  Page(ggml_tensor* data): data(data) , size(0){ }
-
-  bool full(){
-    return size >= PAGE_SIZE;
-  }
-};
-

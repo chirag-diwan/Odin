@@ -42,8 +42,6 @@ class stream_buffer{
       read_fd_(fd)
   {}
 
-
-
     [[nodiscard]]
       size_t bytes_available();
 

@@ -1,6 +1,7 @@
 #include "../../include/engine.hpp"
 #include "../../include/forward.hpp"
 #include <cmath>
+#include <span>
 
 Engine::Engine(Model& model, ggml_context* state_ctx, ggml_backend_t target_backend)
   : model(model), backend(target_backend),
@@ -72,7 +73,7 @@ void Engine::ReservePrefillMemory() {
   ggml_free(ctx0);
 }
 
-uint32_t Engine::Prefill(span<uint32_t>& tokens) {
+uint32_t Engine::Prefill(std::span<uint32_t>& tokens) {
   struct ggml_init_params params = {context_arena_size, NULL, true};
   ggml_context*           ctx0   = ggml_init(params);
   ggml_cgraph*            gf     = ggml_new_graph(ctx0);

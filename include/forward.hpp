@@ -13,6 +13,6 @@ ggml_tensor* forward(
     Model& model,
     KVCache& cache,
     EngineState& state
-    );
+);
 
 

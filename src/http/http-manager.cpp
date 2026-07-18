@@ -103,9 +103,13 @@ void HttpManager::prompt_income_handler(const httplib::Request& req , httplib::R
   }
 }
 
-HttpManager::HttpManager(std::sig_atomic_t& intrpt , const std::string& root) : is_running_(true) , interupt_(intrpt){
-  std::string root_abs = std::filesystem::absolute(root);
+HttpManager::HttpManager(std::sig_atomic_t& intrpt ) : is_running_(true) , interupt_(intrpt){
+  std::string root_abs = std::filesystem::absolute("../interface");
   file_content.populate(file_paths.size());
+  if(!std::filesystem::is_directory(root_abs)){
+    Log(ERROR ,"Frontend interface not present in path", root_abs);
+    return;
+  }
 
   std::ifstream in;
   for(const auto& file_path : file_paths){

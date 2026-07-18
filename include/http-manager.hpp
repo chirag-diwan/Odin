@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #define CPPHTTPLIB_NO_MULTI_THREAD_SUPPORT
 #include "../external/httplib/httplib.h"
 #include "./data_structures/unidirectional_map.hpp"
@@ -10,13 +11,10 @@
 
 class HttpManager{
   private:
-    std::string escape(std::string_view s) ;
-
-    void generic_handler(const httplib::Request& request , httplib::Response& response);
-
-    void token_stream_handler(const httplib::Request&, httplib::Response& res);
-
-    void prompt_income_handler(const httplib::Request& req , httplib::Response& );
+    struct converse_pair{
+      std::string user_prompt;
+      std::string response;
+    };
 
     const std::vector<const char *> file_paths = {
       "/index.html",
@@ -42,10 +40,18 @@ class HttpManager{
 
     std::sig_atomic_t& interupt_;
 
+    std::string escape(std::string_view s) ;
+
+    void generic_handler(const httplib::Request& request , httplib::Response& response);
+
+    void token_stream_handler(const httplib::Request&, httplib::Response& res);
+
+    void prompt_income_handler(const httplib::Request& req , httplib::Response& );
+
   public:
     const inline static std::string EOS = "data: [EOS]\n\n";
 
-    HttpManager(std::sig_atomic_t& intrpt , const std::string& root = "../interface");
+    HttpManager(std::sig_atomic_t& intrpt);
 
     void start_listen();
 

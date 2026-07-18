@@ -9,15 +9,16 @@ function(add_odin_target target_name source_file)
 
   target_include_directories(${target_name} PRIVATE
     ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/external/simdjson
     ${PCRE2_INCLUDE_DIRS}
-    ${EXTERNAL_DIR}/simdjson
   )
 
-  target_sources(${target_name} PRIVATE
-    ${EXTERNAL_DIR}/simdjson/simdjson.cpp
-  )
 
   target_link_libraries(${target_name} PRIVATE
+    simdjson
+    engine 
+    http 
+    ipc 
     common
     ggml
     replxx
@@ -28,6 +29,6 @@ function(add_odin_target target_name source_file)
     -Wall
     -Wextra
     $<$<CONFIG:Debug>:-O0 -ggdb -pthread>
-    $<$<CONFIG:Release>:-O3>
+    $<$<CONFIG:Release>:-O3 -march=native>
   )
 endfunction()

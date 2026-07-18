@@ -77,7 +77,7 @@ class ringbuffer{
       size_t capacity(){
         return capacity_ - size();
       }
-  
-    ringbuffer(ringbuffer& buffer) = delete;
-    ringbuffer(ringbuffer&& buffer) = default;
+
+    ringbuffer(const ringbuffer& buffer)noexcept = delete;
+    ringbuffer(ringbuffer&& buffer)noexcept = default;
 };

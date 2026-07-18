@@ -1,8 +1,8 @@
 #pragma once
 
 
-#include "ggml.h"
-#include "./gguf/gguf.hpp"
+#include "../external/ggml/include/ggml.h"
+#include "./gguf.hpp"
 #include "logging.hpp"
 #include "types.hpp"
 

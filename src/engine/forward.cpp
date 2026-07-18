@@ -1,4 +1,5 @@
 #include "../../include/forward.hpp"
+#include <omp.h>
 
 ggml_tensor* forward(
     ggml_context* temp_ctx,
@@ -9,7 +10,7 @@ ggml_tensor* forward(
     Model& model,
     KVCache& cache,
     EngineState& state
-    ){
+){
   for(size_t i = 0 ; i < model.blocks.size() ; i++){
     auto& block = model.blocks[i];
 
@@ -101,5 +102,3 @@ ggml_tensor* forward(
 
   return embeddings;
 }
-
-

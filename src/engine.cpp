@@ -9,9 +9,9 @@
 #include "../include/welcome.hpp"
 #include "../include/formatter.hpp"
 #include "../external/replxx/include/replxx.hxx"
-#include "ggml.h"
-#include "ggml-alloc.h"
-#include "ggml-cpu.h"
+#include "../external/ggml/include/ggml.h"
+#include "../external/ggml/include/ggml-alloc.h"
+#include "../external/ggml/include/ggml-cpu.h"
 #include "main-utility.hpp"
 #include <csignal>
 #include <cstdint>
@@ -152,7 +152,7 @@ int main(int argc, char** argv) {
     tokeniser.Tokenise(prompt, tokens);
 
     size_t span_size = tokens.size() - last_index;
-    span<uint32_t> tokens_view(tokens.data() + last_index, span_size);
+    std::span<uint32_t> tokens_view(tokens.data() + last_index, span_size);
 
     uint32_t next_token = engine.Prefill(tokens_view);
     tokens.push_back(next_token);
