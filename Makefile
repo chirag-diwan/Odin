@@ -3,6 +3,7 @@
 TEST ?=
 model ?= 
 tokeniser ?=
+port ?= 8080
 
 ENABLETEST ?= OFF
 
@@ -28,7 +29,7 @@ run:
 	./build/release/odin --model $(model) --tokeniser-json $(tokeniser)
 	
 run-server:
-	./build/release/odin-http-server --model $(model) --tokeniser-json $(tokeniser)
+	./build/release/odin-http-server --model $(model) --tokeniser-json $(tokeniser) --port $(port)
 
 run-test:
 ifeq ($(ENABLETEST),ON)

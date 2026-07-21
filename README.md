@@ -28,12 +28,9 @@ Odin is a CPU-optimized inference engine designed for hosting on edge hardware. 
 ### Build Instructions
 
 ```bash
-
 git clone --recurse-submodules https://github.com/chirag-diwan/Odin.git
 cd Odin
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j$(nproc)
+mkdir build && make release
 
 ```
 
@@ -46,16 +43,16 @@ Odin requires model weights in the GGUF format.
 ```
 
 ## HTTP server
-> [!WARNING]
-> This is a experimental feature and thus only available on the `dev` branch.
-
-The HTTP server is hosted at `localhost:8080`(not change able)
+The HTTP server is hosted at `localhost:{port}` . The API interface for the engine is **OPENAI Compatible**. **The server has single client support**.
 As of the current status the server dosen't supports refreshing the context .Though on reloading the page the history will be gone from the frontend but not from the engine side. 
 
 ```bash
-./odin-http-server --model "/path/to/model.gguf" --tokeniser-json "/path/to/tokeniser/json"
+./odin-http-server --model "/path/to/model.gguf" --tokeniser-json "/path/to/tokeniser/json" --port 8080
 ```
 
+## Multiclient HTTP server
+> [!WARNING]
+> This is an *experimental* feature that is under development and not yet finished , directory */experimental/* contains the implementation
 ### CLI Arguments
 
 | Argument | Description |
@@ -63,13 +60,12 @@ As of the current status the server dosen't supports refreshing the context .Tho
 | `--model` | **Required.** Absolute or relative path to the `.gguf` model file. |
 | `--tokeniser-json` | **Required.** The path to tokeniser.json for the specific model you are using. |
 | `--thread` | **Optional.** Maximum number of threads allocated to the backend for computation. |
-|`--ipc-path` | **Optional** Path or endpoint for ipc input/output.|
-|`--use-ipc` |**Optional** Enable/disable ipc mode (false = off, true = on).|
-
+| `--ipc-path` | **Optional** Path or endpoint for ipc input/output.|
+| `--use-ipc` |**Optional** Enable/disable ipc mode (false = off, true = on).|
+| `--port` |**(For odin-http-server) Optional** Set the port for hosting the http server.|
 
 
 ## Current State
 
 **Alpha / Active Development**
 Odin currently supports the **Qwen2** and **LLama3** architecture class. Support for additional architectures is actively being implemented.
-The engine is under active development and new feature will be added in future.

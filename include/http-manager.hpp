@@ -35,6 +35,8 @@ class HttpManager{
 
     httplib::Server server_;
 
+    short port_;
+
     std::thread handler_;
 
     ringbuffer<std::string> infered_;
@@ -57,7 +59,7 @@ class HttpManager{
   public:
     const inline static std::string DONE_TOK = "data: [DONE]\n\n";
 
-    HttpManager(std::sig_atomic_t& intrpt);
+    HttpManager(std::sig_atomic_t& intrpt , short port = 8080);
 
     void start_listen();
 

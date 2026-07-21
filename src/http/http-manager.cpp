@@ -233,7 +233,7 @@ void HttpManager::prompt_income_handler(const httplib::Request& request , httpli
   }
 }
 
-HttpManager::HttpManager(std::sig_atomic_t& intrpt ) : is_running_(true) , interupt_(intrpt){
+HttpManager::HttpManager(std::sig_atomic_t& intrpt , short port) : port_(port) ,is_running_(true) ,interupt_(intrpt){
   std::string root_abs = std::filesystem::absolute("./interface");
   file_content_.populate(file_paths_.size());
   if(!std::filesystem::is_directory(root_abs)){
@@ -267,9 +267,9 @@ HttpManager::HttpManager(std::sig_atomic_t& intrpt ) : is_running_(true) , inter
 }
 
 void HttpManager::start_listen(){
-  Log(INFO, "Listening on http://localhost:8000");
+  Log(INFO, std::format("Listening on http://localhost:{}" , port_));
   handler_ = std::thread([this](){
-      server_.listen("localhost", 8000);
+      server_.listen("localhost", port_);
       });
 }
 
