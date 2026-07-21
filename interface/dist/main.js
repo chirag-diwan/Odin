@@ -47,43 +47,6 @@
   customElements.define("assistant-message", AssistantMessage);
   customElements.define("user-message", UserMessage);
 
-  // src/server-side-event.ts
-  var SSEManager = class {
-    constructor(url) {
-      this.queue = [];
-      this.waiting = [];
-      this.closed = false;
-      this.eventSource = new EventSource(url);
-      this.eventSource.onmessage = (event) => {
-        if (this.waiting.length > 0) {
-          this.waiting.shift()({ value: event.data, done: false });
-        } else {
-          this.queue.push(event.data);
-        }
-      };
-      this.eventSource.onerror = () => {
-        this.closed = true;
-        this.eventSource.close();
-        while (this.waiting.length > 0) {
-          this.waiting.shift()({ value: void 0, done: true });
-        }
-      };
-    }
-    async *[Symbol.asyncIterator]() {
-      while (!this.closed) {
-        if (this.queue.length > 0) {
-          yield this.queue.shift();
-        } else {
-          const result = await new Promise(
-            (resolve) => this.waiting.push(resolve)
-          );
-          if (result.done) return;
-          yield result.value;
-        }
-      }
-    }
-  };
-
   // node_modules/marked/lib/marked.esm.js
   function M() {
     return { async: false, breaks: false, extensions: null, gfm: true, hooks: null, pedantic: false, renderer: null, silent: false, tokenizer: null, walkTokens: null };
@@ -1334,63 +1297,73 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     const history = document.getElementById("chat-history");
     const send_btn = document.getElementById("send-btn");
     const textarea = document.getElementById("prompt-area");
-    const sse = new SSEManager("/stream");
-    let turn = "USER";
     let last_chat_bubble = null;
-    const send_prompt = async (prompt) => {
-      const res = await fetch("/prompt", {
+    let turn = "USER";
+    const messages = [];
+    const send_prompt = async (body) => {
+      const res = await fetch("/v1/chat/completions", {
         method: "POST",
         headers: {
-          "Content-Type": "text/plain"
+          "Content-Type": "application/json"
         },
-        body: prompt
+        body: JSON.stringify(body)
       });
       if (!res.ok) {
-        throw new Error("Error sending message");
+        throw new Error("Failed to send message");
       }
-    };
-    const receive_response = async () => {
-      last_chat_bubble = new AssistantMessage();
-      history.appendChild(last_chat_bubble);
-      let textContent = "";
-      let renderPending = false;
-      const updateMarkdown = () => {
-        if (renderPending) return;
-        renderPending = true;
-        requestAnimationFrame(async () => {
-          last_chat_bubble.updateLastMarkdown(await g.parse(textContent));
-          renderPending = false;
-        });
-      };
-      try {
-        for await (const token of sse) {
-          if (token === "[EOS]") {
+      let assistantText = "";
+      if (body.stream) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          if (chunk.includes("[DONE]")) {
             break;
           }
-          const parsed_token = await JSON.parse(token);
-          textContent += parsed_token.token;
-          updateMarkdown();
+          const json = JSON.parse(chunk);
+          for (const choice of json.choices ?? []) {
+            const delta = choice.message?.content ?? "";
+            assistantText += delta;
+            last_chat_bubble?.updateLastMarkdown(assistantText);
+          }
         }
-      } catch (err) {
-        console.error("SSE error:", err);
-        last_chat_bubble.textContent += "\n[Connection error]";
-      } finally {
-        turn = "USER";
-        last_chat_bubble = null;
+      } else {
+        const data = await res.json();
+        assistantText = data.choices.map((choice) => choice.message.content).join("");
+        last_chat_bubble?.updateLastMarkdown(assistantText);
       }
+      return assistantText;
     };
     send_btn?.addEventListener("click", async () => {
-      if (turn !== "USER") return;
       const val = textarea.value.trim();
-      if (!val) return;
+      if (!val || turn !== "USER") return;
       textarea.value = "";
-      turn = "SSE";
       history.appendChild(new UserMessage(val));
+      messages.push({
+        role: "user",
+        content: val
+      });
+      last_chat_bubble = new AssistantMessage("");
+      history.appendChild(last_chat_bubble);
+      turn = "ASSISTANT";
+      const body = {
+        model: "gpt-4.1-mini",
+        messages,
+        temperature: 0.7,
+        stream: true
+      };
       try {
-        await send_prompt(val);
-        await receive_response();
+        const assistantReply = await send_prompt(body);
+        messages.push({
+          role: "assistant",
+          content: assistantReply
+        });
+        turn = "USER";
       } catch (err) {
         console.error(err);
+        alert("Error sending message");
         turn = "USER";
       }
     });

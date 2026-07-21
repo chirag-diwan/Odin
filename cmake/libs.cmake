@@ -5,7 +5,6 @@ add_library(gguf
 
 add_library(http
   ${CMAKE_SOURCE_DIR}/src/http/http-manager.cpp
-  ${CMAKE_SOURCE_DIR}/src/http/multiclient-manager.cpp
 )  
 
 add_library(ipc

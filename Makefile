@@ -1,9 +1,14 @@
 .PHONY: debug release run-test run run-server
 
 TEST ?=
-ENABLETEST ?= OFF
 model ?= 
 tokeniser ?=
+
+ENABLETEST ?= OFF
+
+ifneq ($(strip $(TEST)),)
+ENABLETEST := ON
+endif
 
 debug:
 	@cmake -S . -B build/debug \
@@ -20,11 +25,10 @@ release:
 	@cmake --build build/release
 
 run:
-	cd build/release && ./odin --model $(model) --tokeniser-json $(tokeniser)
+	./build/release/odin --model $(model) --tokeniser-json $(tokeniser)
 	
 run-server:
-	cp -r interface build
-	cd build/release && ./odin-http-server --model $(model) --tokeniser-json $(tokeniser)
+	./build/release/odin-http-server --model $(model) --tokeniser-json $(tokeniser)
 
 run-test:
 ifeq ($(ENABLETEST),ON)

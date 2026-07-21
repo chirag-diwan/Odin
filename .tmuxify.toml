@@ -1,0 +1,18 @@
+[session]
+name = "odin"
+main = 0
+
+[[window]]
+name="nvim"
+cmds=["nvim ."]
+
+[[window]]
+name="build"
+cmds=["ls"]
+
+[[window]]
+name="test"
+
+[[window]]
+name="scratch"
+cmds=["cd ~/scratch/"]

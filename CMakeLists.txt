@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(Odin)
 
 include("cmake/target.cmake")
+include("cmake/tar.cmake")
 include("cmake/downloadFile.cmake")
 include("cmake/downloads.cmake")
 include("cmake/libs.cmake")
@@ -15,6 +16,7 @@ set(EXTERNAL_DIR ${CMAKE_SOURCE_DIR}/external)
 
 add_subdirectory("${EXTERNAL_DIR}/ggml")
 add_subdirectory("${EXTERNAL_DIR}/replxx")
+add_subdirectory("${EXTERNAL_DIR}/nlohmann")
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(PCRE2 REQUIRED libpcre2-8)

@@ -1,5 +1,5 @@
 #include "../../include/logging.hpp"
-#include "../../include/multiclient-httpmanager.hpp"
+#include "../../include/experimental/multiclient-httpmanager.hpp"
 #include "../../include/errors.hpp"
 #include <arpa/inet.h>
 #include <chrono>
@@ -87,6 +87,7 @@ void MultiClientServer::handle_client_fill_state(int client_fd){
     client->closed = true;
     close(client->fd_);
   }
+  return;
 }
 
 void MultiClientServer::handle_event_close(){
@@ -227,25 +228,25 @@ std::string MultiClientServer::read_request() {
     {
       std::unique_lock<std::mutex> _ (read_mutex_);
       read_cv_.wait_for(_, std::chrono::milliseconds(500),[this]{
-          return interupt_ || !is_running_;
-          });
+        return interupt_ || !is_running_;
+      });
+    }
 
-      if(interupt_){
-        break;
-      }
+    if(interupt_){
+      break;
+    }
 
-      if(!is_running_){
-        break;
-      }
+    if(!is_running_){
+      break;
+    }
 
-      for(const auto& client : clients){
-        if(client.occupied){
-          if(!client.value->closed && !client.value->requests.empty()){
-            return *client.value->requests.pop();
-          }
+    for(const auto& client : clients){
+      if(client.occupied){
+        if(!client.value->closed && !client.value->requests.empty()){
+          return *client.value->requests.pop();
         }
       }
-    } 
+    }
   }
   return {};
 }

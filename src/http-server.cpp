@@ -85,10 +85,18 @@ int main(int argc, char** argv) {
 
   manager.start_listen();
 
-  std::string system_prompt = "You are a helpfull AI agent";
+  std::string system_prompt;system_prompt.reserve(32);
 
   while (!interupt) {
-    std::string raw_prompt = manager.read_prompt();
+    auto prompt_req = manager.read_prompt();
+    auto& raw_prompt = prompt_req.content;
+
+    if(prompt_req.role != Role::USER){
+      if(system_prompt.length() >= 8192) system_prompt.clear();
+      system_prompt.append(raw_prompt);
+      continue;
+    }
+
     if (raw_prompt.empty()) {
       continue;
     }
@@ -128,7 +136,7 @@ int main(int argc, char** argv) {
       }
     }
 
-    manager.write_infered(manager.EOS);
+    manager.write_infered(manager.DONE_TOK);
     interupt = false;
   }
   Log("\nBye!\n");

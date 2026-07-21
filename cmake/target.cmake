@@ -15,6 +15,7 @@ function(add_odin_target target_name source_file)
 
 
   target_link_libraries(${target_name} PRIVATE
+    nlohmann_json::nlohmann_json 
     simdjson
     engine 
     http 
