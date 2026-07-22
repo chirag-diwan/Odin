@@ -7,3 +7,5 @@ perf.data
 /venv/
 /scratch/
 prompt.txt
+/src/http/experimental/
+/include/experimental/
