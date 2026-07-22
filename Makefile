@@ -1,4 +1,4 @@
-.PHONY: debug release run-test run run-server
+.PHONY: debug release run-test run run-server perf-engine perf-server
 
 TEST ?=
 model ?= 
@@ -41,3 +41,9 @@ ifeq ($(ENABLETEST),ON)
 else
 	@echo "Tests are disabled (ENABLETEST=$(ENABLETEST))."
 endif
+
+perf-engine:
+	perf record ./build/debug/odin --model $(model) --tokeniser-json $(tokeniser)
+
+perf-server:
+	perf record ./build/debug/odin-http-server --model $(model) --tokeniser-json $(tokeniser) --port $(port)

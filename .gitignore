@@ -9,3 +9,5 @@ perf.data
 prompt.txt
 /src/http/experimental/
 /include/experimental/
+/perf/
+perf*

@@ -5,7 +5,10 @@ function(add_odin_target target_name source_file)
 
   target_precompile_headers(${target_name} PRIVATE
     ${CMAKE_SOURCE_DIR}/external/httplib/httplib.h
+    ${CMAKE_SOURCE_DIR}/external/nlohmann/json.hpp
+    ${CMAKE_SOURCE_DIR}/external/nlohmann/json_fwd.hpp
   )
+
 
   target_include_directories(${target_name} PRIVATE
     ${CMAKE_SOURCE_DIR}/include
@@ -15,7 +18,6 @@ function(add_odin_target target_name source_file)
 
 
   target_link_libraries(${target_name} PRIVATE
-    nlohmann_json::nlohmann_json 
     simdjson
     engine 
     http 

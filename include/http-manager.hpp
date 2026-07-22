@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../external/nlohmann/include/nlohmann/json.hpp"
+#include "../external/nlohmann/json.hpp"
 #include <string>
 #define CPPHTTPLIB_NO_MULTI_THREAD_SUPPORT
 #include "../external/simdjson/simdjson.h"

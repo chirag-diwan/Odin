@@ -14,8 +14,12 @@ download_file(
   "${CMAKE_SOURCE_DIR}/external/httplib/httplib.h"
 )
 
-download_archive(
-  "https://github.com/nlohmann/json/archive/refs/tags/v3.12.0.tar.gz"
-  "${CMAKE_SOURCE_DIR}/external/nlohmann/source.tar.gz"
-  "${CMAKE_SOURCE_DIR}/external/nlohmann/"
+download_file(
+  "https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/single_include/nlohmann/json.hpp"
+  "${CMAKE_SOURCE_DIR}/external/nlohmann/json.hpp"
+)
+
+download_file(
+  "https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/single_include/nlohmann/json_fwd.hpp"
+  "${CMAKE_SOURCE_DIR}/external/nlohmann/json_fwd.hpp"
 )
