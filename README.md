@@ -43,16 +43,14 @@ Odin requires model weights in the GGUF format.
 ```
 
 ## HTTP server
-The HTTP server is hosted at `localhost:{port}` . The API interface for the engine is **OPENAI Compatible**. **The server has single client support**.
-As of the current status the server dosen't supports refreshing the context .Though on reloading the page the history will be gone from the frontend but not from the engine side. 
+The HTTP server is hosted at `localhost:{port}` . The API interface for the engine is **OPENAI Compatible**. **The server has SINGLE client support**.
+
+The API is OpenAI compatible see `docs/api.md` for more information over the API.
 
 ```bash
 ./odin-http-server --model "/path/to/model.gguf" --tokeniser-json "/path/to/tokeniser/json" --port 8080
 ```
 
-## Multiclient HTTP server
-> [!WARNING]
-> This is an *experimental* feature that is under development and not yet finished , directory */experimental/* contains the implementation
 ### CLI Arguments
 
 | Argument | Description |
@@ -62,7 +60,7 @@ As of the current status the server dosen't supports refreshing the context .Tho
 | `--thread` | **Optional.** Maximum number of threads allocated to the backend for computation. |
 | `--ipc-path` | **Optional** Path or endpoint for ipc input/output.|
 | `--use-ipc` |**Optional** Enable/disable ipc mode (false = off, true = on).|
-| `--port` |**(For odin-http-server) Optional** Set the port for hosting the http server.|
+| `--port` |**(For odin-http-server) Optional** Set the port for hosting the http server(default `8080`).|
 
 
 ## Current State

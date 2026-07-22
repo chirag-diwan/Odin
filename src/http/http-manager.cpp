@@ -1,7 +1,5 @@
 #include <atomic>
-#include <cmath>
 #include <filesystem>
-#include <nlohmann/json_fwd.hpp>
 #include <optional>
 #include <string_view>
 #include "../../external/nlohmann/include/nlohmann/json.hpp"
@@ -93,23 +91,23 @@ void HttpManager::token_stream_handler(const httplib::Request& _, httplib::Respo
       }
 
       nlohmann::json response_json = {
-        {"object", "chat.completion"},
+        {"object", "chat.completion.chunk"},
         {"choices", nlohmann::json::array({
             {
             {"index", 0},
             {
-            "message", {
+            "delta", {
             {"role", "assistant"},
             {"content", tok}
             }
             },
-            {"finish_reason", "stop"}
+            {"finish_reason", nullptr}
             }
             })}
       };
 
 
-      auto msg = std::format("{}\n\n", response_json.dump());
+      auto msg = std::format("data: {}\n\n", response_json.dump());
       sink.write(msg.data(), msg.size());
       }
 
@@ -121,6 +119,7 @@ void HttpManager::token_oneshot_handler(const httplib::Request& _ , httplib::Res
   response.set_header("Content-Type", "application/json");
 
   std::string final_tok_string;final_tok_string.reserve(infered_.size() * 5);
+  uint32_t tok_count = 0;
   while(is_running_){
     {
       std::unique_lock<std::mutex> lck(infered_mutex_);
@@ -145,6 +144,7 @@ void HttpManager::token_oneshot_handler(const httplib::Request& _ , httplib::Res
     }
 
     final_tok_string.append(tok.data(), tok.size());
+    tok_count ++;
   }
 
   nlohmann::json response_json = {
@@ -152,15 +152,18 @@ void HttpManager::token_oneshot_handler(const httplib::Request& _ , httplib::Res
     {"choices", nlohmann::json::array({
         {
         {"index", 0},
-        {
-        "message", {
+        {"message", {
         {"role", "assistant"},
         {"content", final_tok_string}
-        }
-        },
+        }},
         {"finish_reason", "stop"}
         }
-        })}
+        })},
+    {"usage", {
+                {"prompt_tokens", prompt_tokens_},
+                {"completion_tokens", tok_count},
+                {"total_tokens", prompt_tokens_ + tok_count}
+              }}
   };
 
   response.set_content(response_json.dump(), "application/json");

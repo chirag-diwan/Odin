@@ -13,7 +13,16 @@
         <h1>Odin</h1>
 
         <div class="header-controls">
-          <div class="status-indicator"></div>
+          <button
+              id="stream-toggle"
+              class="stream-toggle"
+              type="button"
+              aria-pressed="true"
+              >
+              Stream: On
+          </button>
+
+            <div class="status-indicator"></div>
         </div>
       </header>
 
@@ -23,10 +32,10 @@
       <footer class="chat-input-area">
         <div class="input-wrapper">
           <textarea
-            id="prompt-area"
-            rows="1"
-            placeholder="Initialize query..."
-          ></textarea>
+              id="prompt-area"
+              rows="1"
+              placeholder="Initialize query..."
+              ></textarea>
 
           <button type="button" aria-label="Send" id="send-btn">
             <svg xmlns="http://www.w3.org/2000/svg"

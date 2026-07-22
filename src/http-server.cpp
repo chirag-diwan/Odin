@@ -101,21 +101,22 @@ int main(int argc, char** argv) {
       continue;
     }
 
-    if (raw_prompt.starts_with("!exit")) break;
-    if(raw_prompt.starts_with("!system")) {
-      system_prompt = raw_prompt.substr(7);
+    if(system_prompt.empty()){
+      system_prompt = "You are a help full AI agent.";
     }
+
     if(raw_prompt.starts_with("!clear-context")){
       engine.ClearContext();
     }
 
-    auto prompt = Formatter::GetFormatted(model.globals.general_model_architecture,system_prompt, raw_prompt);
+    auto prompt = Formatter::GetFormatted(model.globals.general_model_architecture, system_prompt, raw_prompt);
 
     size_t last_index = tokens.size();
     tokeniser.Tokenise(prompt, tokens);
 
     size_t span_size = tokens.size() - last_index;
     std::span<uint32_t> tokens_view(tokens.data() + last_index, span_size);
+    manager.set_prompt_tokens(span_size);
 
     uint32_t next_token = engine.Prefill(tokens_view);
     tokens.push_back(next_token);
@@ -139,6 +140,7 @@ int main(int argc, char** argv) {
     manager.write_infered(manager.DONE_TOK);
     interupt = false;
   }
+
   Log("\nBye!\n");
 
   manager.stop();

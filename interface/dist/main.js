@@ -5,6 +5,7 @@
     constructor(type) {
       super();
       this.last_markdown = null;
+      this.usage = null;
       this.row = document.createElement("div");
       this.row.className = `message-row ${type}`;
       this.bubble = document.createElement("div");
@@ -26,8 +27,18 @@
       }
       this.last_markdown.innerHTML = html;
     }
+    updateUsage(promptTokens, completionTokens, totalTokens) {
+      if (this.usage === null) {
+        this.usage = document.createElement("div");
+        this.usage.className = "usage-stats";
+        this.bubble.appendChild(this.usage);
+      }
+      this.usage.textContent = `Prompt: ${promptTokens} \u2022 Completion: ${completionTokens} \u2022 Total: ${totalTokens}`;
+    }
     clear() {
       this.bubble.textContent = "";
+      this.last_markdown = null;
+      this.usage = null;
     }
   };
   var UserMessage = class extends ChatMessage {
@@ -1294,9 +1305,18 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     breaks: true
   });
   async function main() {
+    let stream_enable = true;
     const history = document.getElementById("chat-history");
     const send_btn = document.getElementById("send-btn");
     const textarea = document.getElementById("prompt-area");
+    const streamToggle = document.getElementById("stream-toggle");
+    let streamEnabled = true;
+    streamToggle.addEventListener("click", () => {
+      streamEnabled = !streamEnabled;
+      streamToggle.textContent = `Stream: ${streamEnabled ? "On" : "Off"}`;
+      streamToggle.setAttribute("aria-pressed", String(streamEnabled));
+      stream_enable = !stream_enable;
+    });
     let last_chat_bubble = null;
     let turn = "USER";
     const messages = [];
@@ -1309,38 +1329,62 @@ Please report this to https://github.com/markedjs/marked.`, e) {
         body: JSON.stringify(body)
       });
       if (!res.ok) {
-        throw new Error("Failed to send message");
+        let msg = "Failed to send message";
+        try {
+          const err = await res.json();
+          msg = err.error?.message ?? msg;
+        } catch {
+        }
+        throw new Error(msg);
       }
       let assistantText = "";
       if (body.stream) {
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
+        let buffer = "";
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          if (chunk.includes("[DONE]")) {
-            break;
-          }
-          const json = JSON.parse(chunk);
-          for (const choice of json.choices ?? []) {
-            const delta = choice.message?.content ?? "";
-            assistantText += delta;
-            last_chat_bubble?.updateLastMarkdown(assistantText);
+          buffer += decoder.decode(value, { stream: true });
+          const events = buffer.split("\n\n");
+          buffer = events.pop() ?? "";
+          for (const event of events) {
+            const line = event.trim();
+            if (!line.startsWith("data:")) continue;
+            const data = line.slice(5).trim();
+            if (data === "[DONE]") {
+              return;
+            }
+            const json = JSON.parse(data);
+            for (const choice of json.choices) {
+              const token = choice.delta.content ?? "";
+              assistantText += token;
+              last_chat_bubble?.updateLastMarkdown(
+                g.parse(assistantText)
+              );
+            }
           }
         }
       } else {
         const data = await res.json();
         assistantText = data.choices.map((choice) => choice.message.content).join("");
-        last_chat_bubble?.updateLastMarkdown(assistantText);
+        last_chat_bubble?.updateLastMarkdown(g.parse(assistantText));
+        if (data.usage) {
+          last_chat_bubble?.updateUsage(
+            data.usage.prompt_tokens,
+            data.usage.completion_tokens,
+            data.usage.total_tokens
+          );
+        }
       }
-      return assistantText;
+      return;
     };
     send_btn?.addEventListener("click", async () => {
       const val = textarea.value.trim();
       if (!val || turn !== "USER") return;
       textarea.value = "";
       history.appendChild(new UserMessage(val));
+      messages.length = 0;
       messages.push({
         role: "user",
         content: val
@@ -1352,14 +1396,10 @@ Please report this to https://github.com/markedjs/marked.`, e) {
         model: "gpt-4.1-mini",
         messages,
         temperature: 0.7,
-        stream: true
+        stream: stream_enable
       };
       try {
-        const assistantReply = await send_prompt(body);
-        messages.push({
-          role: "assistant",
-          content: assistantReply
-        });
+        await send_prompt(body);
         turn = "USER";
       } catch (err) {
         console.error(err);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <nlohmann/json_fwd.hpp>
+#include "../external/nlohmann/include/nlohmann/json.hpp"
 #include <string>
 #define CPPHTTPLIB_NO_MULTI_THREAD_SUPPORT
 #include "../external/simdjson/simdjson.h"
@@ -55,8 +55,10 @@ class HttpManager{
     void token_stream_handler(const httplib::Request&, httplib::Response& res);
     void token_oneshot_handler(const httplib::Request& request , httplib::Response& response );
     void prompt_income_handler(const httplib::Request& req , httplib::Response& );
-
+  
+    uint32_t prompt_tokens_;
   public:
+
     const inline static std::string DONE_TOK = "data: [DONE]\n\n";
 
     HttpManager(std::sig_atomic_t& intrpt , short port = 8080);
@@ -65,7 +67,13 @@ class HttpManager{
 
     PromptReq read_prompt();
 
+    void set_prompt_tokens(uint32_t tok_count){
+      prompt_tokens_ = tok_count;
+    }
+
     bool write_infered(const std::string& tok);
 
     void stop();
+
+
 };
