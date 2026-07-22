@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <optional>
 #include <string_view>
+#include <format>
 #include "../../external/nlohmann/json.hpp"
 #include "../../external/simdjson/simdjson.h"
 #define CPPHTTPLIB_NO_MULTI_THREAD_SUPPORT
