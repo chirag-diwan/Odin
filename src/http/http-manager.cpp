@@ -3,7 +3,7 @@
 #include <optional>
 #include <string_view>
 #include "../../external/nlohmann/json.hpp"
-#include "simdjson.h"
+#include "../../external/simdjson/simdjson.h"
 #define CPPHTTPLIB_NO_MULTI_THREAD_SUPPORT
 #include "../../include/http-manager.hpp"
 #include "../../include/logging.hpp"
