@@ -32,6 +32,6 @@ function(add_odin_target target_name source_file)
     -Wall
     -Wextra
     $<$<CONFIG:Debug>:-O0 -ggdb -pthread>
-    $<$<CONFIG:Release>:-O3 -march=native>
+    $<$<CONFIG:Release>:-O3>
   )
 endfunction()

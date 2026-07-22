@@ -4,7 +4,7 @@
 
 ## JSON structure.
 ### Request
-> [WARNING]
+> [!WARNING]
 > The `messages` field is set to be an array for compatibility BUT it should contain only ONE `system` , `user` pair because the engine keeps its own context , failing to do so will cause unexpected behavior
 ```jsonc
 {
