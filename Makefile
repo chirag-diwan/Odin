@@ -1,4 +1,4 @@
-.PHONY: debug release run-test run run-server perf-engine perf-server
+.PHONY: debug release run-test run-debug run-server-debug run run-server perf-engine perf-server run-ipc run-ipc-debug
 
 TEST ?=
 model ?= 
@@ -16,14 +16,25 @@ debug:
 		-DCMAKE_BUILD_TYPE=Debug \
 		-DENABLE_TESTS=$(ENABLETEST) \
 		-DTEST_FILE=$(TEST)
-	@cmake --build build/debug
+	@cmake --build build/debug -j
 
 release:
 	@cmake -S . -B build/release \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DENABLE_TESTS=$(ENABLETEST) \
 		-DTEST_FILE=$(TEST)
-	@cmake --build build/release
+	@cmake --build build/release -j
+
+
+
+run-debug:
+	./build/debug/odin --model $(model) --tokeniser-json $(tokeniser)
+	
+run-server-debug:
+	./build/debug/odin-http-server --model $(model) --tokeniser-json $(tokeniser) --port $(port)
+
+run-ipc-debug:
+	./build/debug/odin-ipc-server --model $(model) --tokeniser-json $(tokeniser) --port $(port)
 
 run:
 	./build/release/odin --model $(model) --tokeniser-json $(tokeniser)
@@ -31,6 +42,9 @@ run:
 run-server:
 	./build/release/odin-http-server --model $(model) --tokeniser-json $(tokeniser) --port $(port)
 
+run-ipc:
+	./build/release/odin-ipc-server --model $(model) --tokeniser-json $(tokeniser)
+	
 run-test:
 ifeq ($(ENABLETEST),ON)
 	@if [ -z "$(TEST)" ]; then \

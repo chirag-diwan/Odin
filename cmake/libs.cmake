@@ -22,7 +22,6 @@ add_library(engine
 
 add_library(common
   ${CMAKE_SOURCE_DIR}/src/block.cpp
-  ${CMAKE_SOURCE_DIR}/src/welcome.cpp
   ${CMAKE_SOURCE_DIR}/src/stream_buffer.cpp
 )
 

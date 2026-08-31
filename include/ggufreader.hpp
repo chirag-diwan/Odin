@@ -10,33 +10,28 @@
 #include <vector>
 
 
-class GGufReader {
+class GGufParser {
   private:
-    int      file_descriptor;
-    uint8_t* mapped_data;
+    int      file_descriptor_;
 
-    uint64_t total_size;
+    uint64_t total_size_;
 
-    uint64_t current_offset;
-    uint64_t data_offset;
-    uint64_t byte_alignment;
+    uint64_t current_offset_;
+    uint64_t data_offset_;
+    uint64_t byte_alignment_;
 
+    uint8_t* mapped_data_;
 
-
-  public:
-    GGufHeader header;
-    std::vector<GGufTensor> tensors;
-    metadatakv_t metadata_key_values;
 
 
   private:
     __attribute__((always_inline)) inline void* getCurrentPositionPointer() {
-      return &mapped_data[current_offset];
+      return &mapped_data_[current_offset_];
     }
 
     __attribute__((always_inline)) inline void advanceOffset(size_t step_size) {
-      Errorif(current_offset + step_size > total_size, "Size overflow");
-      current_offset += step_size;
+      Errorif(current_offset_ + step_size > total_size_, "Size overflow");
+      current_offset_ += step_size;
     }
 
 
@@ -46,15 +41,25 @@ class GGufReader {
 
     void parseKeyValue() ;
 
+    void parseHeader() ;
+    void parseAllKeyValues() ;
+    void parseAllTensors() ;
+
   public:
-    GGufReader();
+    GGufHeader header_;
+    std::vector<GGufTensor> tensors_;
+    metadatakv_t metadata_key_values_;
 
-    std::pair<void* , size_t> OpenFile(const std::string& filepath) ;
+    GGufParser(const std::string& filepath);
 
-    void ParseHeader() ;
+    GGufParser(const GGufParser&) = delete;
+    GGufParser(GGufParser&&) = default;
+    GGufParser &operator=(const GGufParser&) = delete;
+    GGufParser &operator=(GGufParser&&) = default;
 
-    void ParseAllKeyValues() ;
+    ~GGufParser();
 
-    void ParseAllTensors() ;
-    ~GGufReader();
+
+    std::pair<void* , size_t> GetParsedFile() ;
+
 };

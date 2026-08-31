@@ -71,12 +71,12 @@ ModelGlobals GetModelGlobals(metadatakv_t& metadata_key_values ){
 
 
 
-Model CreateModel(ggml_context* tensor_context, GGufReader& reader){
+Model CreateModel(ggml_context* tensor_context, GGufParser& reader){
   Model m;
-  m.globals = GetModelGlobals(reader.metadata_key_values);
+  m.globals = GetModelGlobals(reader.metadata_key_values_);
   m.blocks.resize(m.globals.block_count);
 
-  for(const auto& tensor : reader.tensors){
+  for(const auto& tensor : reader.tensors_){
     ggml_tensor* t;
     ggml_type current_type = tensor.tensor_type;
     switch (tensor.dimension_count){

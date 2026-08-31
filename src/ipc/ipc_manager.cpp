@@ -11,6 +11,7 @@ bool IPCManager::add_to_event(int epoll_fd , epoll_event& ev , int fd){
     Log(ERROR , "epoll_ctl failed for",fd);
     return false;
   }
+  Log(INFO, "Added fd to epoll:", fd);
   return true;
 }
 
@@ -23,6 +24,8 @@ void IPCManager::handle_client(){
     Log(ERROR , "Cannot initialize epoll instance");
     return;
   }
+
+  Log(INFO, "IPC server event loop started");
 
   add_to_event(epoll_fd, ev, server_fd_);
   add_to_event(epoll_fd, ev, close_event_fd_);
@@ -48,6 +51,8 @@ void IPCManager::handle_client(){
           continue;
         }
 
+        Log(INFO, "Client connected:", client_fd);
+
         int flags = fcntl(client_fd, F_GETFL, 0);
         fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);
 
@@ -62,7 +67,10 @@ void IPCManager::handle_client(){
         uint64_t buf;
         read(close_event_fd_, &buf, sizeof(buf));
 
+        Log(INFO, "IPC server shutdown requested");
+
         if(client.fd_ != -1){
+          Log(INFO, "Closing client:", client.fd_);
           close(client.fd_);
         }
 
@@ -75,11 +83,13 @@ void IPCManager::handle_client(){
         }
 
         if (server_fd_ >= 0) {
+          Log(INFO, "Closing server socket:", server_fd_);
           shutdown(server_fd_, SHUT_RDWR);
           close(server_fd_);
           server_fd_ = -1;
         }
 
+        Log(INFO, "IPC server stopped");
         return;
       }else if(events[i].data.fd == infered_event_fd_){
         uint64_t buf;
@@ -106,6 +116,7 @@ void IPCManager::handle_client(){
               } else if (ret == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
                 break; 
               } else {
+                Log(INFO, "Client disconnected while sending response:", client.fd_);
                 client.fill_status = CLIENT_CLOSED;
                 break;
               }
@@ -113,7 +124,12 @@ void IPCManager::handle_client(){
           }
         }
 
-      }else if((client.fill_status & CLIENT_OPEN ) && events[i].data.fd == client.fd_){ client.fill_status = client.buffer_.fill();
+      }else if((client.fill_status & CLIENT_OPEN ) && events[i].data.fd == client.fd_){
+        client.fill_status = client.buffer_.fill();
+
+        if(client.fill_status & CLIENT_CLOSED){
+          Log(INFO, "Client closed connection:", client.fd_);
+        }
       }
     } 
 
@@ -130,6 +146,8 @@ void IPCManager::handle_client(){
           auto len = client.buffer_.read_u32();
           client.len = *len;
           client.state_ = ClientState::READING_PAYLOAD;
+
+          Log(INFO, "Receiving request from client:", client.fd_, "payload size:", client.len);
         }
 
         if (client.state_ == ClientState::READING_PAYLOAD) {
@@ -155,12 +173,14 @@ void IPCManager::handle_client(){
 
 
     if(client.fill_status & CLIENT_CLOSED){
+      Log(INFO, "Closing client connection:", client.fd_);
       close(client.fd_);
       client.fd_ = -1;
     }
   }
 
   if(client.fd_ != -1){
+    Log(INFO, "Closing client connection:", client.fd_);
     close(client.fd_);
   }
 
@@ -173,20 +193,28 @@ void IPCManager::handle_client(){
   }
 
   if (server_fd_ >= 0) {
+    Log(INFO, "Closing server socket:", server_fd_);
     shutdown(server_fd_, SHUT_RDWR);
     close(server_fd_);
     server_fd_ = -1;
   }
+
+  Log(INFO, "IPC server event loop exited");
 }
 
 
 IPCManager::IPCManager(std::sig_atomic_t& interupt , const std::string& path = "/tmp/odin0000.socket") : path_(path)  , is_running_(true) , interupt_(interupt){
   unlink(path_.c_str());
+
+  Log(INFO, "Initializing IPC server:", path_);
+
   server_fd_ = socket(AF_LOCAL, SOCK_STREAM, 0);
   if(server_fd_ == -1){
     Log(ERROR,"Unable to create server file descriptor" , strerror(errno));
     return;
   }
+
+  Log(INFO, "Created server socket:", server_fd_);
 
   int flags = fcntl(server_fd_, F_GETFL, 0);
   fcntl(server_fd_, F_SETFL, flags | O_NONBLOCK);
@@ -198,10 +226,14 @@ IPCManager::IPCManager(std::sig_atomic_t& interupt , const std::string& path = "
   auto ret = bind(server_fd_, reinterpret_cast<struct sockaddr*> (&server_addr), sizeof(server_addr));
   if(ret == -1){
     Log(ERROR, "Cannot binding server to addr" , strerror(errno));
+  } else {
+    Log(INFO, "IPC server bound to:", path_);
   }
 
   close_event_fd_ = eventfd(0 , EFD_SEMAPHORE); //Binary semaphore
   infered_event_fd_ = eventfd(0 , EFD_SEMAPHORE); //Binary semaphore
+
+  Log(INFO, "IPC event descriptors initialized");
 }
 
 void IPCManager::start_listen(){
@@ -211,6 +243,7 @@ void IPCManager::start_listen(){
     return;
   }
 
+  Log(INFO, "IPC server listening on:", path_);
 
   handler_ = std::thread(&IPCManager::handle_client , this );
 }
@@ -220,11 +253,12 @@ std::string IPCManager::read_prompt() {
   while(true){
 
     bool got_data = read_cv_.wait_for(lock, std::chrono::milliseconds(500), [this] {
-        return !is_running_ || !prompts_.empty();
-        });
+      return !is_running_ || !prompts_.empty();
+    });
 
     if (!got_data) {
       if (interupt_) {
+        Log(INFO, "Interrupt received while waiting for prompt");
         return {}; 
       }
       continue;
@@ -232,8 +266,13 @@ std::string IPCManager::read_prompt() {
       break;
     }
   }
+
   if (prompts_.empty()) return {};
-  return *prompts_.pop();
+
+  auto prompt = *prompts_.pop();
+  Log(INFO, "Prompt retrieved for inference");
+
+  return prompt;
 }
 
 
@@ -243,6 +282,9 @@ bool IPCManager::write_infered(const std::string& tok){
   if(ok){
     uint64_t ret = 1;
     write(infered_event_fd_, &ret, sizeof(ret));
+
+  } else {
+    Log(INFO, "Failed to queue inference result");
   }
 
   return ok;
@@ -250,6 +292,8 @@ bool IPCManager::write_infered(const std::string& tok){
 
 
 void IPCManager::stop() {
+  Log(INFO, "Stopping IPC server");
+
   uint64_t ret = 1;
   write(close_event_fd_, &ret, sizeof(ret));
 
@@ -259,11 +303,18 @@ void IPCManager::stop() {
 }
 
 IPCManager::~IPCManager(){
+  Log(INFO, "Destroying IPC server");
+
   if (is_running_) {
     stop();
   }
+
   if (handler_.joinable()) {
     handler_.join();
   }
+
   unlink(path_.c_str());
+
+  Log(INFO, "IPC server destroyed");
 }
+

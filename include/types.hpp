@@ -180,16 +180,12 @@ struct Config{
   std::string tokeniser_json_path;
   std::string history_path;
 
-  bool use_ipc;
-  bool use_http;
   uint32_t port;
   uint8_t thread_count;
 
   Config(){
     ipc_path = "/tmp/odin0000.socket";
     history_path = "/tmp/odin-prompt-history.txt";
-    use_ipc = false;
-    use_http = false;
     port = 8080;
     thread_count = std::thread::hardware_concurrency();
     model_path = "NOT PROVIDED";

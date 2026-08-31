@@ -9,41 +9,9 @@
 #include "../../include/http-manager.hpp"
 #include "../../include/logging.hpp"
 
-std::string escape(std::string_view s) {
-  std::string out;
-  out.reserve(s.size() + 8);
-
-  for (char c : s) {
-    switch (c) {
-      case '"':
-        out += "\\\""; break;
-      case '\\':
-        out += "\\\\"; break;
-      case '\b':
-        out += "\\b";  break;
-      case '\f':
-        out += "\\f";  break;
-      case '\n':
-        out += "\\n";  break;
-      case '\r':
-        out += "\\r";  break;
-      case '\t':
-        out += "\\t";  break;
-      default:
-        if ((unsigned char)c < 0x20) {
-          char buf[7];
-          snprintf(buf, sizeof(buf), "\\u%04x", (unsigned char)c);
-          out += buf;
-        } else {
-          out += c;
-        }
-    }
-  }
-
-  return out;
-}
-
 void HttpManager::generic_handler(const httplib::Request& request , httplib::Response& response){
+  Log(INFO, std::format("[{}] {} from {}", request.method, request.path, request.remote_addr));
+
   std::string path;
   if(request.path == "/"){
     path = "/index.html";
@@ -63,15 +31,17 @@ void HttpManager::generic_handler(const httplib::Request& request , httplib::Res
 }
 
 void HttpManager::token_stream_handler(const httplib::Request& _, httplib::Response& res){
+  Log(INFO, "[POST] /v1/chat/completions - streaming response");
+
   res.set_header("Content-Type", "text/event-stream");
   res.set_header("Connection", "keep-alive");
   res.set_chunked_content_provider("text/event-stream", [this](size_t /*offset*/, httplib::DataSink& sink) ->bool{ 
-      while(is_running_){
+    while(is_running_){
       {
-      std::unique_lock<std::mutex> lck(infered_mutex_);
-      infered_cv_.wait(lck, [this] {
+        std::unique_lock<std::mutex> lck(infered_mutex_);
+        infered_cv_.wait(lck, [this] {
           return (interupt_ || !is_running_ || !infered_.empty());
-          });
+        });
       }
 
       if(!is_running_){
@@ -93,30 +63,33 @@ void HttpManager::token_stream_handler(const httplib::Request& _, httplib::Respo
 
       nlohmann::json response_json = {
         {"object", "chat.completion.chunk"},
-        {"choices", nlohmann::json::array({
+        {"choices",
+          nlohmann::json::array({
             {
-            {"index", 0},
-            {
-            "delta", {
-            {"role", "assistant"},
-            {"content", tok}
+              {"index", 0},
+              {
+                "delta", {
+                  {"role", "assistant"},
+                  {"content", tok}
+                }
+              },
+              {"finish_reason", nullptr}
             }
-            },
-            {"finish_reason", nullptr}
-            }
-            })}
+          })}
       };
 
 
       auto msg = std::format("data: {}\n\n", response_json.dump());
       sink.write(msg.data(), msg.size());
-      }
+    }
 
-      return true;
+    return true;
   });
 }
 
 void HttpManager::token_oneshot_handler(const httplib::Request& _ , httplib::Response& response ){
+  Log(INFO, "[POST] /v1/chat/completions - non-streaming response");
+
   response.set_header("Content-Type", "application/json");
 
   std::string final_tok_string;final_tok_string.reserve(infered_.size() * 5);
@@ -125,8 +98,8 @@ void HttpManager::token_oneshot_handler(const httplib::Request& _ , httplib::Res
     {
       std::unique_lock<std::mutex> lck(infered_mutex_);
       infered_cv_.wait(lck, [this] {
-          return (interupt_ || !is_running_ || !infered_.empty());
-          });
+        return (interupt_ || !is_running_ || !infered_.empty());
+      });
     }
 
     if(!is_running_){
@@ -150,27 +123,32 @@ void HttpManager::token_oneshot_handler(const httplib::Request& _ , httplib::Res
 
   nlohmann::json response_json = {
     {"object", "chat.completion"},
-    {"choices", nlohmann::json::array({
+    {"choices",
+      nlohmann::json::array({
         {
-        {"index", 0},
-        {"message", {
-        {"role", "assistant"},
-        {"content", final_tok_string}
-        }},
-        {"finish_reason", "stop"}
+          {"index", 0},
+          {"message", {
+                        {"role", "assistant"},
+                        {"content", final_tok_string}
+                      }},
+          {"finish_reason", "stop"}
         }
-        })},
-    {"usage", {
-                {"prompt_tokens", prompt_tokens_},
-                {"completion_tokens", tok_count},
-                {"total_tokens", prompt_tokens_ + tok_count}
-              }}
+      })},
+      {"usage",
+        {
+          {"prompt_tokens", prompt_tokens_},
+          {"completion_tokens", tok_count},
+          {"total_tokens", prompt_tokens_ + tok_count}
+        }}
   };
+
 
   response.set_content(response_json.dump(), "application/json");
 }
 
 void HttpManager::prompt_income_handler(const httplib::Request& request , httplib::Response& response ){
+  Log(INFO, std::format("[POST] {} from {}", request.path, request.remote_addr));
+
   auto dom = json_parser_.parse(request.body.data(), request.body.size());
 
   std::string_view buf;
@@ -183,17 +161,22 @@ void HttpManager::prompt_income_handler(const httplib::Request& request , httpli
     stream = value.get_bool();
   }
 
+
   status = dom["messages"].get(value);
   if(status != simdjson::SUCCESS){
+
     response.status = 400;
     auto res = nlohmann::json({{"error", {{"message", "Empty messages are not allowed"}, {"type", "invalid_request_error"}}}}).dump();
     response.set_content(res.data() , res.size() , "application/json");
     return;
   }
 
+  uint32_t message_count = 0;
+
   for(const auto& msg_obj : value.get_array()){
     status = msg_obj["content"].get(value);
     if(status != simdjson::SUCCESS){
+
       response.status = 400;
       auto res = nlohmann::json({{"error", {{"message", "JSON parsing error , content field not set"}, {"type", "invalid_request_error"}}}}).dump();
       response.set_content(res.data() , res.size() , "application/json");
@@ -205,6 +188,7 @@ void HttpManager::prompt_income_handler(const httplib::Request& request , httpli
 
     status = msg_obj["role"].get(value);
     if(status != simdjson::SUCCESS){
+
       response.status = 400;
       auto res = nlohmann::json({{"error", {{"message", "JSON parsing error , content field not set"}, {"type", "invalid_request_error"}}}}).dump();
       response.set_content(res.data() , res.size() , "application/json");
@@ -219,13 +203,14 @@ void HttpManager::prompt_income_handler(const httplib::Request& request , httpli
     }
 
     auto ret = prompts_.push({
-        .content = content ,
+      .content = content ,
         .role = role,
-        });
+    });
 
     if(!ret){
-      Log(WARN , "Push to prompt failed");
+      Log(INFO, "Push to prompt failed");
     }else{
+      message_count++;
       read_cv_.notify_all();
     }
   }
@@ -238,12 +223,16 @@ void HttpManager::prompt_income_handler(const httplib::Request& request , httpli
 }
 
 HttpManager::HttpManager(std::sig_atomic_t& intrpt , short port) : port_(port) ,is_running_(true) ,interupt_(intrpt){
+  Log(INFO, std::format("Initializing HTTP server on port {}", port_));
+
   std::string root_abs = std::filesystem::absolute("./interface");
   file_content_.populate(file_paths_.size());
   if(!std::filesystem::is_directory(root_abs)){
-    Log(ERROR ,"Frontend interface not present in path", root_abs);
+    Log(INFO, std::format("Frontend interface not present in path: {}", root_abs));
     return;
   }
+
+  Log(INFO, std::format("Loading frontend interface from {}", root_abs));
 
   std::ifstream in;
   for(const auto& file_path : file_paths_){
@@ -252,37 +241,43 @@ HttpManager::HttpManager(std::sig_atomic_t& intrpt , short port) : port_(port) ,
     std::string content(std::istreambuf_iterator<char>{in} , std::istreambuf_iterator<char>{});
     in.close();
     file_content_.insert(file_path, content);
+
+    Log(INFO, std::format("Loaded {} ({} bytes)", file_path, content.size()));
   }
 
 
   server_.Get("/", [this](const httplib::Request& request , httplib::Response& response) {
-      generic_handler(request, response);
-      });
+    generic_handler(request, response);
+  });
 
   for(const auto& path : file_paths_){
     server_.Get(path, [this](const httplib::Request& request , httplib::Response& response) {
-        generic_handler(request, response);
-        });
+      generic_handler(request, response);
+    });
   }
 
   server_.Post("/v1/chat/completions", [this](const httplib::Request& request , httplib::Response& response) {
-      prompt_income_handler(request, response);
-      });
+    Log(INFO, "[POST] /v1/chat/completions");
+    prompt_income_handler(request, response);
+  });
+
+  Log(INFO, "HTTP server routes initialized");
 }
 
 void HttpManager::start_listen(){
   Log(INFO, std::format("Listening on http://localhost:{}" , port_));
   handler_ = std::thread([this](){
-      server_.listen("localhost", port_);
-      });
+    server_.listen("localhost", port_);
+    Log(INFO, "HTTP server stopped listening");
+  });
 }
 
 PromptReq HttpManager::read_prompt() {
   std::unique_lock<std::mutex> lock(prompt_mutex_);
   while(true){
     bool got_data = read_cv_.wait_for(lock, std::chrono::milliseconds(500), [this] {
-        return !is_running_ || !prompts_.empty() ;
-        });
+      return !is_running_ || !prompts_.empty() ;
+    });
 
     if (!got_data) {
       if (interupt_) {
@@ -296,6 +291,7 @@ PromptReq HttpManager::read_prompt() {
   }
 
   if (prompts_.empty()) return {};
+
   return *prompts_.pop();
 }
 
@@ -304,6 +300,8 @@ bool HttpManager::write_infered(const std::string& tok){
   auto ok = infered_.push(tok);
   if(ok){
     infered_cv_.notify_one();
+  }else{
+    Log(INFO, "Failed to push inference token");
   }
 
   return ok;
@@ -311,10 +309,14 @@ bool HttpManager::write_infered(const std::string& tok){
 
 
 void HttpManager::stop(){
+  Log(INFO, "Stopping HTTP server");
+
   is_running_ = false;
 
   infered_cv_.notify_all();
   read_cv_.notify_all();
   server_.stop();
   handler_.join();
+
+  Log(INFO, "HTTP server stopped");
 }

@@ -1,13 +1,12 @@
-#include "../include/model_utils.hpp"
 #include "../include/engine.hpp"
+#include "../include/ipc_manager.hpp"
+#include "../include/model_utils.hpp"
 #include "../include/json_tokeniser.hpp"
 #include "../include/ggufreader.hpp"
 #include "../include/config.hpp"
 #include "../include/logging.hpp"
 #include "../include/types.hpp"
 #include "../include/formatter.hpp"
-#include "../include/http-manager.hpp"
-
 #include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-cpu.h"
@@ -37,10 +36,13 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
+
   Config config = ParseConfig(argc, argv);
+
   GGufParser parser(config.model_path);
 
   auto [addr, len] = parser.GetParsedFile();
+
   MmapGuard mmap_guard(addr, len); 
 
   ggml_backend_t backend = ggml_backend_cpu_init();
@@ -59,11 +61,13 @@ int main(int argc, char** argv) {
   UniqueGgmlContext static_ctx(ggml_init(static_ctx_params));
 
   auto globals = GetModelGlobals(parser.metadata_key_values_);
+
   if(globals.general_model_architecture == Architecture::UNKNOWN){
     //TODO Try and get more information about the Architecture using the full name.
     Log(ERROR , "Unknown model architecture" , globals.full_architecture_name);
     return -1;
   }
+
   auto model = CreateModel(static_ctx.get(), parser);
 
   Engine engine(model, static_ctx.get(), backend);
@@ -73,65 +77,62 @@ int main(int argc, char** argv) {
   BPETokeniser tokeniser(config.tokeniser_json_path);
   std::vector<uint32_t> tokens;
 
-  HttpManager manager(interupt);
 
-  manager.start_listen();
+  IPCManager manager(interupt , config.ipc_path);
 
-  std::string system_prompt;system_prompt.reserve(32);
+    manager.start_listen();
+
+  std::string system_prompt = "You are a helpfull AI agent";
 
   std::string raw_prompt;
 
   while (!interupt) {
-    auto prompt_req = manager.read_prompt();
-    raw_prompt = prompt_req.content;
-
-    if(prompt_req.role != Role::USER){
-      if(system_prompt.length() >= 8192) system_prompt.clear();
-      system_prompt.append(raw_prompt);
-      continue;
-    }
+    raw_prompt  = manager.read_prompt();
 
     if (raw_prompt.empty()) {
       continue;
     }
 
-    if(system_prompt.empty()){
-      system_prompt = "You are a help full AI agent.";
+    if (raw_prompt.starts_with("!exit")) break;
+
+    if(raw_prompt.starts_with("!system")) {
+      system_prompt = raw_prompt.substr(7);
     }
 
     if(raw_prompt.starts_with("!clear-context")){
       engine.ClearContext();
     }
 
-    auto prompt = GetFormatted(model.globals.general_model_architecture, system_prompt, raw_prompt);
+    auto prompt = GetFormatted(model.globals.general_model_architecture,system_prompt, raw_prompt);
 
     size_t last_index = tokens.size();
     tokeniser.Tokenise(prompt, tokens);
 
     size_t span_size = tokens.size() - last_index;
     std::span<uint32_t> tokens_view(tokens.data() + last_index, span_size);
-    manager.set_prompt_tokens(span_size);
 
     uint32_t next_token = engine.Prefill(tokens_view);
     tokens.push_back(next_token);
+
     auto tok = tokeniser.Decode(next_token);
+
     if(tok.has_value()){
-      manager.write_infered(*tok);
+        manager.write_infered(*tok);
     }
 
     while (!interupt && (next_token != globals.ggml_eos_token_id)) {
+
       next_token = engine.Infer(tokens.back());
       tokens.push_back(next_token);
 
       if (next_token != globals.ggml_eos_token_id) {
+
         auto tok = tokeniser.Decode(next_token);
         if(tok.has_value()){
-          manager.write_infered(*tok);
+            manager.write_infered(*tok);
         }
       }
     }
-
-    manager.write_infered(manager.DONE_TOK);
 
     interupt = false;
   }
@@ -140,3 +141,4 @@ int main(int argc, char** argv) {
 
   return EXIT_SUCCESS;
 }
+
