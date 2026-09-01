@@ -4,7 +4,7 @@
 #include <string_view>
 #include "./types.hpp"
 #include "./gguf.hpp"
-#include "./ggufreader.hpp"
+#include "./ggufparser.hpp"
 
 
 uint64_t calculateKeyValueCacheByteSize(ModelGlobals& global_struct) {
@@ -52,10 +52,12 @@ ModelGlobals GetModelGlobals(metadatakv_t& metadata_key_values ){
       global_struct.ggml_bos_token_id = Extract<uint32_t , GGUF_VALUE_TYPE_INT32 , GGUF_VALUE_TYPE_UINT32>(kv.value);
 
     }else if(kv.name.find("tokenizer.ggml.tokens") != std::string_view::npos){
-      global_struct.token_vocab = &kv.value.array.strings;
+      //global_struct.token_vocab = kv.value.array.strings.data();
+      //global_struct.token_vocab_size = kv.value.array.strings.size();
 
     }else if(kv.name.find("tokenizer.ggml.merges") != std::string_view::npos){
-      global_struct.token_merges = &kv.value.array.strings;
+      //global_struct.token_merges = kv.value.array.strings.data();
+      //global_struct.token_merges_size = kv.value.array.strings.size();
 
     }else if(kv.name.find("general.architecture") != std::string_view::npos){
       global_struct.full_architecture_name = kv.value.string;

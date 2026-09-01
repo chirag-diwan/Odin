@@ -1,4 +1,4 @@
-#include "../../include/ggufreader.hpp"
+#include "../../include/ggufparser.hpp"
 #include "../../include/gguf.hpp"
 
 
@@ -59,7 +59,7 @@ void GGufParser::parseKeyValue() {
     advanceOffset(GGufValueSize(value_type));
   }
 
-  metadata_key_values_.push_back({ metadata_key , parsed_value });
+  metadata_key_values_.push_back({ metadata_key , std::move(parsed_value) });
 }
 
 GGufParser::GGufParser(const std::string& filepath){

@@ -2,7 +2,7 @@
 #include "../include/ipc_manager.hpp"
 #include "../include/model_utils.hpp"
 #include "../include/json_tokeniser.hpp"
-#include "../include/ggufreader.hpp"
+#include "../include/ggufparser.hpp"
 #include "../include/config.hpp"
 #include "../include/logging.hpp"
 #include "../include/types.hpp"

@@ -34,17 +34,17 @@ ggml_tensor* forward(
     }
 
 
-    ggml_tensor* Q_3D = ggml_reshape_3d(temp_ctx, Q, state.d, model.globals.attention_head_count, s);
-    ggml_tensor* K_3D = ggml_reshape_3d(temp_ctx, K, state.d, model.globals.attention_head_count_kv, s);
-    ggml_tensor* V_3D = ggml_reshape_3d(temp_ctx, V, state.d, model.globals.attention_head_count_kv, s);
+    ggml_tensor* Q_3D = ggml_reshape_3d(temp_ctx, Q, state.inner_dimension, model.globals.attention_head_count, s);
+    ggml_tensor* K_3D = ggml_reshape_3d(temp_ctx, K, state.inner_dimension, model.globals.attention_head_count_kv, s);
+    ggml_tensor* V_3D = ggml_reshape_3d(temp_ctx, V, state.inner_dimension, model.globals.attention_head_count_kv, s);
 
     if(model.globals.general_model_architecture == Architecture::LLAMA3){
-      Q_3D = ggml_rope_ext(temp_ctx, Q_3D, pos, model.global_tensors.rope_freq_weights, state.d, GGML_ROPE_TYPE_NORMAL, model.globals.context_length, model.globals.rope_freq_base, 1.0f, 32.0f, 1.0f, 4.0f, 1.0f);
-      K_3D = ggml_rope_ext(temp_ctx, K_3D, pos, model.global_tensors.rope_freq_weights, state.d, GGML_ROPE_TYPE_NORMAL, model.globals.context_length, model.globals.rope_freq_base, 1.0f, 32.0f, 1.0f, 4.0f, 1.0f);
+      Q_3D = ggml_rope_ext(temp_ctx, Q_3D, pos, model.global_tensors.rope_freq_weights, state.inner_dimension, GGML_ROPE_TYPE_NORMAL, model.globals.context_length, model.globals.rope_freq_base, 1.0f, 32.0f, 1.0f, 4.0f, 1.0f);
+      K_3D = ggml_rope_ext(temp_ctx, K_3D, pos, model.global_tensors.rope_freq_weights, state.inner_dimension, GGML_ROPE_TYPE_NORMAL, model.globals.context_length, model.globals.rope_freq_base, 1.0f, 32.0f, 1.0f, 4.0f, 1.0f);
 
     }else if(model.globals.general_model_architecture == Architecture::QWEN2){
-      Q_3D = ggml_rope_ext(temp_ctx, Q_3D, pos, model.global_tensors.rope_freq_weights, state.d, GGML_ROPE_TYPE_NEOX, model.globals.context_length, model.globals.rope_freq_base, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-      K_3D = ggml_rope_ext(temp_ctx, K_3D, pos, model.global_tensors.rope_freq_weights, state.d, GGML_ROPE_TYPE_NEOX, model.globals.context_length, model.globals.rope_freq_base, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+      Q_3D = ggml_rope_ext(temp_ctx, Q_3D, pos, model.global_tensors.rope_freq_weights, state.inner_dimension, GGML_ROPE_TYPE_NEOX, model.globals.context_length, model.globals.rope_freq_base, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+      K_3D = ggml_rope_ext(temp_ctx, K_3D, pos, model.global_tensors.rope_freq_weights, state.inner_dimension, GGML_ROPE_TYPE_NEOX, model.globals.context_length, model.globals.rope_freq_base, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     }
 
     //Q_3D = ggml_cont(temp_ctx, ggml_permute(temp_ctx, Q_3D, 0, 2, 1, 3));
@@ -54,18 +54,18 @@ ggml_tensor* forward(
     K_3D = ggml_permute(temp_ctx, K_3D, 0, 2, 1, 3);
     V_3D = ggml_permute(temp_ctx, V_3D, 0, 2, 1, 3);
 
-    cache.AppendToKeyCache(temp_ctx, gf, K_3D, state.n_past , i);
-    cache.AppendToValueCache(temp_ctx, gf, V_3D, state.n_past , i);
+    cache.AppendToKeyCache(temp_ctx, gf, K_3D, state.past_token_count , i);
+    cache.AppendToValueCache(temp_ctx, gf, V_3D, state.past_token_count , i);
 
-    int64_t active_tokens = state.n_past + s;
+    int64_t active_tokens = state.past_token_count + s;
 
     size_t layer_offset = i * cache.K->nb[3];
-    ggml_tensor* K_view = ggml_view_3d(temp_ctx, cache.K, state.d, active_tokens, model.globals.attention_head_count_kv, cache.K->nb[1], cache.K->nb[2], layer_offset);
-    ggml_tensor* V_view = ggml_view_3d(temp_ctx, cache.V, active_tokens, state.d, model.globals.attention_head_count_kv, cache.V->nb[1], cache.V->nb[2], layer_offset);
+    ggml_tensor* K_view = ggml_view_3d(temp_ctx, cache.K, state.inner_dimension, active_tokens, model.globals.attention_head_count_kv, cache.K->nb[1], cache.K->nb[2], layer_offset);
+    ggml_tensor* V_view = ggml_view_3d(temp_ctx, cache.V, active_tokens, state.inner_dimension, model.globals.attention_head_count_kv, cache.V->nb[1], cache.V->nb[2], layer_offset);
 
     auto qk_t = ggml_mul_mat(temp_ctx, K_view, Q_3D);//dch_kv , dsh -> cdh_kv , dsh -> sch
     qk_t = ggml_scale(temp_ctx, qk_t, state.scale_factor);
-    qk_t = ggml_diag_mask_inf(temp_ctx, qk_t,  state.n_past);
+    qk_t = ggml_diag_mask_inf(temp_ctx, qk_t,  state.past_token_count);
     qk_t = ggml_soft_max(temp_ctx, qk_t);
 
     ggml_tensor* attention_out = ggml_mul_mat(temp_ctx, V_view, qk_t);

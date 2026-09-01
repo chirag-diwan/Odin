@@ -5,9 +5,10 @@
 #include <format>
 #include "../../external/nlohmann/json.hpp"
 #include "../../external/simdjson/simdjson.h"
+#include "../../include/logging.hpp"
+
 #define CPPHTTPLIB_NO_MULTI_THREAD_SUPPORT
 #include "../../include/http-manager.hpp"
-#include "../../include/logging.hpp"
 
 void HttpManager::generic_handler(const httplib::Request& request , httplib::Response& response){
   Log(INFO, std::format("[{}] {} from {}", request.method, request.path, request.remote_addr));

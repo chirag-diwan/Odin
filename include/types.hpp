@@ -26,9 +26,11 @@ struct GGufHeader {
     metadata_kv_count = 0;
   }
 
+  GGufHeader(const GGufHeader &) = default;
+  GGufHeader(GGufHeader &&) = default;
+  GGufHeader &operator=(const GGufHeader &) = default;
+  GGufHeader &operator=(GGufHeader &&) = default;
 };
-
-
 
 enum GGufValueType {
   GGUF_VALUE_TYPE_UINT8   = 0,
@@ -59,6 +61,11 @@ struct GGufArray{
     length = 0;
     strings = {};
   }
+
+  GGufArray(const GGufArray &) = delete;
+  GGufArray(GGufArray &&) = default;
+  GGufArray &operator=(const GGufArray &) = delete;
+  GGufArray &operator=(GGufArray &&) = default;
 };
 
 struct GGufValue {
@@ -71,8 +78,12 @@ struct GGufValue {
     data = nullptr;
     type = GGUF_VALUE_TYPE_NULL;
   }
-};
 
+  GGufValue(const GGufValue &) = delete;
+  GGufValue(GGufValue &&) = default;
+  GGufValue &operator=(const GGufValue &) = delete;
+  GGufValue &operator=(GGufValue &&) = default;
+};
 
 struct metadata_key_value{
   std::string_view name;
@@ -80,7 +91,6 @@ struct metadata_key_value{
 };
 
 using metadatakv_t = std::vector<metadata_key_value>;
-
 
 struct GGufTensor {
   std::string_view name;
@@ -100,8 +110,12 @@ struct GGufTensor {
     byte_size = 1;
     weights_data = 0;
   }
-};
 
+  GGufTensor(const GGufTensor &) = default;
+  GGufTensor(GGufTensor &&) = default;
+  GGufTensor &operator=(const GGufTensor &) = default;
+  GGufTensor &operator=(GGufTensor &&) = default;
+};
 
 enum class Architecture : uint8_t{
   QWEN2,
@@ -123,9 +137,11 @@ struct ModelGlobals{
   double rope_freq_base ;
   double attention_layer_norm_rms_epsilon ;
 
-  const std::vector<std::string_view>* token_vocab;
-  const std::vector<std::string_view>* token_merges;
+  //const std::string_view* token_vocab;
+  //size_t token_vocab_size;
 
+  //const std::string_view* token_merges;
+  //size_t token_merges_size;
 
   ModelGlobals(){
     general_model_architecture = Architecture::UNKNOWN;
@@ -139,9 +155,14 @@ struct ModelGlobals{
     attention_layer_norm_rms_epsilon  = 0;
     ggml_eos_token_id = 0;
     ggml_bos_token_id = 0;
-    token_vocab = nullptr;
-    token_merges = nullptr;
+    //token_vocab = nullptr;
+    //token_merges = nullptr;
   }
+
+  ModelGlobals(const ModelGlobals &) = default;
+  ModelGlobals(ModelGlobals &&) = default;
+  ModelGlobals &operator=(const ModelGlobals &) = default;
+  ModelGlobals &operator=(ModelGlobals &&) = default;
 };
 
 struct GlobalTensors {
@@ -150,14 +171,13 @@ struct GlobalTensors {
   struct ggml_tensor* output_weights      ;
   struct ggml_tensor* rope_freq_weights   ;
 
-  GlobalTensors(){
-    token_embd_weights  = nullptr;
-    output_norm_weights = nullptr;
-    output_weights      = nullptr;
-    rope_freq_weights   = nullptr;
-  }
-};
+  GlobalTensors(): token_embd_weights(nullptr), output_norm_weights(nullptr), output_weights(nullptr), rope_freq_weights(nullptr){}
 
+  GlobalTensors(const GlobalTensors &) = default;
+  GlobalTensors(GlobalTensors &&) = default;
+  GlobalTensors &operator=(const GlobalTensors &) = default;
+  GlobalTensors &operator=(GlobalTensors &&) = default;
+};
 
 struct merge_rank_result{
   uint32_t merge_rank;
@@ -191,11 +211,11 @@ struct Config{
     model_path = "NOT PROVIDED";
     tokeniser_json_path = "NOT PROVIDED";
   }
-};
 
-struct InferenceParams{
-  float temp;
-  uint32_t K;
+  Config(const Config &) = default;
+  Config(Config &&) = default;
+  Config &operator=(const Config &) = default;
+  Config &operator=(Config &&) = default;
 };
 
 struct Model{
@@ -205,10 +225,9 @@ struct Model{
 };
 
 struct EngineState{
-  size_t d;
+  size_t inner_dimension;
   float scale_factor;
-  size_t n_past;
-  float temp_inv;
+  size_t past_token_count;
 };
 
 struct KVCache{
@@ -216,21 +235,28 @@ struct KVCache{
   ggml_tensor* V;
   ggml_backend_buffer_t kv_buffer;
 
-  KVCache(ggml_context* state_ctx ,ggml_backend_t backend ,  Model& model ){
+  KVCache(ggml_context *state_ctx, ggml_backend_t backend, Model &model) {
     auto d_head = model.globals.embedding_length / model.globals.attention_head_count;
 
     auto c = model.globals.context_length; 
     auto n_head_kv = model.globals.attention_head_count_kv;
 
     K = ggml_new_tensor_4d(state_ctx, GGML_TYPE_F16, 
-        d_head, c, n_head_kv , model.globals.block_count);
+                           d_head, c, n_head_kv , model.globals.block_count);
 
     V = ggml_new_tensor_4d(state_ctx, GGML_TYPE_F16, 
-        c, d_head, n_head_kv , model.globals.block_count);
+                           c, d_head, n_head_kv , model.globals.block_count);
 
     kv_buffer = ggml_backend_alloc_ctx_tensors(state_ctx, backend);
     Errorif(kv_buffer == nullptr, "Failed to allocate physical memory for KV cache");
   }
+
+
+  KVCache(const KVCache &) = delete;
+  KVCache(KVCache &&) noexcept = default;
+  KVCache &operator=(const KVCache &) = delete;
+  KVCache &operator=(KVCache &&) noexcept = default;
+
 
   void AppendToKeyCache( ggml_context* state_ctx , ggml_cgraph* gf, ggml_tensor* tensor, int token_index , size_t layer_index)const{
 
@@ -249,13 +275,13 @@ struct KVCache{
     ggml_tensor* t = ggml_transpose(state_ctx, tensor);
     ggml_tensor* V_view =
       ggml_view_3d(state_ctx,
-          V,
-          t->ne[0],
-          t->ne[1],
-          t->ne[2],
-          V->nb[1],
-          V->nb[2],
-          offset);
+                   V,
+                   t->ne[0],
+                   t->ne[1],
+                   t->ne[2],
+                   V->nb[1],
+                   V->nb[2],
+                   offset);
 
     ggml_tensor* copy_node = ggml_cpy(state_ctx, t, V_view);
     ggml_build_forward_expand(gf, copy_node);

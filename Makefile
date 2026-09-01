@@ -1,8 +1,8 @@
 .PHONY: debug release run-test run-debug run-server-debug run run-server perf-engine perf-server run-ipc run-ipc-debug
 
 TEST ?=
-model ?= 
-tokeniser ?=
+model ?= ~/Models/Llama-3.2-1B-Instruct-Q4_0.gguf
+tokeniser ?= ~/Models/llama3tok.json
 port ?= 8080
 
 ENABLETEST ?= OFF

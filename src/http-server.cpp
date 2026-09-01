@@ -1,7 +1,7 @@
 #include "../include/model_utils.hpp"
 #include "../include/engine.hpp"
 #include "../include/json_tokeniser.hpp"
-#include "../include/ggufreader.hpp"
+#include "../include/ggufparser.hpp"
 #include "../include/config.hpp"
 #include "../include/logging.hpp"
 #include "../include/types.hpp"
@@ -74,10 +74,9 @@ int main(int argc, char** argv) {
   std::vector<uint32_t> tokens;
 
   HttpManager manager(interupt);
-
   manager.start_listen();
 
-  std::string system_prompt;system_prompt.reserve(32);
+  std::string system_prompt; system_prompt.reserve(32);
 
   std::string raw_prompt;
 

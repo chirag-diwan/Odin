@@ -11,10 +11,10 @@ Engine::Engine(Model& model, ggml_context* state_ctx, ggml_backend_t target_back
       ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend))),
   cache(state_ctx, target_backend, model) {
 
-    state.d =
+    state.inner_dimension =
       model.globals.embedding_length / model.globals.attention_head_count;
-    state.scale_factor = 1.0f / std::sqrt(static_cast<float>(state.d));
-    state.n_past       = 0;
+    state.scale_factor = 1.0f / std::sqrt(static_cast<float>(state.inner_dimension));
+    state.past_token_count       = 0;
   }
 
 void Engine::ReserveDecodeMemory() {
@@ -29,8 +29,8 @@ void Engine::ReserveDecodeMemory() {
   ggml_tensor* embeddings =
     ggml_get_rows(ctx0, model.global_tensors.token_embd_weights, indices);
 
-  size_t original_n_past = state.n_past;
-  state.n_past           = model.globals.context_length - 1;
+  size_t original_n_past = state.past_token_count;
+  state.past_token_count           = model.globals.context_length - 1;
 
   embeddings = forward(ctx0, gf, embeddings, pos, s, model, cache, state);
 
@@ -42,7 +42,7 @@ void Engine::ReserveDecodeMemory() {
     exit(1);
   }
 
-  state.n_past = original_n_past;
+  state.past_token_count = original_n_past;
   ggml_free(ctx0);
 }
 
@@ -94,7 +94,7 @@ uint32_t Engine::Prefill(std::span<uint32_t>& tokens) {
 
   std::vector<int32_t> pos_data(s);
   for (size_t p = 0; p < s; p++) {
-    pos_data[p] = p + state.n_past;
+    pos_data[p] = p + state.past_token_count;
   }
 
   ggml_backend_tensor_set(pos, pos_data.data(), 0, s * sizeof(int32_t));
@@ -105,7 +105,7 @@ uint32_t Engine::Prefill(std::span<uint32_t>& tokens) {
   int32_t next_token;
   ggml_backend_tensor_get(max_idx, &next_token, 0, sizeof(int32_t));
 
-  state.n_past += s;
+  state.past_token_count += s;
 
   ggml_free(ctx0);
   return next_token;
@@ -129,7 +129,7 @@ uint32_t Engine::Infer(uint32_t prev_token) {
   ggml_build_forward_expand(gf, max_idx);
   ggml_gallocr_alloc_graph(infer_allocr, gf);
 
-  int32_t current_pos = state.n_past;
+  int32_t current_pos = state.past_token_count;
   ggml_backend_tensor_set(pos, &current_pos, 0, sizeof(int32_t));
   ggml_backend_tensor_set(indices, &prev_token, 0, sizeof(int32_t));
 
@@ -138,13 +138,13 @@ uint32_t Engine::Infer(uint32_t prev_token) {
   int32_t next_token;
   ggml_backend_tensor_get(max_idx, &next_token, 0, sizeof(int32_t));
 
-  state.n_past += 1;
+  state.past_token_count += 1;
   ggml_free(ctx0);
   return next_token;
 }
 
 void Engine::ClearContext() {
-  state.n_past = 0;
+  state.past_token_count = 0;
 }
 
 Engine::~Engine() {

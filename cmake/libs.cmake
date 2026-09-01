@@ -1,6 +1,6 @@
 add_library(gguf
   ${CMAKE_SOURCE_DIR}/src/gguf/gguf.cpp
-  ${CMAKE_SOURCE_DIR}/src/gguf/ggufreader.cpp
+  ${CMAKE_SOURCE_DIR}/src/gguf/ggufparser.cpp
 )
 
 add_library(http

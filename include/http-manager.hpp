@@ -1,14 +1,17 @@
 #pragma once
 
 #include <string>
-#define CPPHTTPLIB_NO_MULTI_THREAD_SUPPORT
-#include "../external/simdjson/simdjson.h"
-#include "../external/httplib/httplib.h"
-#include "./data_structures/unidirectional_map.hpp"
-#include "./data_structures/lock_free_ring_buffer.hpp"
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+
+#include "./data_structures/unidirectional_map.hpp"
+#include "./data_structures/lock_free_ring_buffer.hpp"
+
+#include "../external/simdjson/simdjson.h"
+#define CPPHTTPLIB_NO_MULTI_THREAD_SUPPORT
+#include "../external/httplib/httplib.h"
+
 
 enum class Role : uint8_t {
   SYSTEM,
