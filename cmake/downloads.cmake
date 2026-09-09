@@ -23,3 +23,18 @@ download_file(
   "https://raw.githubusercontent.com/nlohmann/json/refs/heads/develop/single_include/nlohmann/json_fwd.hpp"
   "${CMAKE_SOURCE_DIR}/external/nlohmann/json_fwd.hpp"
 )
+
+download_file(
+  "https://raw.githubusercontent.com/google/minja/refs/heads/main/include/minja/chat-template.hpp"
+  "${CMAKE_SOURCE_DIR}/external/minja/chat-template.hpp"
+)
+
+download_file(
+  "https://raw.githubusercontent.com/google/minja/refs/heads/main/include/minja/minja.hpp"
+  "${CMAKE_SOURCE_DIR}/external/minja/minja.hpp"
+)
+
+download_file(
+  "https://raw.githubusercontent.com/jonoton/cpp-tui/refs/heads/main/cpptui.hpp"
+  "${CMAKE_SOURCE_DIR}/external/jonathan/cpptui.hpp"
+)

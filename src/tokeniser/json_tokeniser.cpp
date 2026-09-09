@@ -1,4 +1,5 @@
 #include "../../include/json_tokeniser.hpp"
+#include <sys/types.h>
 
 using namespace simdjson;
 
@@ -37,26 +38,26 @@ pcre2_code* compile_regex(const std::string_view& regex){
 
 
 
-void BPETokeniser::generate_unicode_to_byte(){
+void BPETokeniser::generateUnicodeToByte(){
   int n = 0;
   for (int b = 0; b < 256; b++) {
     if ((b >= 33 && b <= 126) || (b >= 161 && b <= 172) || (b >= 174 && b <= 255)) {
     } else {
       int unicode_val = 256 + n;
-      unicode_to_byte_table[unicode_val - 256] = static_cast<uint8_t>(b);
+      unicodeToByteTable[unicode_val - 256] = static_cast<uint8_t>(b);
       n++;
     }
   }
 }
 
 // XXX created by llm
-void BPETokeniser::generate_byte_to_unicode() {
-  byte_to_unicode_table.resize(256);
+void BPETokeniser::generateByteToUnicode() {
+  byteToUnicodeTable.resize(256);
   int n = 0;
   for (int b = 0; b < 256; b++) {
     // Range of printable characters that map to themselves
     if ((b >= 33 && b <= 126) || (b >= 161 && b <= 172) || (b >= 174 && b <= 255)) {
-      byte_to_unicode_table[b] = std::string(1, static_cast<char>(b));
+      byteToUnicodeTable[b] = std::string(1, static_cast<char>(b));
     } else {
       // Map to U+0100 and above
       int unicode_val = 256 + n;
@@ -65,7 +66,7 @@ void BPETokeniser::generate_byte_to_unicode() {
       utf8_char.push_back(static_cast<char>(0xC0 | (unicode_val >> 6)));
       utf8_char.push_back(static_cast<char>(0x80 | (unicode_val & 0x3F)));
 
-      byte_to_unicode_table[b] = utf8_char;
+      byteToUnicodeTable[b] = utf8_char;
       n++;
     }
   }
@@ -76,102 +77,145 @@ __attribute__((always_inline)) inline uint64_t BPETokeniser::getKey(uint32_t fir
   return (static_cast<uint64_t>(first) << 32) ^ static_cast<uint64_t>(second);
 }
 
-void BPETokeniser::init_maps(simdjson_result<ondemand::document>& doc){
-  auto added_token = doc["added_tokens"]->get_array();
-  size_t added_token_size = added_token->count_elements();
-  special_tokens = bidirectional_map<std::string_view, uint32_t>(added_token_size);
+void BPETokeniser::initMaps(simdjson_result<ondemand::document>& doc){
+  if(doc["added_tokens"].has_value()){
+    auto added_token = doc["added_tokens"]->get_array();
+    size_t added_token_size = added_token->count_elements();
+    specialTokens.populate(added_token_size);
+  }
 
-  auto vocab_obj = doc["model"]["vocab"].get_object();
-  size_t vocab_size = vocab_obj->count_fields();
-  vocab = bidirectional_map<std::string_view, uint32_t>(vocab_size);
+  if(doc["model"].has_value() && doc["model"]["vocab"].has_value()){
+    auto vocab_obj = doc["model"]["vocab"].get_object();
+    size_t vocab_size = vocab_obj->count_fields();
+    vocab.populate(vocab_size);
+  }
 
-
-  auto merges_array = doc["model"]["merges"]->get_array();
-  size_t merges_size = merges_array->count_elements();
-  merges = unidirectional_map<uint64_t , merge_rank_result>(merges_size);
-
+  if(doc["model"].has_value() && doc["model"]["merges"].has_value()){
+    auto merges_array = doc["model"]["merges"]->get_array();
+    size_t merges_size = merges_array->count_elements();
+    merges.populate(merges_size);
+  }
 }
 
-void BPETokeniser::init_pre_tokeniser(simdjson_result<ondemand::document>& doc){
-  auto pretokenizers = doc["pre_tokenizer"]["pretokenizers"];
-  for(auto obj : pretokenizers){
-    std::string_view type = obj["type"]->get_string();
-    if(type == "Split"){
-      split_tokeniser.regex = obj["pattern"]["Regex"]->get_string();
-      split_tokeniser.behavior = obj["behavior"]->get_string();
-      split_tokeniser.invert = obj["invert"]->get_bool();
-      break;
-    }else{
-      Log(ERROR , "PreTokeniser type Split not found");
+void BPETokeniser::initPreTokeniser(simdjson_result<ondemand::document>& doc){
+  if(doc["pre_tokenizer"].has_value() && doc["pre_tokenizer"]["pretokenizers"].has_value()){
+    auto pretokenizers = doc["pre_tokenizer"]["pretokenizers"];
+    for(auto obj : pretokenizers){
+      std::string_view type = obj["type"]->get_string();
+      if(type == "Split"){
+        split_tokeniser.regex = obj["pattern"]["Regex"]->get_string();
+        split_tokeniser.behavior = obj["behavior"]->get_string();
+        split_tokeniser.invert = obj["invert"]->get_bool();
+        break;
+      }else{
+        Log(ERROR , "PreTokeniser type Split not found");
+      }
     }
   }
 }
 
-void BPETokeniser::fill_added_tokens(simdjson_result<ondemand::document>& doc){
-  auto added_token = doc["added_tokens"]->get_array();
-  for(auto obj : added_token){
-    uint32_t id = obj["id"]->get_uint32();
-    std::string_view token = obj["content"]->get_string();
-    special_tokens.insert(token, id);
+void BPETokeniser::fillAddedTokens(simdjson_result<ondemand::document>& doc){
+  if(doc["added_tokens"].has_value()){
+    auto added_token = doc["added_tokens"]->get_array();
+    size_t fail_count = 0;
+    for(auto obj : added_token){
+      if(fail_count > 4){
+        Log(ERROR , "Fail count exceeded max limit");
+        std::exit(-1);
+      }
+      uint32_t id = obj["id"]->get_uint32();
+      std::string_view token = obj["content"]->get_string();
+      if(!specialTokens.insert(token, id)){
+        Log(WARN , "insert into specialTokens failed");
+        fail_count++;
+      }
+    }
+  }else{
+    Log(WARN, "Doc dosen't contains added_tokens");
   }
 }
 
 
-void BPETokeniser::fill_vocab_tokens(simdjson_result<ondemand::document>& doc){
-  auto vocab_obj = doc["model"]["vocab"].get_object();
-  for (auto field : vocab_obj) {
-    std::string_view key = field->unescaped_key();
-    uint32_t value = uint32_t(field.value());
-    vocab.insert(key, value);
+void BPETokeniser::fillVocabTokens(simdjson_result<ondemand::document>& doc){
+  if(doc["model"].has_value() && doc["model"]["vocab"].has_value()){
+    auto vocab_obj = doc["model"]["vocab"].get_object();
+    size_t fail_count = 0;
+    for (auto field : vocab_obj) {
+      if(fail_count > 4){
+        Log(ERROR , "Fail count exceeded max limit");
+        std::exit(-1);
+      }
+      std::string_view key = field->unescaped_key();
+      uint32_t value = uint32_t(field.value());
+      if(!vocab.insert(key, value)){
+        fail_count ++;
+        Log(WARN, "insert into vocab failed");
+      }
+    }
+  }else{
+    Log(WARN, "Doc dosen't contains `model` or `[model][vocab]`");
   }
+
 }
 
 
-void BPETokeniser::fill_merges_tokens(simdjson_result<ondemand::document>& doc){
-  auto merges_array = doc["model"]["merges"]->get_array();
-  size_t i = 0;
-  for(auto element : merges_array){
-    std::string_view merge_pair = element.get_string();
-    auto split_point = merge_pair.find(' ');
-    std::string_view first = merge_pair.substr(0 , split_point);
-    std::string_view second = merge_pair.substr(split_point + 1);
-    auto first_idx = vocab.getValueOf(first);
-    auto second_idx = vocab.getValueOf(second);
+void BPETokeniser::fillMergesTokens(simdjson_result<ondemand::document>& doc){
+  if(doc["model"].has_value() && doc["model"]["merges"].has_value()){
+    auto merges_array = doc["model"]["merges"]->get_array();
+    size_t i = 0;
+    size_t fail_count = 0;
+    for(auto element : merges_array){
+      if(fail_count > 4){
+        Log(ERROR , "Fail count exceeded max limit");
+        std::exit(-1);
+      }
+      std::string_view merge_pair = element.get_string();
+      auto split_point = merge_pair.find(' ');
+      std::string_view first = merge_pair.substr(0 , split_point);
+      std::string_view second = merge_pair.substr(split_point + 1);
+      auto first_idx = vocab.getValueOf(first);
+      auto second_idx = vocab.getValueOf(second);
 
-    if(__builtin_expect(!first_idx.has_value(),false)){
-      Log(ERROR , "value not found for key" , first);
-      continue;
+      if(__builtin_expect(!first_idx.has_value(),false)){
+        Log(ERROR , "value not found for key" , first);
+        continue;
+      }
+      if (__builtin_expect(!second_idx.has_value(),false)) {
+        Log(ERROR , "value not found for key" , second);
+        continue;
+      }
+
+
+      auto key = getKey(*first_idx, *second_idx);
+      std::string result;
+      result.reserve(first.size() + second.size());
+
+      result.append(first);
+      result.append(second);
+
+      auto merge_result = vocab.getValueOf(result);
+      if(__builtin_expect(!merge_result.has_value(),false)){
+        Log(ERROR , "value not found for key" , result);
+        continue;
+      }
+
+      if(!merges.insert(key , { .mergeRank= static_cast<uint32_t>(i) , .mergeResult = *merge_result })){
+        fail_count ++;
+        Log(WARN, "insert into merges failed");
+      }
+      i++;
     }
-    if (__builtin_expect(!second_idx.has_value(),false)) {
-      Log(ERROR , "value not found for key" , second);
-      continue;
-    }
-
-
-    auto key = getKey(*first_idx, *second_idx);
-    std::string result;
-    result.reserve(first.size() + second.size());
-
-    result.append(first);
-    result.append(second);
-
-    auto merge_result = vocab.getValueOf(result);
-    if(__builtin_expect(!merge_result.has_value(),false)){
-      Log(ERROR , "value not found for key" , result);
-      continue;
-    }
-
-    merges.insert(key , { .merge_rank = static_cast<uint32_t>(i) , .merge_result = *merge_result });
-    i++;
+  }else{
+    Log(WARN, "Doc dosen't contains `model` or `[model][merges]`");
   }
 }
 
-std::string BPETokeniser::create_search_regex(){
+std::string BPETokeniser::createSearchRegex(){
   std::string special_tokens_str;
-  special_tokens_str.reserve(special_tokens.size()*10);
+  special_tokens_str.reserve(specialTokens.size()*10);
 
   special_tokens_str.append("(?:");
-  for(const auto& [tok , _] : special_tokens){
+  for(const auto& [tok , _] : specialTokens){
     special_tokens_str += "\\Q";
     special_tokens_str.append(tok.data() , tok.size());
     special_tokens_str += "\\E|";
@@ -181,61 +225,61 @@ std::string BPETokeniser::create_search_regex(){
   return special_tokens_str;
 }
 
-BPETokeniser::BPETokeniser(const std::string& tokeniser_json) : json(padded_string::load(tokeniser_json)) {
+void BPETokeniser::Open(const std::string& tokeniser_json){
+  json = padded_string::load(tokeniser_json);
   auto doc = parser.iterate(json);
-  init_maps(doc);
+  initMaps(doc);
 
-  //Re iterate
   auto doc_reinit = parser.iterate(json);
 
-  fill_added_tokens(doc_reinit);
-  init_pre_tokeniser(doc_reinit);
-  fill_vocab_tokens(doc_reinit);
-  fill_merges_tokens(doc_reinit);
+  fillAddedTokens(doc_reinit);
+  initPreTokeniser(doc_reinit);
+  fillVocabTokens(doc_reinit);
+  fillMergesTokens(doc_reinit);
 
-  pre_tok_regex = compile_regex(split_tokeniser.regex);
-  special_tok_regex = compile_regex(create_search_regex());
+  preTokRegex = compile_regex(split_tokeniser.regex);
+  specialTokRegex = compile_regex(createSearchRegex());
 
-  generate_byte_to_unicode();
-  generate_unicode_to_byte();
+  generateByteToUnicode();
+  generateUnicodeToByte();
 
-  jit_stack = pcre2_jit_stack_create_8(32*1024, 512*1024, nullptr);
-  match_context = pcre2_match_context_create_8(nullptr);
-  pcre2_jit_stack_assign_8(match_context, nullptr , jit_stack);
+  jitStack = pcre2_jit_stack_create_8(32*1024, 512*1024, nullptr);
+  matchContext = pcre2_match_context_create_8(nullptr);
+  pcre2_jit_stack_assign_8(matchContext, nullptr , jitStack);
 }
 
 void BPETokeniser::Tokenise(const std::string& prompt_str , std::vector<uint32_t>& tokens){
   std::string_view prompt = prompt_str;
 
-  special_seprate_tokens.clear();
+  specialSeprateTokens.clear();
 
-  pcre2_match_data* match_data = pcre2_match_data_create_from_pattern(special_tok_regex ,NULL);
+  pcre2_match_data* match_data = pcre2_match_data_create_from_pattern(specialTokRegex ,NULL);
   PCRE2_SIZE start_offset = 0;
 
-  while (pcre2_jit_match_8(special_tok_regex, reinterpret_cast<PCRE2_SPTR>(prompt_str.c_str()), prompt.size(), start_offset, 0, match_data, match_context) >= 0) {
+  while (pcre2_jit_match_8(specialTokRegex, reinterpret_cast<PCRE2_SPTR>(prompt_str.c_str()), prompt.size(), start_offset, 0, match_data, matchContext) >= 0) {
     PCRE2_SIZE* ovector = pcre2_get_ovector_pointer(match_data);
-    special_seprate_tokens.emplace_back(prompt.substr(start_offset, ovector[0] - start_offset));
-    special_seprate_tokens.emplace_back(prompt.substr(ovector[0], ovector[1] - ovector[0]));
+    specialSeprateTokens.emplace_back(prompt.substr(start_offset, ovector[0] - start_offset));
+    specialSeprateTokens.emplace_back(prompt.substr(ovector[0], ovector[1] - ovector[0]));
     start_offset = ovector[1]; 
   }
 
   if(start_offset < prompt.size()){
-    special_seprate_tokens.emplace_back(prompt.substr(start_offset, prompt.size() - start_offset));
+    specialSeprateTokens.emplace_back(prompt.substr(start_offset, prompt.size() - start_offset));
   }
 
   pcre2_match_data_free(match_data);
 
-  match_data = pcre2_match_data_create_from_pattern(pre_tok_regex, NULL);
+  match_data = pcre2_match_data_create_from_pattern(preTokRegex, NULL);
 
 
   chunks.clear();
-  for(const auto& raw_prompt : special_seprate_tokens){
+  for(const auto& raw_prompt : specialSeprateTokens){
     start_offset = 0;
-    if(special_tokens.contains_key(raw_prompt)){
+    if(specialTokens.contains_key(raw_prompt)){
       chunks.push_back(raw_prompt);
       continue;
     }
-    while (pcre2_jit_match_8(pre_tok_regex, reinterpret_cast<PCRE2_SPTR>(raw_prompt.data()), raw_prompt.size(), start_offset, 0, match_data, match_context) >= 0) {
+    while (pcre2_jit_match_8(preTokRegex, reinterpret_cast<PCRE2_SPTR>(raw_prompt.data()), raw_prompt.size(), start_offset, 0, match_data, matchContext) >= 0) {
       PCRE2_SIZE* ovector = pcre2_get_ovector_pointer(match_data);
 
       chunks.push_back(raw_prompt.substr(ovector[0], ovector[1] - ovector[0]));
@@ -247,8 +291,8 @@ void BPETokeniser::Tokenise(const std::string& prompt_str , std::vector<uint32_t
   pcre2_match_data_free(match_data);
 
   for(const auto& chunk : chunks){
-    if(special_tokens.contains_key(chunk)){
-      tokens.emplace_back(*special_tokens.getValueOf(chunk));
+    if(specialTokens.contains_key(chunk)){
+      tokens.emplace_back(*specialTokens.getValueOf(chunk));
       continue;
     }
 
@@ -256,7 +300,7 @@ void BPETokeniser::Tokenise(const std::string& prompt_str , std::vector<uint32_t
 
     for (size_t i = 0; i < chunk.size(); i++) {
       uint8_t raw_byte = static_cast<uint8_t>(chunk[i]);
-      auto mapped_str = byte_to_unicode_table[raw_byte];
+      auto mapped_str = byteToUnicodeTable[raw_byte];
 
       auto id = vocab.getValueOf(mapped_str);
       if(__builtin_expect(!id.has_value(),false)){
@@ -277,10 +321,10 @@ void BPETokeniser::Tokenise(const std::string& prompt_str , std::vector<uint32_t
 
         if (!it.has_value()) continue;
 
-        if ((*it).merge_rank < lowest_rank) {
-          lowest_rank = (*it).merge_rank;
+        if ((*it).mergeRank < lowest_rank) {
+          lowest_rank = (*it).mergeRank;
           lowest_rank_indx = i;
-          target_merge_id = (*it).merge_result;
+          target_merge_id = (*it).mergeResult;
         }
       }
 
@@ -300,7 +344,7 @@ void BPETokeniser::Tokenise(const std::string& prompt_str , std::vector<uint32_t
 std::optional<std::string> BPETokeniser::Decode(uint32_t token_id){
   auto token_opt = vocab.getKeyOf(token_id);
   if(__builtin_expect(!token_opt.has_value(),false)){
-    token_opt = special_tokens.getKeyOf(token_id);
+    token_opt = specialTokens.getKeyOf(token_id);
     if(!token_opt.has_value()){
       return std::nullopt;
     }
@@ -320,7 +364,7 @@ std::optional<std::string> BPETokeniser::Decode(uint32_t token_id){
       unsigned char c2 = token_str[i + 1];
       uint16_t unicode_val = ((c & 0x1F) << 6) | (c2 & 0x3F);
 
-      uint8_t original_byte = unicode_to_byte_table[unicode_val - 256];
+      uint8_t original_byte = unicodeToByteTable[unicode_val - 256];
       token.push_back(original_byte);
 
       i += 2; 
@@ -333,6 +377,6 @@ std::optional<std::string> BPETokeniser::Decode(uint32_t token_id){
   return token;
 }
 
-BPETokeniser::~BPETokeniser(){
-  pcre2_code_free(pre_tok_regex);
+void BPETokeniser::Delete(){
+  pcre2_code_free(preTokRegex);
 }

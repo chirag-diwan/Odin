@@ -9,12 +9,12 @@
 
 class Engine {
 private:
-  EngineState state;
-  Model       model;
+  EngineState state_;
+  Model       model_;
 
-  const ggml_backend_t backend;
-  const ggml_gallocr_t prefill_allocr;
-  const ggml_gallocr_t infer_allocr;
+  ggml_backend_t backend_;
+  ggml_gallocr_t prefillAllocr_;
+  ggml_gallocr_t inferAllocr_;
 
   KVCache cache;
 
@@ -22,7 +22,7 @@ public:
   static constexpr size_t prefill_batch_size = 512;
   static constexpr size_t context_arena_size = 10 * 1024 * 1024;
 
-  Engine(Model& model, ggml_context* state_ctx, ggml_backend_t target_backend);
+  void Init(Model& model , ggml_gallocr* prefill_allocr , ggml_gallocr* infer_allocr, ggml_backend_t target_backend , ggml_tensor* kcache , ggml_tensor* vcache , ggml_backend_buffer* backend_buffer);
 
   void ReserveDecodeMemory() ;
 
@@ -33,6 +33,4 @@ public:
   uint32_t Infer(uint32_t prev_token) ;
 
   void ClearContext() ;
-
-  ~Engine() ;
 };

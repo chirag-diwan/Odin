@@ -25,15 +25,15 @@ struct PromptReq{
 
 class HttpManager{
   private:
-    simdjson::dom::parser json_parser_;
+    simdjson::dom::parser jsonParser_;
     
-    const std::vector<const char *> file_paths_ = {
+    const std::vector<const char *> filePaths_ = {
       "/index.html",
       "/style.css",
       "/dist/main.js",
     };
 
-    unidirectional_map<std::string, std::string> file_content_;
+    unidirectional_map<std::string, std::string> fileContent_;
 
     httplib::Server server_;
 
@@ -42,38 +42,38 @@ class HttpManager{
     std::thread handler_;
 
     ringbuffer<std::string> infered_;
-    std::condition_variable infered_cv_;
-    std::mutex infered_mutex_;
+    std::condition_variable inferedCv_;
+    std::mutex inferedMutex_;
 
     ringbuffer<PromptReq> prompts_;
-    std::condition_variable read_cv_;
-    std::mutex prompt_mutex_;
+    std::condition_variable readCv_;
+    std::mutex promptMutex_;
 
-    std::atomic<bool> is_running_ = true;
+    std::atomic<bool> isRunning_ = true;
 
     std::sig_atomic_t& interupt_;
 
-    void generic_handler(const httplib::Request& request , httplib::Response& response);
-    void token_stream_handler(const httplib::Request&, httplib::Response& res);
-    void token_oneshot_handler(const httplib::Request& request , httplib::Response& response );
-    void prompt_income_handler(const httplib::Request& req , httplib::Response& );
+    void genericHandler(const httplib::Request& request , httplib::Response& response);
+    void tokenStreamHandler(const httplib::Request&, httplib::Response& res);
+    void tokenOneshotHandler(const httplib::Request& request , httplib::Response& response );
+    void promptIncomeHandler(const httplib::Request& req , httplib::Response& );
   
-    uint32_t prompt_tokens_;
+    uint32_t promptTokens_;
   public:
 
     const inline static std::string DONE_TOK = "data: [DONE]\n\n";
 
     HttpManager(std::sig_atomic_t& intrpt , short port = 8080);
 
-    void start_listen();
+    void StartListen();
 
-    PromptReq read_prompt();
+    PromptReq ReadPrompt();
 
-    void set_prompt_tokens(uint32_t tok_count){
-      prompt_tokens_ = tok_count;
+    void SetPromptTokens(uint32_t tok_count){
+      promptTokens_ = tok_count;
     }
 
-    bool write_infered(const std::string& tok);
+    bool WriteInfered(const std::string& tok);
 
     void stop();
 

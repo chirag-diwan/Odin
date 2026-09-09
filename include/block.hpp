@@ -1,6 +1,5 @@
 #pragma once
 
-#include "./logging.hpp"
 #include <string>
 #include <string_view>
 
@@ -54,30 +53,29 @@ struct ModelBlock {
   struct ggml_tensor* ffn_gate_b ;
   // Uses ffn_up_w and ffn_down_w from above.
 
-  ModelBlock(){
-    attn_norm_w = nullptr;
-    attn_norm_b = nullptr;
-    ffn_norm_w = nullptr;
-    ffn_norm_b = nullptr;
-    attn_q_w = nullptr;
-    attn_q_b = nullptr;
-    attn_k_w = nullptr;
-    attn_k_b = nullptr;
-    attn_v_w = nullptr;
-    attn_v_b = nullptr;
-    attn_qkv_w = nullptr;
-    attn_qkv_b = nullptr;
-    attn_kv_w = nullptr;
-    attn_kv_b = nullptr;
-    attn_output_w = nullptr;
-    attn_output_b = nullptr;
-    ffn_up_w   = nullptr;
-    ffn_up_b   = nullptr;
-    ffn_down_w = nullptr;
-    ffn_down_b = nullptr;
-    ffn_gate_w = nullptr;
-    ffn_gate_b = nullptr;
-  }
+  ModelBlock():
+    attn_norm_w(nullptr),
+    attn_norm_b(nullptr),
+    ffn_norm_w(nullptr),
+    ffn_norm_b(nullptr),
+    attn_q_w(nullptr),
+    attn_q_b(nullptr),
+    attn_k_w(nullptr),
+    attn_k_b(nullptr),
+    attn_v_w(nullptr),
+    attn_v_b(nullptr),
+    attn_qkv_w(nullptr),
+    attn_qkv_b(nullptr),
+    attn_kv_w(nullptr),
+    attn_kv_b(nullptr),
+    attn_output_w(nullptr),
+    attn_output_b(nullptr),
+    ffn_up_w(nullptr),
+    ffn_up_b(nullptr),
+    ffn_down_w(nullptr),
+    ffn_down_b(nullptr),
+    ffn_gate_w(nullptr),
+    ffn_gate_b(nullptr) {}
 
   void MapTensor(const std::string_view& tensor_name , ggml_tensor* tensor){
     if (tensor_name.find(".attn_norm.weight") != std::string::npos)
@@ -108,16 +106,5 @@ struct ModelBlock {
       ffn_down_w = tensor;
   }
 };
-
-static inline const char* tstate(struct ggml_tensor* t) {
-  return (t != NULL) ? "OK" : "NULL";
-}
-
-static inline void print_tensor(const char* name, struct ggml_tensor* t) {
-  if (t == nullptr) {
-    return;
-  }
-  Log(INFO,name, tstate(t), (void*)t);
-}
 
 void DebugPrintBlock(ModelBlock& block) ;

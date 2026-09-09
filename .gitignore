@@ -1,6 +1,7 @@
 build/
 qwen-2.5-model.info
 llama-3.2-model.info
+all-MiniLM-L6.info
 /external/*
 perf.data
 /test/
@@ -10,4 +11,5 @@ prompt.txt
 /src/http/experimental/
 /include/experimental/
 /perf/
+/test/
 perf*

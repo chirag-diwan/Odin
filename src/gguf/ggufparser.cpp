@@ -23,7 +23,7 @@ GGufArray GGufParser::parseArray() {
   advanceOffset(sizeof(decltype(element_count)));
 
   arr.length = element_count;
-  arr.elem_type = element_type;
+  arr.elemType = element_type;
 
   if(element_type == GGUF_VALUE_TYPE_ARRAY){
     for(size_t i = 0 ; i < element_count ; i++){
@@ -62,34 +62,20 @@ void GGufParser::parseKeyValue() {
   metadata_key_values_.push_back({ metadata_key , std::move(parsed_value) });
 }
 
-GGufParser::GGufParser(const std::string& filepath){
-
-  int opened_descriptor = open(filepath.c_str(), O_RDONLY);
-  Errorif(opened_descriptor == -1, "Not a valid file descriptor for %?", filepath);
-
-  struct stat file_statistics;
-  Errorif(fstat(opened_descriptor, &file_statistics) == -1, "Unable to get file stats for ", filepath);
-
-  void* memory_mapped_pointer = mmap(NULL, file_statistics.st_size, PROT_READ, MAP_PRIVATE, opened_descriptor, 0);
-  Errorif(memory_mapped_pointer == MAP_FAILED, "Mapping failed for ", filepath);
-
-  file_descriptor_ = opened_descriptor;
-  mapped_data_     = static_cast<uint8_t*>(memory_mapped_pointer);
-  total_size_      = file_statistics.st_size;
-  byte_alignment_  = 32;
-  current_offset_  = 0;
+void GGufParser::ParseFile(int fd , void * mmap_ptr , size_t fileSize) {
+  fileDescriptor_ = fd;
+  mappedData_     = static_cast<uint8_t*>(mmap_ptr);
+  totalSize_      = fileSize;
+  byteAlignment_  = 32;
+  currentOffset_  = 0;
 
   parseHeader();
   parseAllKeyValues();
   parseAllTensors();
 }
 
-std::pair<void* , size_t> GGufParser::GetParsedFile() {
-  return {mapped_data_ , total_size_};
-}
-
 void GGufParser::parseHeader() {
-  Errorif(current_offset_ != 0, "Offset is not zero on the first call");
+  Errorif(currentOffset_ != 0, "Offset is not zero on the first call");
 
   header_ = static_cast<GGufHeader*>(getCurrentPositionPointer())[0];
   advanceOffset(sizeof(decltype(header_)));
@@ -98,62 +84,59 @@ void GGufParser::parseHeader() {
 
 
 void GGufParser::parseAllKeyValues() {
-  for (size_t i = 0; i < header_.metadata_kv_count; ++i) {
+  for (size_t i = 0; i < header_.metadataKvCount; ++i) {
     parseKeyValue();
   }
 
   for(const auto& kv : metadata_key_values_){
     if (kv.name == "general.alignment") {
-      this->byte_alignment_ = Extract<uint64_t,GGUF_VALUE_TYPE_UINT32 ,GGUF_VALUE_TYPE_UINT64 >(
+      this->byteAlignment_ = Extract<uint64_t,GGUF_VALUE_TYPE_UINT32 ,GGUF_VALUE_TYPE_UINT64 >(
                                                                                                 kv.value);
       return;
     }
   }
-  this->byte_alignment_ = 32;
+  this->byteAlignment_ = 32;
 }
 
 void GGufParser::parseAllTensors() {
-  for (size_t i = 0; i < header_.tensor_count; ++i) {
+  for (size_t i = 0; i < header_.tensorCount; ++i) {
     GGufTensor tensor;
     tensor.name = parseString();
 
-    tensor.dimension_count =
+    tensor.dimensionCount =
       read_unaligned<uint32_t>(getCurrentPositionPointer());
     advanceOffset(sizeof(uint32_t));
 
-    for (size_t j = 0; j < tensor.dimension_count; j++) {
+    for (size_t j = 0; j < tensor.dimensionCount; j++) {
       tensor.dimensions[j] =
         read_unaligned<int64_t>(getCurrentPositionPointer());
       advanceOffset(sizeof(int64_t));
     }
 
-    tensor.tensor_type= static_cast<ggml_type>(
+    tensor.tensorType= static_cast<ggml_type>(
                                                read_unaligned<uint32_t>(getCurrentPositionPointer()));
     advanceOffset(sizeof(uint32_t));
 
-    tensor.file_offset =
+    tensor.fileOffset =
       read_unaligned<uint64_t>(getCurrentPositionPointer());
     advanceOffset(sizeof(uint64_t));
 
     uint64_t byte_size = 1;
-    for (uint8_t k = 0; k < tensor.dimension_count; ++k) {
+    for (uint8_t k = 0; k < tensor.dimensionCount; ++k) {
       byte_size *= tensor.dimensions[k];
     }
 
-    const auto block_size = ggml_blck_size(tensor.tensor_type);
+    const auto block_size = ggml_blck_size(tensor.tensorType);
     Errorif(byte_size % block_size != 0, "Number of elements in tensor ",
             tensor.name, " is not a multiple of block size ", block_size);
-    byte_size = byte_size * ggml_type_size(tensor.tensor_type) / block_size;
-    tensor.byte_size = byte_size;
+    byte_size = byte_size * ggml_type_size(tensor.tensorType) / block_size;
+    tensor.byteSize = byte_size;
 
     tensors_.push_back(tensor);
   }
-  data_offset_ = (current_offset_ + byte_alignment_ - 1) & ~(byte_alignment_ - 1);
+  dataOffset_ = (currentOffset_ + byteAlignment_ - 1) & ~(byteAlignment_ - 1);
   for(auto& tensor : tensors_){
-    tensor.file_offset = tensor.file_offset + data_offset_;
-    tensor.weights_data = mapped_data_ + tensor.file_offset;
+    tensor.fileOffset = tensor.fileOffset + dataOffset_;
+    tensor.weightsData = mappedData_ + tensor.fileOffset;
   }
-}
-
-GGufParser::~GGufParser(){
 }

@@ -1,21 +1,23 @@
 #include "../../include/engine.hpp"
 #include "../../include/forward.hpp"
+#include "../../include/logging.hpp"
+
 #include <cmath>
 #include <span>
 
-Engine::Engine(Model& model, ggml_context* state_ctx, ggml_backend_t target_backend)
-  : model(model), backend(target_backend),
-  prefill_allocr(
-      ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend))),
-  infer_allocr(
-      ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend))),
-  cache(state_ctx, target_backend, model) {
+void Engine::Init(Model& model , ggml_gallocr* prefill_allocr , ggml_gallocr* infer_allocr, ggml_backend* target_backend , ggml_tensor* kcache , ggml_tensor* vcache , ggml_backend_buffer* backend_buffer){
 
-    state.inner_dimension =
-      model.globals.embedding_length / model.globals.attention_head_count;
-    state.scale_factor = 1.0f / std::sqrt(static_cast<float>(state.inner_dimension));
-    state.past_token_count       = 0;
-  }
+  model_ = model;
+  backend_ = target_backend;
+  prefillAllocr_ = prefill_allocr;
+  inferAllocr_ = infer_allocr;
+  cache.Init(kcache , vcache , backend_buffer);
+
+  state_.innerDimension = model.globals.embeddingLength / model.globals.attentionHeadCount;
+  state_.scaleFactor = 1.0f / std::sqrt(state_.innerDimension);
+  state_.pastTokenCount       = 0;
+
+}
 
 void Engine::ReserveDecodeMemory() {
   size_t s = 1;
@@ -27,22 +29,22 @@ void Engine::ReserveDecodeMemory() {
   ggml_tensor* pos     = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, s);
   ggml_tensor* indices = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, s);
   ggml_tensor* embeddings =
-    ggml_get_rows(ctx0, model.global_tensors.token_embd_weights, indices);
+    ggml_get_rows(ctx0, model_.globalTensors.tokenEmbdWeights, indices);
 
-  size_t original_n_past = state.past_token_count;
-  state.past_token_count           = model.globals.context_length - 1;
+  size_t original_n_past = state_.pastTokenCount;
+  state_.pastTokenCount           = model_.globals.contextLength - 1;
 
-  embeddings = forward(ctx0, gf, embeddings, pos, s, model, cache, state);
+  embeddings = forward(ctx0, gf, embeddings, pos, s, model_, cache, state_);
 
   ggml_tensor* max_idx = ggml_argmax(ctx0, embeddings);
   ggml_build_forward_expand(gf, max_idx);
 
-  if (!ggml_gallocr_reserve(infer_allocr, gf)) {
+  if (!ggml_gallocr_reserve(inferAllocr_, gf)) {
     Log("Failed to reserve memory for infer_allocr");
     exit(1);
   }
 
-  state.past_token_count = original_n_past;
+  state_.pastTokenCount = original_n_past;
   ggml_free(ctx0);
 }
 
@@ -57,15 +59,15 @@ void Engine::ReservePrefillMemory() {
     ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, prefill_batch_size);
 
   ggml_tensor* embeddings =
-    ggml_get_rows(ctx0, model.global_tensors.token_embd_weights, indices);
-  embeddings = forward(ctx0, gf, embeddings, pos, prefill_batch_size, model,
-      cache, state);
+    ggml_get_rows(ctx0, model_.globalTensors.tokenEmbdWeights, indices);
+  embeddings = forward(ctx0, gf, embeddings, pos, prefill_batch_size, model_,
+                       cache, state_);
 
   ggml_tensor* max_idx = ggml_argmax(ctx0, embeddings);
 
   ggml_build_forward_expand(gf, max_idx);
 
-  if (!ggml_gallocr_reserve(prefill_allocr, gf)) {
+  if (!ggml_gallocr_reserve(prefillAllocr_, gf)) {
     Log("Failed to reserve memory for prefill_allocr");
     exit(1);
   }
@@ -84,28 +86,28 @@ uint32_t Engine::Prefill(std::span<uint32_t>& tokens) {
   ggml_tensor* indices = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, s);
 
   ggml_tensor* embeddings =
-    ggml_get_rows(ctx0, model.global_tensors.token_embd_weights, indices);
-  embeddings = forward(ctx0, gf, embeddings, pos, s, model, cache, state);
+    ggml_get_rows(ctx0, model_.globalTensors.tokenEmbdWeights, indices);
+  embeddings = forward(ctx0, gf, embeddings, pos, s, model_, cache, state_);
 
   ggml_tensor* max_idx = ggml_argmax(ctx0, embeddings);
 
   ggml_build_forward_expand(gf, max_idx);
-  ggml_gallocr_alloc_graph(prefill_allocr, gf);
+  ggml_gallocr_alloc_graph(prefillAllocr_, gf);
 
   std::vector<int32_t> pos_data(s);
   for (size_t p = 0; p < s; p++) {
-    pos_data[p] = p + state.past_token_count;
+    pos_data[p] = p + state_.pastTokenCount;
   }
 
   ggml_backend_tensor_set(pos, pos_data.data(), 0, s * sizeof(int32_t));
   ggml_backend_tensor_set(indices, tokens.data(), 0, s * sizeof(int32_t));
 
-  ggml_backend_graph_compute(backend, gf);
+  ggml_backend_graph_compute(backend_, gf);
 
   int32_t next_token;
   ggml_backend_tensor_get(max_idx, &next_token, 0, sizeof(int32_t));
 
-  state.past_token_count += s;
+  state_.pastTokenCount += s;
 
   ggml_free(ctx0);
   return next_token;
@@ -120,34 +122,29 @@ uint32_t Engine::Infer(uint32_t prev_token) {
   ggml_tensor* indices = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, 1);
 
   ggml_tensor* embeddings =
-    ggml_get_rows(ctx0, model.global_tensors.token_embd_weights, indices);
+    ggml_get_rows(ctx0, model_.globalTensors.tokenEmbdWeights, indices);
 
-  embeddings = forward(ctx0, gf, embeddings, pos, 1, model, cache, state);
+  embeddings = forward(ctx0, gf, embeddings, pos, 1, model_, cache, state_);
 
   ggml_tensor* max_idx = ggml_argmax(ctx0, embeddings);
 
   ggml_build_forward_expand(gf, max_idx);
-  ggml_gallocr_alloc_graph(infer_allocr, gf);
+  ggml_gallocr_alloc_graph(inferAllocr_, gf);
 
-  int32_t current_pos = state.past_token_count;
+  int32_t current_pos = state_.pastTokenCount;
   ggml_backend_tensor_set(pos, &current_pos, 0, sizeof(int32_t));
   ggml_backend_tensor_set(indices, &prev_token, 0, sizeof(int32_t));
 
-  ggml_backend_graph_compute(backend, gf);
+  ggml_backend_graph_compute(backend_, gf);
 
   int32_t next_token;
   ggml_backend_tensor_get(max_idx, &next_token, 0, sizeof(int32_t));
 
-  state.past_token_count += 1;
+  state_.pastTokenCount += 1;
   ggml_free(ctx0);
   return next_token;
 }
 
 void Engine::ClearContext() {
-  state.past_token_count = 0;
-}
-
-Engine::~Engine() {
-  ggml_gallocr_free(infer_allocr);
-  ggml_gallocr_free(prefill_allocr);
+  state_.pastTokenCount = 0;
 }

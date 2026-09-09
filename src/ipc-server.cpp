@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
 
   Config config = ParseConfig(argc, argv);
 
-  GGufParser parser(config.model_path);
+  GGufParser parser(config.modelPath);
 
   auto [addr, len] = parser.GetParsedFile();
 
@@ -60,34 +60,35 @@ int main(int argc, char** argv) {
 
   UniqueGgmlContext static_ctx(ggml_init(static_ctx_params));
 
-  auto globals = GetModelGlobals(parser.metadata_key_values_);
-
-  if(globals.general_model_architecture == Architecture::UNKNOWN){
+  auto model = CreateModel(static_ctx.get(), parser);
+  if(model.globals.generalModelArchitecture == Architecture::UNKNOWN){
     //TODO Try and get more information about the Architecture using the full name.
-    Log(ERROR , "Unknown model architecture" , globals.full_architecture_name);
+    Log(ERROR , "Unknown model architecture" , model.globals.fullArchitectureName);
     return -1;
   }
 
-  auto model = CreateModel(static_ctx.get(), parser);
 
   Engine engine(model, static_ctx.get(), backend);
   engine.ReservePrefillMemory();
   engine.ReserveDecodeMemory();
 
-  BPETokeniser tokeniser(config.tokeniser_json_path);
+  BPETokeniser tokeniser(config.tokeniserJsonPath);
   std::vector<uint32_t> tokens;
 
+  TemplateParamGenerator tpgenerator; tpgenerator.SetDefault(model.globals.generalModelArchitecture);
+  Formatter formatter{std::string{model.globals.chat_template}};
 
-  IPCManager manager(interupt , config.ipc_path);
-
-    manager.start_listen();
+  IPCManager manager(interupt , config.ipcPath);
+  manager.StartListen();
 
   std::string system_prompt = "You are a helpfull AI agent";
 
   std::string raw_prompt;
 
   while (!interupt) {
-    raw_prompt  = manager.read_prompt();
+    tpgenerator.Reset();
+    tpgenerator.SetDefault(model.globals.generalModelArchitecture);
+    raw_prompt  = manager.ReadPrompt();
 
     if (raw_prompt.empty()) {
       continue;
@@ -103,7 +104,10 @@ int main(int argc, char** argv) {
       engine.ClearContext();
     }
 
-    auto prompt = GetFormatted(model.globals.general_model_architecture,system_prompt, raw_prompt);
+    tpgenerator.AddMessage("system", system_prompt);
+    tpgenerator.AddMessage("user", raw_prompt);
+
+    auto prompt = formatter.GetFormattedString(tpgenerator.GetRef());
 
     size_t last_index = tokens.size();
     tokeniser.Tokenise(prompt, tokens);
@@ -117,19 +121,18 @@ int main(int argc, char** argv) {
     auto tok = tokeniser.Decode(next_token);
 
     if(tok.has_value()){
-        manager.write_infered(*tok);
+        manager.WriteInfered(*tok);
     }
 
-    while (!interupt && (next_token != globals.ggml_eos_token_id)) {
+    while (!interupt && (next_token != model.globals.ggmlEosTokenId)) {
 
       next_token = engine.Infer(tokens.back());
       tokens.push_back(next_token);
 
-      if (next_token != globals.ggml_eos_token_id) {
-
+      if (next_token != model.globals.ggmlEosTokenId) {
         auto tok = tokeniser.Decode(next_token);
         if(tok.has_value()){
-            manager.write_infered(*tok);
+            manager.WriteInfered(*tok);
         }
       }
     }
@@ -137,7 +140,7 @@ int main(int argc, char** argv) {
     interupt = false;
   }
 
-  manager.stop();
+  manager.Stop();
 
   return EXIT_SUCCESS;
 }

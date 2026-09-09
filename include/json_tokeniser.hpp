@@ -20,56 +20,50 @@ class BPETokeniser{
     std::vector<std::string_view> chunks;
     std::vector<uint32_t> bytes;
 
-
   protected:
     TokeniserConfig config;
     PreTokeniser split_tokeniser;
 
     ondemand::parser parser;
-    const padded_string json;
+    padded_string json;
 
     bidirectional_map<std::string_view, uint32_t> vocab;
-    bidirectional_map<std::string_view, uint32_t> special_tokens;
+    bidirectional_map<std::string_view, uint32_t> specialTokens;
     unidirectional_map<uint64_t, merge_rank_result> merges;
 
-    pcre2_code* pre_tok_regex;
-    pcre2_code* special_tok_regex;
+    pcre2_code* preTokRegex;
+    pcre2_code* specialTokRegex;
 
-    pcre2_jit_stack* jit_stack;
-    pcre2_match_context* match_context;
+    pcre2_jit_stack* jitStack;
+    pcre2_match_context* matchContext;
 
-    std::vector<std::string> byte_to_unicode_table;
-    uint8_t unicode_to_byte_table[65];
+    std::vector<std::string> byteToUnicodeTable;
+    uint8_t unicodeToByteTable[65];
 
-
-    // XXX created by llm
-    void generate_unicode_to_byte();
 
     // XXX created by llm
-    void generate_byte_to_unicode() ;
+    void generateUnicodeToByte();
+
+    // XXX created by llm
+    void generateByteToUnicode() ;
 
     __attribute__((always_inline)) inline uint64_t getKey(uint32_t first, uint32_t second);
 
-    void init_maps(simdjson_result<ondemand::document>& doc);
-
-    void init_pre_tokeniser(simdjson_result<ondemand::document>& doc);
-
-    void fill_added_tokens(simdjson_result<ondemand::document>& doc);
-
-    void fill_vocab_tokens(simdjson_result<ondemand::document>& doc);
-
-    void fill_merges_tokens(simdjson_result<ondemand::document>& doc);
-
-    std::string create_search_regex();
+    void initMaps(simdjson_result<ondemand::document>& doc);
+    void initPreTokeniser(simdjson_result<ondemand::document>& doc);
+    void fillAddedTokens(simdjson_result<ondemand::document>& doc);
+    void fillVocabTokens(simdjson_result<ondemand::document>& doc);
+    void fillMergesTokens(simdjson_result<ondemand::document>& doc);
+    std::string createSearchRegex();
 
   public:
 
-    std::vector<std::string_view> special_seprate_tokens;
+    std::vector<std::string_view> specialSeprateTokens;
 
-    BPETokeniser(const std::string& tokeniser_json);
+    void Open(const std::string& tokeniser_json);
 
     void Tokenise(const std::string& prompt_str , std::vector<uint32_t>& tokens);
     std::optional<std::string> Decode(uint32_t token_id);
 
-    ~BPETokeniser();
+    void Delete();
 };

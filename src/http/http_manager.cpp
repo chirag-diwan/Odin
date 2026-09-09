@@ -8,9 +8,9 @@
 #include "../../include/logging.hpp"
 
 #define CPPHTTPLIB_NO_MULTI_THREAD_SUPPORT
-#include "../../include/http-manager.hpp"
+#include "../../include/http_manager.hpp"
 
-void HttpManager::generic_handler(const httplib::Request& request , httplib::Response& response){
+void HttpManager::genericHandler(const httplib::Request& request , httplib::Response& response){
   Log(INFO, std::format("[{}] {} from {}", request.method, request.path, request.remote_addr));
 
   std::string path;
@@ -20,7 +20,7 @@ void HttpManager::generic_handler(const httplib::Request& request , httplib::Res
     path = request.path;
   }
 
-  std::string content = *file_content_.getValueOf(path);
+  std::string content = *fileContent_.getValueOf(path);
 
   if(path.ends_with(".js")){
     response.set_content(content.c_str() , content.size(), "text/javascript");
@@ -31,21 +31,21 @@ void HttpManager::generic_handler(const httplib::Request& request , httplib::Res
   }
 }
 
-void HttpManager::token_stream_handler(const httplib::Request& _, httplib::Response& res){
+void HttpManager::tokenStreamHandler(const httplib::Request& _, httplib::Response& res){
   Log(INFO, "[POST] /v1/chat/completions - streaming response");
 
   res.set_header("Content-Type", "text/event-stream");
   res.set_header("Connection", "keep-alive");
   res.set_chunked_content_provider("text/event-stream", [this](size_t /*offset*/, httplib::DataSink& sink) ->bool{ 
-    while(is_running_){
+    while(isRunning_){
       {
-        std::unique_lock<std::mutex> lck(infered_mutex_);
-        infered_cv_.wait(lck, [this] {
-          return (interupt_ || !is_running_ || !infered_.empty());
+        std::unique_lock<std::mutex> lck(inferedMutex_);
+        inferedCv_.wait(lck, [this] {
+          return (interupt_ || !isRunning_ || !infered_.empty());
         });
       }
 
-      if(!is_running_){
+      if(!isRunning_){
         break;
       }
 
@@ -88,22 +88,22 @@ void HttpManager::token_stream_handler(const httplib::Request& _, httplib::Respo
   });
 }
 
-void HttpManager::token_oneshot_handler(const httplib::Request& _ , httplib::Response& response ){
+void HttpManager::tokenOneshotHandler(const httplib::Request& _ , httplib::Response& response ){
   Log(INFO, "[POST] /v1/chat/completions - non-streaming response");
 
   response.set_header("Content-Type", "application/json");
 
   std::string final_tok_string;final_tok_string.reserve(infered_.size() * 5);
   uint32_t tok_count = 0;
-  while(is_running_){
+  while(isRunning_){
     {
-      std::unique_lock<std::mutex> lck(infered_mutex_);
-      infered_cv_.wait(lck, [this] {
-        return (interupt_ || !is_running_ || !infered_.empty());
+      std::unique_lock<std::mutex> lck(inferedMutex_);
+      inferedCv_.wait(lck, [this] {
+        return (interupt_ || !isRunning_ || !infered_.empty());
       });
     }
 
-    if(!is_running_){
+    if(!isRunning_){
       break;
     }
 
@@ -137,9 +137,9 @@ void HttpManager::token_oneshot_handler(const httplib::Request& _ , httplib::Res
       })},
       {"usage",
         {
-          {"prompt_tokens", prompt_tokens_},
+          {"prompt_tokens", promptTokens_},
           {"completion_tokens", tok_count},
-          {"total_tokens", prompt_tokens_ + tok_count}
+          {"total_tokens", promptTokens_ + tok_count}
         }}
   };
 
@@ -147,10 +147,10 @@ void HttpManager::token_oneshot_handler(const httplib::Request& _ , httplib::Res
   response.set_content(response_json.dump(), "application/json");
 }
 
-void HttpManager::prompt_income_handler(const httplib::Request& request , httplib::Response& response ){
+void HttpManager::promptIncomeHandler(const httplib::Request& request , httplib::Response& response ){
   Log(INFO, std::format("[POST] {} from {}", request.path, request.remote_addr));
 
-  auto dom = json_parser_.parse(request.body.data(), request.body.size());
+  auto dom = jsonParser_.parse(request.body.data(), request.body.size());
 
   std::string_view buf;
   simdjson::dom::element value;
@@ -171,8 +171,6 @@ void HttpManager::prompt_income_handler(const httplib::Request& request , httpli
     response.set_content(res.data() , res.size() , "application/json");
     return;
   }
-
-  uint32_t message_count = 0;
 
   for(const auto& msg_obj : value.get_array()){
     status = msg_obj["content"].get(value);
@@ -211,23 +209,22 @@ void HttpManager::prompt_income_handler(const httplib::Request& request , httpli
     if(!ret){
       Log(INFO, "Push to prompt failed");
     }else{
-      message_count++;
-      read_cv_.notify_all();
+      readCv_.notify_all();
     }
   }
 
   if(stream){
-    token_stream_handler(request, response);
+    tokenStreamHandler(request, response);
   }else{
-    token_oneshot_handler(request, response);
+    tokenOneshotHandler(request, response);
   }
 }
 
-HttpManager::HttpManager(std::sig_atomic_t& intrpt , short port) : port_(port) ,is_running_(true) ,interupt_(intrpt){
+HttpManager::HttpManager(std::sig_atomic_t& intrpt , short port) : port_(port) ,isRunning_(true) ,interupt_(intrpt){
   Log(INFO, std::format("Initializing HTTP server on port {}", port_));
 
   std::string root_abs = std::filesystem::absolute("./interface");
-  file_content_.populate(file_paths_.size());
+  fileContent_.populate(filePaths_.size());
   if(!std::filesystem::is_directory(root_abs)){
     Log(INFO, std::format("Frontend interface not present in path: {}", root_abs));
     return;
@@ -236,36 +233,36 @@ HttpManager::HttpManager(std::sig_atomic_t& intrpt , short port) : port_(port) ,
   Log(INFO, std::format("Loading frontend interface from {}", root_abs));
 
   std::ifstream in;
-  for(const auto& file_path : file_paths_){
+  for(const auto& file_path : filePaths_){
     auto abs_file_path = root_abs + file_path;
     in.open(abs_file_path);
     std::string content(std::istreambuf_iterator<char>{in} , std::istreambuf_iterator<char>{});
     in.close();
-    file_content_.insert(file_path, content);
+    fileContent_.insert(file_path, content);
 
     Log(INFO, std::format("Loaded {} ({} bytes)", file_path, content.size()));
   }
 
 
   server_.Get("/", [this](const httplib::Request& request , httplib::Response& response) {
-    generic_handler(request, response);
+    genericHandler(request, response);
   });
 
-  for(const auto& path : file_paths_){
+  for(const auto& path : filePaths_){
     server_.Get(path, [this](const httplib::Request& request , httplib::Response& response) {
-      generic_handler(request, response);
+      genericHandler(request, response);
     });
   }
 
   server_.Post("/v1/chat/completions", [this](const httplib::Request& request , httplib::Response& response) {
     Log(INFO, "[POST] /v1/chat/completions");
-    prompt_income_handler(request, response);
+    promptIncomeHandler(request, response);
   });
 
   Log(INFO, "HTTP server routes initialized");
 }
 
-void HttpManager::start_listen(){
+void HttpManager::StartListen(){
   Log(INFO, std::format("Listening on http://localhost:{}" , port_));
   handler_ = std::thread([this](){
     server_.listen("localhost", port_);
@@ -273,11 +270,11 @@ void HttpManager::start_listen(){
   });
 }
 
-PromptReq HttpManager::read_prompt() {
-  std::unique_lock<std::mutex> lock(prompt_mutex_);
+PromptReq HttpManager::ReadPrompt() {
+  std::unique_lock<std::mutex> lock(promptMutex_);
   while(true){
-    bool got_data = read_cv_.wait_for(lock, std::chrono::milliseconds(500), [this] {
-      return !is_running_ || !prompts_.empty() ;
+    bool got_data = readCv_.wait_for(lock, std::chrono::milliseconds(500), [this] {
+      return !isRunning_ || !prompts_.empty() ;
     });
 
     if (!got_data) {
@@ -297,10 +294,10 @@ PromptReq HttpManager::read_prompt() {
 }
 
 
-bool HttpManager::write_infered(const std::string& tok){
+bool HttpManager::WriteInfered(const std::string& tok){
   auto ok = infered_.push(tok);
   if(ok){
-    infered_cv_.notify_one();
+    inferedCv_.notify_one();
   }else{
     Log(INFO, "Failed to push inference token");
   }
@@ -312,10 +309,10 @@ bool HttpManager::write_infered(const std::string& tok){
 void HttpManager::stop(){
   Log(INFO, "Stopping HTTP server");
 
-  is_running_ = false;
+  isRunning_ = false;
 
-  infered_cv_.notify_all();
-  read_cv_.notify_all();
+  inferedCv_.notify_all();
+  readCv_.notify_all();
   server_.stop();
   handler_.join();
 

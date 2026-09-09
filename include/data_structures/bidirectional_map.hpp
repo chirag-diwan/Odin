@@ -105,22 +105,20 @@ class bidirectional_map {
       values = std::make_unique<bid_value_t<value_type>[]>(capacity);
     }
 
+    [[nodiscard]]
     bool insert(key_type key, value_type value) {
       if (current_size >= capacity / 2) {
-        Log("Current size greator than capacity/2");
-        std::exit(-1);
+        Log(ERROR ,"Current size greator than capacity/2 (" , current_size , capacity , ")");
         return false;
       }
 
       if (getKeyOf(value).has_value()) {
-        Log("Value already present", value);
-        std::exit(-1);
+        Log(ERROR ,"Value already present", value);
         return false;
       }
 
       if (getValueOf(key).has_value()) {
-        Log("Key already present", key);
-        std::exit(-1);
+        Log(ERROR ,"Key already present", key);
         return false;
       }
 

@@ -1,6 +1,5 @@
 #pragma once
 #include "./block.hpp"
-#include "./errors.hpp"
 #include "../external/ggml/include/ggml-alloc.h"
 #include "../external/ggml/include/ggml-backend.h"
 #include "../external/ggml/include/ggml.h"
@@ -16,14 +15,14 @@
 struct GGufHeader {
   uint32_t magic;
   uint32_t version;
-  uint64_t tensor_count;
-  uint64_t metadata_kv_count;
+  uint64_t tensorCount;
+  uint64_t metadataKvCount;
 
   GGufHeader(){
     magic = 0;
     version = 0;
-    tensor_count = 0;
-    metadata_kv_count = 0;
+    tensorCount = 0;
+    metadataKvCount = 0;
   }
 
   GGufHeader(const GGufHeader &) = default;
@@ -50,13 +49,13 @@ enum GGufValueType {
 };
 
 struct GGufArray{
-  uint32_t elem_type;
+  uint32_t elemType;
   uint8_t* data;
   uint64_t length;
   std::vector<std::string_view> strings;
 
   GGufArray(){
-    elem_type = GGUF_VALUE_TYPE_NULL;
+    elemType = GGUF_VALUE_TYPE_NULL;
     data = nullptr;
     length = 0;
     strings = {};
@@ -90,25 +89,23 @@ struct metadata_key_value{
   GGufValue value;
 };
 
-using metadatakv_t = std::vector<metadata_key_value>;
-
 struct GGufTensor {
   std::string_view name;
-  ggml_type        tensor_type;
-  uint32_t         dimension_count;
+  ggml_type        tensorType;
+  uint32_t         dimensionCount;
   int64_t          dimensions[DIM_ARRAY_MAX_SIZE];
-  uint64_t         file_offset;
-  uint64_t         byte_size;
-  uint8_t*         weights_data;
+  uint64_t         fileOffset;
+  uint64_t         byteSize;
+  uint8_t*         weightsData;
 
   GGufTensor(){
-    dimension_count = 1;
+    dimensionCount = 1;
     for(int i = 0 ; i < DIM_ARRAY_MAX_SIZE ; i++){
       dimensions[i] = 1;
     }
-    file_offset = 0;
-    byte_size = 1;
-    weights_data = 0;
+    fileOffset = 0;
+    byteSize = 1;
+    weightsData = 0;
   }
 
   GGufTensor(const GGufTensor &) = default;
@@ -124,41 +121,50 @@ enum class Architecture : uint8_t{
 };
 
 struct ModelGlobals{
-  Architecture general_model_architecture;
-  std::string_view full_architecture_name;
-  uint32_t block_count;
-  uint32_t embedding_length;
-  uint32_t feed_forward_length;
-  uint32_t attention_head_count;
-  uint32_t attention_head_count_kv;
-  uint32_t context_length ;
-  uint32_t ggml_eos_token_id;
-  uint32_t ggml_bos_token_id;
-  double rope_freq_base ;
-  double attention_layer_norm_rms_epsilon ;
+  Architecture generalModelArchitecture;
+  std::string_view fullArchitectureName;
+  uint32_t blockCount;
+  uint32_t embeddingLength;
+  uint32_t feedForwardLength;
+  uint32_t attentionHeadCount;
+  uint32_t attentionHeadCountKv;
+  uint32_t contextLength ;
+  uint32_t ggmlEosTokenId;
+  uint32_t ggmlBosTokenId;
+  double ropeFreqBase ;
+  double attentionLayerNormRmsEpsilon ;
 
-  //const std::string_view* token_vocab;
-  //size_t token_vocab_size;
-
-  //const std::string_view* token_merges;
-  //size_t token_merges_size;
+  std::string_view chat_template;
 
   ModelGlobals(){
-    general_model_architecture = Architecture::UNKNOWN;
-    block_count = 0;
-    embedding_length = 0;
-    feed_forward_length = 0;
-    attention_head_count = 0;
-    attention_head_count_kv = 0;
-    context_length  = 0;
-    rope_freq_base  = 0;
-    attention_layer_norm_rms_epsilon  = 0;
-    ggml_eos_token_id = 0;
-    ggml_bos_token_id = 0;
-    //token_vocab = nullptr;
-    //token_merges = nullptr;
+    generalModelArchitecture = Architecture::UNKNOWN;
+    blockCount = 0;
+    embeddingLength = 0;
+    feedForwardLength = 0;
+    attentionHeadCount = 0;
+    attentionHeadCountKv = 0;
+    contextLength  = 0;
+    ropeFreqBase  = 0;
+    attentionLayerNormRmsEpsilon  = 0;
+    ggmlEosTokenId = 0;
+    ggmlBosTokenId = 0;
   }
 
+  ModelGlobals(Architecture generalModelArchitecture,
+               std::string_view fullArchitectureName, uint32_t blockCount,
+               uint32_t embeddingLength, uint32_t feedForwardLength,
+               uint32_t attentionHeadCount, uint32_t attentionHeadCountKv,
+               uint32_t contextLength, uint32_t ggmlEosTokenId,
+               uint32_t ggmlBosTokenId, double ropeFreqBase,
+               double attentionLayerNormRmsEpsilon)
+      : generalModelArchitecture(generalModelArchitecture),
+        fullArchitectureName(fullArchitectureName), blockCount(blockCount),
+        embeddingLength(embeddingLength), feedForwardLength(feedForwardLength),
+        attentionHeadCount(attentionHeadCount),
+        attentionHeadCountKv(attentionHeadCountKv),
+        contextLength(contextLength), ggmlEosTokenId(ggmlEosTokenId),
+        ggmlBosTokenId(ggmlBosTokenId), ropeFreqBase(ropeFreqBase),
+        attentionLayerNormRmsEpsilon(attentionLayerNormRmsEpsilon) {}
   ModelGlobals(const ModelGlobals &) = default;
   ModelGlobals(ModelGlobals &&) = default;
   ModelGlobals &operator=(const ModelGlobals &) = default;
@@ -166,12 +172,12 @@ struct ModelGlobals{
 };
 
 struct GlobalTensors {
-  struct ggml_tensor* token_embd_weights  ;
-  struct ggml_tensor* output_norm_weights ;
-  struct ggml_tensor* output_weights      ;
-  struct ggml_tensor* rope_freq_weights   ;
+  struct ggml_tensor* tokenEmbdWeights  ;
+  struct ggml_tensor* outputNormWeights ;
+  struct ggml_tensor* outputWeights      ;
+  struct ggml_tensor* ropeFreqWeights   ;
 
-  GlobalTensors(): token_embd_weights(nullptr), output_norm_weights(nullptr), output_weights(nullptr), rope_freq_weights(nullptr){}
+  GlobalTensors(): tokenEmbdWeights(nullptr), outputNormWeights(nullptr), outputWeights(nullptr), ropeFreqWeights(nullptr){}
 
   GlobalTensors(const GlobalTensors &) = default;
   GlobalTensors(GlobalTensors &&) = default;
@@ -180,8 +186,8 @@ struct GlobalTensors {
 };
 
 struct merge_rank_result{
-  uint32_t merge_rank;
-  uint32_t merge_result;
+  uint32_t mergeRank;
+  uint32_t mergeResult;
 };
 
 struct rank_index_pair{
@@ -195,21 +201,21 @@ struct rank_index_pair{
 
 
 struct Config{
-  std::string ipc_path;
-  std::string model_path;
-  std::string tokeniser_json_path;
-  std::string history_path;
+  std::string ipcPath;
+  std::string modelPath;
+  std::string tokeniserJsonPath;
+  std::string historyPath;
 
   uint32_t port;
-  uint8_t thread_count;
+  uint8_t threadCount;
 
   Config(){
-    ipc_path = "/tmp/odin0000.socket";
-    history_path = "/tmp/odin-prompt-history.txt";
+    ipcPath = "/tmp/odin0000.socket";
+    historyPath = "/tmp/odin-prompt-history.txt";
     port = 8080;
-    thread_count = std::thread::hardware_concurrency();
-    model_path = "NOT PROVIDED";
-    tokeniser_json_path = "NOT PROVIDED";
+    threadCount = std::thread::hardware_concurrency();
+    modelPath = "NOT PROVIDED";
+    tokeniserJsonPath = "NOT PROVIDED";
   }
 
   Config(const Config &) = default;
@@ -220,42 +226,26 @@ struct Config{
 
 struct Model{
   ModelGlobals globals;
-  GlobalTensors global_tensors;
+  GlobalTensors globalTensors;
   std::vector<ModelBlock> blocks;
 };
 
 struct EngineState{
-  size_t inner_dimension;
-  float scale_factor;
-  size_t past_token_count;
+  size_t innerDimension;
+  float scaleFactor;
+  size_t pastTokenCount;
 };
 
 struct KVCache{
   ggml_tensor* K;
   ggml_tensor* V;
-  ggml_backend_buffer_t kv_buffer;
+  ggml_backend_buffer_t kvBuffer;
 
-  KVCache(ggml_context *state_ctx, ggml_backend_t backend, Model &model) {
-    auto d_head = model.globals.embedding_length / model.globals.attention_head_count;
-
-    auto c = model.globals.context_length; 
-    auto n_head_kv = model.globals.attention_head_count_kv;
-
-    K = ggml_new_tensor_4d(state_ctx, GGML_TYPE_F16, 
-                           d_head, c, n_head_kv , model.globals.block_count);
-
-    V = ggml_new_tensor_4d(state_ctx, GGML_TYPE_F16, 
-                           c, d_head, n_head_kv , model.globals.block_count);
-
-    kv_buffer = ggml_backend_alloc_ctx_tensors(state_ctx, backend);
-    Errorif(kv_buffer == nullptr, "Failed to allocate physical memory for KV cache");
+  void Init(ggml_tensor* kcache , ggml_tensor* vcache , ggml_backend_buffer* backend_buffer) {
+    K = kcache;
+    V = vcache;
+    kvBuffer = backend_buffer;
   }
-
-
-  KVCache(const KVCache &) = delete;
-  KVCache(KVCache &&) noexcept = default;
-  KVCache &operator=(const KVCache &) = delete;
-  KVCache &operator=(KVCache &&) noexcept = default;
 
 
   void AppendToKeyCache( ggml_context* state_ctx , ggml_cgraph* gf, ggml_tensor* tensor, int token_index , size_t layer_index)const{
@@ -285,13 +275,6 @@ struct KVCache{
 
     ggml_tensor* copy_node = ggml_cpy(state_ctx, t, V_view);
     ggml_build_forward_expand(gf, copy_node);
-  }
-
-
-  ~KVCache(){
-    if (kv_buffer != nullptr) {
-      ggml_backend_buffer_free(kv_buffer);
-    }
   }
 };
 

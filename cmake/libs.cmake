@@ -1,10 +1,18 @@
+add_library(odin_pch INTERFACE)
+
+target_precompile_headers(odin_pch INTERFACE
+  ${CMAKE_SOURCE_DIR}/external/httplib/httplib.h
+  ${CMAKE_SOURCE_DIR}/external/nlohmann/json.hpp
+  ${CMAKE_SOURCE_DIR}/external/jonathan/cpptui.hpp
+)
+
 add_library(gguf
   ${CMAKE_SOURCE_DIR}/src/gguf/gguf.cpp
   ${CMAKE_SOURCE_DIR}/src/gguf/ggufparser.cpp
 )
 
 add_library(http
-  ${CMAKE_SOURCE_DIR}/src/http/http-manager.cpp
+  ${CMAKE_SOURCE_DIR}/src/http/http_manager.cpp
 )  
 
 add_library(ipc
@@ -21,7 +29,6 @@ add_library(engine
 )
 
 add_library(common
-  ${CMAKE_SOURCE_DIR}/src/block.cpp
   ${CMAKE_SOURCE_DIR}/src/stream_buffer.cpp
 )
 

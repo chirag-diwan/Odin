@@ -2,6 +2,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include "../logging.hpp"
 
 template <typename key_type , typename obj_value_type>
 class unidirectional_map{
@@ -81,8 +82,10 @@ class unidirectional_map{
       values = std::make_unique<uni_pack_t<obj_value_type , key_type>[]>(capacity);
     }
 
+    [[nodiscard]]
     bool insert(key_type key , obj_value_type value){
       if (current_size >= capacity/2) {
+        Log(ERROR ,"Current size greator than capacity/2 (" , current_size , capacity , ")");
         return false;
       }
 

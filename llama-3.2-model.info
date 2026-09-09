@@ -28,7 +28,8 @@ tokenizer.ggml.token_type: [array] [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 tokenizer.ggml.merges: [array] [Ġ Ġ, Ġ ĠĠĠ, ĠĠ ĠĠ, ĠĠĠ Ġ, i n, Ġ t, Ġ ĠĠĠĠĠĠĠ, ĠĠ ĠĠĠĠĠĠ, ĠĠĠĠ ĠĠĠĠ, ĠĠĠ ĠĠĠĠĠ, ĠĠĠĠĠĠĠ Ġ, ĠĠĠĠĠ ĠĠĠ, ĠĠĠĠĠĠ ĠĠ, e r, Ġ ĠĠ, ĠĠ Ġ, o n, Ġ a, r e, a t, s t, e n, o r, Ġ th, Ġt h, Ċ Ċ, Ġ c, l e, Ġ s, i t, ... 280117 more items of 280147]
 tokenizer.ggml.bos_token_id: [uint32] 128000
 tokenizer.ggml.eos_token_id: [uint32] 128009
-tokenizer.chat_template: [string] {{- bos_token }}
+tokenizer.chat_template: [string]
+{{- bos_token }}
 {%- if custom_tools is defined %}
     {%- set tools = custom_tools %}
 {%- endif %}

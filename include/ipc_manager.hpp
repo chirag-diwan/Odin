@@ -22,33 +22,33 @@ class IPCManager {
     ringbuffer<std::string> prompts_;
     ringbuffer<std::string> infered_;
 
-    std::condition_variable read_cv_;
-    std::mutex prompt_mutex;
+    std::condition_variable readCv_;
+    std::mutex promptMutex_;
 
 
-    std::atomic<bool> is_running_;
+    std::atomic<bool> isRunning_;
     std::sig_atomic_t& interupt_;
 
 
-    int server_fd_;
-    int close_event_fd_;
-    int infered_event_fd_;
+    int serverFd_;
+    int closeEventFd_;
+    int inferedEventFd_;
 
-    bool add_to_event(int epoll_fd , epoll_event& ev , int fd);
+    bool addToEvent(int epoll_fd , epoll_event& ev , int fd);
 
-    void handle_client();
+    void handleClient();
 
   public:
 
     IPCManager(std::sig_atomic_t& interupt , const std::string& path) ;
 
-    void start_listen();
+    void StartListen();
 
-    std::string read_prompt() ;
+    std::string ReadPrompt() ;
 
-    bool write_infered(const std::string& tok);
+    bool WriteInfered(const std::string& tok);
 
-    void stop() ;
+    void Stop() ;
 
     ~IPCManager();
 };

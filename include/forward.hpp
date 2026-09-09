@@ -14,5 +14,3 @@ ggml_tensor* forward(
     KVCache& cache,
     EngineState& state
 );
-
-
