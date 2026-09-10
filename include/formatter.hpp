@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <sstream>
 #include <string>
 #include <ctime>
 #include <iomanip>
@@ -87,9 +88,10 @@ class TemplateParamGenerator {
 
       auto now = std::time(nullptr);
       auto* localTime = std::localtime(&now);
+      std::ostringstream oss; oss << std::put_time(localTime, "%Y-%m-%d %H:%M:%S");
 
       current["bos_token"] = bos_token;
-      current["date_string"] = std::put_time(localTime, "%Y-%m-%d %H:%M:%S")._M_fmt;
+      current["date_string"] = oss.str();
       current["add_generation_prompt"] = true;
       current["tools_in_user_message"] = false;
     }
@@ -99,10 +101,10 @@ class TemplateParamGenerator {
       auto* localTime = std::localtime(&now);
 
       json j;
+      std::ostringstream oss; oss << std::put_time(localTime, "%Y-%m-%d %H:%M:%S");
 
       j["bos_token"] = bos_token;
-      j["date_string"] =
-        std::put_time(localTime, "%Y-%m-%d %H:%M:%S")._M_fmt;
+      j["date_string"] = oss.str();
       j["add_generation_prompt"] = true;
       j["tools_in_user_message"] = false;
 
