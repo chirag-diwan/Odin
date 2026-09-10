@@ -12,12 +12,7 @@ function(add_odin_target target_name source_file)
   )
 
   target_link_libraries(${target_name} PRIVATE
-    odin_pch
-    simdjson
-    engine 
-    http 
-    ipc 
-    common
+    application
     ggml
     replxx
     ${PCRE2_LIBRARIES}

@@ -1267,9 +1267,7 @@ FOCUS ACCESSIBILITY
 button:focus-visible,
 textarea:focus-visible,
 a:focus-visible {
-  outline: 2px solid rgba(99, 102, 241, 0.7);
-
-  outline-offset: 3px;
+  border: none;
 }
 
 

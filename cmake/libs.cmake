@@ -27,6 +27,7 @@ add_library(engine
   ${CMAKE_SOURCE_DIR}/src/engine/engine_impl.cpp
   ${CMAKE_SOURCE_DIR}/src/engine/forward.cpp
 )
+target_link_libraries(engine PUBLIC gguf tokeniser)
 
 add_library(common
   ${CMAKE_SOURCE_DIR}/src/stream_buffer.cpp
@@ -36,4 +37,15 @@ add_library(simdjson
   ${CMAKE_SOURCE_DIR}/external/simdjson/simdjson.cpp
 )
 
-target_link_libraries(engine PUBLIC gguf tokeniser)
+add_library(application
+  ${CMAKE_SOURCE_DIR}/src/app.cpp
+)
+
+target_link_libraries(application PUBLIC 
+  odin_pch
+  simdjson
+  engine 
+  http 
+  ipc 
+  common
+)
