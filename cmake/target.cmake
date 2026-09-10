@@ -7,9 +7,9 @@ function(add_odin_target target_name source_file)
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/external/simdjson
     ${CMAKE_SOURCE_DIR}/external/minja
+    ${CMAKE_SOURCE_DIR}/external
     ${PCRE2_INCLUDE_DIRS}
   )
-
 
   target_link_libraries(${target_name} PRIVATE
     odin_pch
