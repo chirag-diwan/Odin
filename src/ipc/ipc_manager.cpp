@@ -203,7 +203,10 @@ void IPCManager::handleClient(){
 }
 
 
-IPCManager::IPCManager(std::sig_atomic_t& interupt , const std::string& path = "/tmp/odin0000.socket") : path_(path)  , isRunning_(true) , interupt_(interupt){
+void IPCManager::Init(std::shared_ptr<std::sig_atomic_t> interupt , const std::string& path){
+  path_ = (path);
+  isRunning_ = (true);
+  interupt_ = (interupt);
   unlink(path_.c_str());
 
   Log(INFO, "Initializing IPC server:", path_);
@@ -257,7 +260,7 @@ std::string IPCManager::ReadPrompt() {
     });
 
     if (!got_data) {
-      if (interupt_) {
+      if (*interupt_) {
         Log(INFO, "Interrupt received while waiting for prompt");
         return {}; 
       }
@@ -302,9 +305,7 @@ void IPCManager::Stop() {
   readCv_.notify_all();
 }
 
-IPCManager::~IPCManager(){
-  Log(INFO, "Destroying IPC server");
-
+void IPCManager::Delete(){
   if (isRunning_) {
     Stop();
   }
@@ -314,7 +315,5 @@ IPCManager::~IPCManager(){
   }
 
   unlink(path_.c_str());
-
-  Log(INFO, "IPC server destroyed");
 }
 

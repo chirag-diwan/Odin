@@ -1,4 +1,5 @@
 #include "../../include/json_tokeniser.hpp"
+#include <iostream>
 #include <sys/types.h>
 
 using namespace simdjson;
@@ -343,6 +344,7 @@ void BPETokeniser::Tokenise(const std::string& prompt_str , std::vector<uint32_t
 
 std::optional<std::string> BPETokeniser::Decode(uint32_t token_id){
   auto token_opt = vocab.getKeyOf(token_id);
+
   if(__builtin_expect(!token_opt.has_value(),false)){
     token_opt = specialTokens.getKeyOf(token_id);
     if(!token_opt.has_value()){
@@ -374,6 +376,7 @@ std::optional<std::string> BPETokeniser::Decode(uint32_t token_id){
       break;
     }
   }
+
   return token;
 }
 

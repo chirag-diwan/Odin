@@ -35,13 +35,12 @@ void HttpManager::tokenStreamHandler(const httplib::Request& _, httplib::Respons
   Log(INFO, "[POST] /v1/chat/completions - streaming response");
 
   res.set_header("Content-Type", "text/event-stream");
-  res.set_header("Connection", "keep-alive");
   res.set_chunked_content_provider("text/event-stream", [this](size_t /*offset*/, httplib::DataSink& sink) ->bool{ 
     while(isRunning_){
       {
         std::unique_lock<std::mutex> lck(inferedMutex_);
         inferedCv_.wait(lck, [this] {
-          return (interupt_ || !isRunning_ || !infered_.empty());
+          return (*interupt_ || !isRunning_ || !infered_.empty());
         });
       }
 
@@ -49,7 +48,7 @@ void HttpManager::tokenStreamHandler(const httplib::Request& _, httplib::Respons
         break;
       }
 
-      if(interupt_){
+      if(*interupt_){
         break;
       }
 
@@ -59,7 +58,8 @@ void HttpManager::tokenStreamHandler(const httplib::Request& _, httplib::Respons
 
       if(tok == DONE_TOK){
         sink.write(DONE_TOK.data() , DONE_TOK.size());
-        return true;
+        sink.done();  
+        return false;
       }
 
       nlohmann::json response_json = {
@@ -84,7 +84,7 @@ void HttpManager::tokenStreamHandler(const httplib::Request& _, httplib::Respons
       sink.write(msg.data(), msg.size());
     }
 
-    return true;
+    return false;
   });
 }
 
@@ -99,7 +99,7 @@ void HttpManager::tokenOneshotHandler(const httplib::Request& _ , httplib::Respo
     {
       std::unique_lock<std::mutex> lck(inferedMutex_);
       inferedCv_.wait(lck, [this] {
-        return (interupt_ || !isRunning_ || !infered_.empty());
+        return (*interupt_ || !isRunning_ || !infered_.empty());
       });
     }
 
@@ -107,7 +107,7 @@ void HttpManager::tokenOneshotHandler(const httplib::Request& _ , httplib::Respo
       break;
     }
 
-    if(interupt_){
+    if(*interupt_){
       break;
     }
 
@@ -195,15 +195,9 @@ void HttpManager::promptIncomeHandler(const httplib::Request& request , httplib:
     }
 
     buf = value.get_string();
-    Role role = Role::USER;
-
-    if(buf == "system"){
-      role = Role::SYSTEM;
-    }
-
     auto ret = prompts_.push({
       .content = content ,
-        .role = role,
+      .role = std::string{buf},
     });
 
     if(!ret){
@@ -220,7 +214,11 @@ void HttpManager::promptIncomeHandler(const httplib::Request& request , httplib:
   }
 }
 
-HttpManager::HttpManager(std::sig_atomic_t& intrpt , short port) : port_(port) ,isRunning_(true) ,interupt_(intrpt){
+void HttpManager::Init(std::shared_ptr<std::sig_atomic_t> intrpt , short port){
+  port_ = port;
+  isRunning_ = true;
+  interupt_ = intrpt;
+
   Log(INFO, std::format("Initializing HTTP server on port {}", port_));
 
   std::string root_abs = std::filesystem::absolute("./interface");
@@ -238,8 +236,7 @@ HttpManager::HttpManager(std::sig_atomic_t& intrpt , short port) : port_(port) ,
     in.open(abs_file_path);
     std::string content(std::istreambuf_iterator<char>{in} , std::istreambuf_iterator<char>{});
     in.close();
-    fileContent_.insert(file_path, content);
-
+    auto _ = fileContent_.insert(file_path, content);
     Log(INFO, std::format("Loaded {} ({} bytes)", file_path, content.size()));
   }
 
@@ -278,7 +275,7 @@ PromptReq HttpManager::ReadPrompt() {
     });
 
     if (!got_data) {
-      if (interupt_) {
+      if (*interupt_) {
         return {}; 
       }
 
@@ -296,6 +293,7 @@ PromptReq HttpManager::ReadPrompt() {
 
 bool HttpManager::WriteInfered(const std::string& tok){
   auto ok = infered_.push(tok);
+
   if(ok){
     inferedCv_.notify_one();
   }else{
@@ -306,7 +304,7 @@ bool HttpManager::WriteInfered(const std::string& tok){
 }
 
 
-void HttpManager::stop(){
+void HttpManager::Stop(){
   Log(INFO, "Stopping HTTP server");
 
   isRunning_ = false;

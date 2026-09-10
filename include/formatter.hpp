@@ -89,11 +89,9 @@ class TemplateParamGenerator {
       auto* localTime = std::localtime(&now);
 
       current["bos_token"] = bos_token;
-      current["date_string"] =
-        std::put_time(localTime, "%Y-%m-%d %H:%M:%S")._M_fmt;
+      current["date_string"] = std::put_time(localTime, "%Y-%m-%d %H:%M:%S")._M_fmt;
       current["add_generation_prompt"] = true;
       current["tools_in_user_message"] = false;
-      current["tools"] = GetTools();
     }
 
     static json GetDefault(const std::string& bos_token) {
@@ -107,9 +105,12 @@ class TemplateParamGenerator {
         std::put_time(localTime, "%Y-%m-%d %H:%M:%S")._M_fmt;
       j["add_generation_prompt"] = true;
       j["tools_in_user_message"] = false;
-      j["tools"] = GetTools();
 
       return j;
+    }
+
+    void SetTools(){
+      current["tools"] = GetTools();
     }
 
     void Reset() {
@@ -146,15 +147,14 @@ class Formatter {
 };
 
 
-//std::string GetFormatted(Architecture model_arch , const std::string& system , const std::string & user){
-//  switch (model_arch) {
-//    case Architecture::LLAMA3:
-//      return std::format("<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n{}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n" , system , user);
-//
-//    case Architecture::QWEN2:
-//      return std::format( "<|im_start|>system\n{}\n<|im_end|>\n" "<|im_start|>user\n{}\n<|im_end|>\n" "<|im_start|>assistant\n", system, user);
-//    default:
-//      Errorif(true, "Invalid model architecture");
-//      return "";
-//  }
-//}
+std::string GetFormatted(Architecture model_arch , const std::string& system , const std::string & user){
+  switch (model_arch) {
+    case Architecture::LLAMA3:
+      return std::format("<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n{}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n" , system , user);
+
+    case Architecture::QWEN2:
+      return std::format( "<|im_start|>system\n{}\n<|im_end|>\n" "<|im_start|>user\n{}\n<|im_end|>\n" "<|im_start|>assistant\n", system, user);
+    default:
+      return "";
+  }
+}

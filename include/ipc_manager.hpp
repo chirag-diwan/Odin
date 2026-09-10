@@ -27,7 +27,7 @@ class IPCManager {
 
 
     std::atomic<bool> isRunning_;
-    std::sig_atomic_t& interupt_;
+    std::shared_ptr<std::sig_atomic_t> interupt_;
 
 
     int serverFd_;
@@ -39,8 +39,7 @@ class IPCManager {
     void handleClient();
 
   public:
-
-    IPCManager(std::sig_atomic_t& interupt , const std::string& path) ;
+    void Init(std::shared_ptr<std::sig_atomic_t> interupt , const std::string& path = "/tmp/odin0000.socket") ;
 
     void StartListen();
 
@@ -50,5 +49,5 @@ class IPCManager {
 
     void Stop() ;
 
-    ~IPCManager();
+    void Delete();
 };

@@ -16,14 +16,14 @@ debug:
 		-DCMAKE_BUILD_TYPE=Debug \
 		-DENABLE_TESTS=$(ENABLETEST) \
 		-DTEST_FILE=$(test)
-	@cmake --build build/debug -j
+	@cmake --build build/debug -j4
 
 release:
 	@cmake -S . -B build/release \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DENABLE_TESTS=$(ENABLETEST) \
 		-DTEST_FILE=$(test)
-	@cmake --build build/release -j
+	@cmake --build build/release -j4
 
 
 

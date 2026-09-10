@@ -13,14 +13,9 @@
 #include "../external/httplib/httplib.h"
 
 
-enum class Role : uint8_t {
-  SYSTEM,
-  USER
-};
-
 struct PromptReq{
   std::string content;
-  Role role;
+  std::string role;
 };
 
 class HttpManager{
@@ -51,7 +46,7 @@ class HttpManager{
 
     std::atomic<bool> isRunning_ = true;
 
-    std::sig_atomic_t& interupt_;
+    std::shared_ptr<std::sig_atomic_t> interupt_;
 
     void genericHandler(const httplib::Request& request , httplib::Response& response);
     void tokenStreamHandler(const httplib::Request&, httplib::Response& res);
@@ -59,23 +54,21 @@ class HttpManager{
     void promptIncomeHandler(const httplib::Request& req , httplib::Response& );
   
     uint32_t promptTokens_;
-  public:
 
+  public:
     const inline static std::string DONE_TOK = "data: [DONE]\n\n";
 
-    HttpManager(std::sig_atomic_t& intrpt , short port = 8080);
+    void Init(std::shared_ptr<std::sig_atomic_t> intrpt , short port = 8080);
 
     void StartListen();
 
     PromptReq ReadPrompt();
 
-    void SetPromptTokens(uint32_t tok_count){
+    void SetPromptTokenCount(uint32_t tok_count){
       promptTokens_ = tok_count;
     }
 
     bool WriteInfered(const std::string& tok);
 
-    void stop();
-
-
+    void Stop();
 };

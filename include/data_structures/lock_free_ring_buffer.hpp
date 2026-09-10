@@ -15,13 +15,13 @@ class ringbuffer{
     std::atomic<size_t> head_;
     std::atomic<size_t> tail_;
 
-    explicit ringbuffer() :
-      capacity_(init_capacity),
-      data_(std::make_unique<T[]>(capacity_)),
-      head_(0),
-      tail_(0) {
-        static_assert(!(init_capacity & (init_capacity - 1)), "init capacity must be power of two");
-      }
+    ringbuffer(){
+      capacity_ = init_capacity;
+      data_ = std::make_unique<T[]>(capacity_);
+      head_ = 0;
+      tail_ = 0;
+      static_assert(!(init_capacity & (init_capacity - 1)), "init capacity must be power of two");
+    }
 
     [[nodiscard]]
       bool push(const T& val){

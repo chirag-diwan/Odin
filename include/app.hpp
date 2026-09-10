@@ -1,18 +1,22 @@
 #pragma once
 #include "engine.hpp"
-#include "ggml-backend.h"
+#include "ipc_manager.hpp"
 #include "model_utils.hpp"
 #include "json_tokeniser.hpp"
 #include "ggufparser.hpp"
-#include "../external/replxx/include/replxx.hxx"
 #include "types.hpp"
 #include "formatter.hpp"
+#include "http_manager.hpp"
+#include "../external/replxx/include/replxx.hxx"
 #include "../external/ggml/include/ggml.h"
 #include "../external/ggml/include/ggml-alloc.h"
 #include "../external/ggml/include/ggml-cpu.h"
+#include "../external/ggml/include/ggml-backend.h"
 #include <csignal>
 #include <cstdint>
 #include <cstdlib>
+#include <iostream>
+#include <memory>
 #include <string>
 #include <sys/mman.h>
 #include <thread>
@@ -20,7 +24,7 @@
 namespace odin{
   class App{
     private:
-      static inline std::sig_atomic_t interupt = false;
+      static inline std::shared_ptr<std::sig_atomic_t> interupt = std::make_shared<std::sig_atomic_t>(false);
 
       static constexpr ggml_init_params staticCtxParams = {
         .mem_size = 10 * 1024 * 1024,
@@ -29,7 +33,7 @@ namespace odin{
       };
 
       static void sig_int_handler(int){
-        interupt = true;
+        *interupt = true;
       }
 
       void openFileMmap(const std::string& filepath){
@@ -97,10 +101,19 @@ namespace odin{
   
       replxx::Replxx rx;
 
-    public:
-      App(){}
+      HttpManager httpManager;
+      IPCManager ipcManager;
 
-      void Init(const Config& conf){
+      enum class AppType{
+        CHAT,
+        HTTP_SERVER,
+        IPC_SERVER
+      };
+
+      AppType appType;
+
+    public:
+      void InitBase(const Config& conf){
         std::signal(SIGINT , sig_int_handler);
 
         openFileMmap(conf.modelPath);
@@ -119,47 +132,84 @@ namespace odin{
         tokeniser.Open(conf.tokeniserJsonPath);
         tpgenerator.SetDefault(model.globals.generalModelArchitecture);
         formatter.Init(std::string{model.globals.chat_template});
+      }
+
+      void ConfigureChat(){
+        appType = AppType::CHAT;
 
         rx.install_window_change_handler();
         rx.set_max_history_size(1000);
 
-        rx.bind_key(
-                    replxx::Replxx::KEY::ENTER,
-                    [this](char32_t) {
-                      rx.invoke(replxx::Replxx::ACTION::INSERT_CHARACTER, '\n');
-                      return replxx::Replxx::ACTION_RESULT::CONTINUE;
-                    }
-                   );
+        rx.bind_key(replxx::Replxx::KEY::ENTER, [this](char32_t) {
+          rx.invoke(replxx::Replxx::ACTION::INSERT_CHARACTER, '\n');
+          return replxx::Replxx::ACTION_RESULT::CONTINUE;
+        });
 
-        rx.bind_key(
-                    replxx::Replxx::KEY::control('S'),
-                    [](char32_t) {
-                      return replxx::Replxx::ACTION_RESULT::RETURN;
-                    }
-                   );
+        rx.bind_key(replxx::Replxx::KEY::control('S'), [](char32_t) {
+          return replxx::Replxx::ACTION_RESULT::RETURN;
+        });
+      }
 
+      void ConfigureHttpServer(){
+        appType = AppType::HTTP_SERVER;
+        httpManager.Init(interupt);
+      }
+
+      void ConfigureIPCServer(){
+        appType = AppType::IPC_SERVER;
+        ipcManager.Init(interupt);
       }
 
       void Run(){
-        std::vector<uint32_t> tokens;
+        std::vector<uint32_t> tokens{};
         std::string system_prompt = "You are a helpful, accurate, and concise AI assistant. You have to respond in the tool format only when you need to use a tool , respond in plain english without format otherwise";
 
         std::string raw_prompt;
 
         bool is_first = true;
-        while (!interupt) {
+
+        if(appType == AppType::CHAT){
+          rx.clear_screen();
+        }
+
+        if(appType == AppType::HTTP_SERVER){
+          httpManager.StartListen();
+        }
+
+        if(appType == AppType::IPC_SERVER){
+          ipcManager.StartListen();
+        }
+
+        while (!(*interupt)) {
           tpgenerator.Reset();
+          tpgenerator.SetDefault(model.globals.generalModelArchitecture);
           if(is_first){
             is_first = false;
-            tpgenerator.SetDefault(model.globals.generalModelArchitecture);
+            tpgenerator.SetTools();
           }
 
-          const char* c_input = rx.input("\n $ ");
+          if(appType == AppType::CHAT){
+            const char* c_input = rx.input("\n $ ");
+            if (!c_input) {
+              break;
+            }
 
-          if (c_input == nullptr) {
-            break;
-          }else{
             raw_prompt = c_input;
+
+            if (raw_prompt.starts_with("!exit")) break;
+            if(raw_prompt.starts_with("!system")) {
+              system_prompt = raw_prompt.substr(7);
+            }
+          }else if(appType == AppType::HTTP_SERVER){
+            auto prompt_req = httpManager.ReadPrompt();
+            raw_prompt = prompt_req.content;
+
+            if(prompt_req.role == "system"){
+              system_prompt = raw_prompt;
+              continue;
+            }
+          }else if(appType == AppType::IPC_SERVER){
+            raw_prompt = ipcManager.ReadPrompt();
           }
 
           if (raw_prompt.empty()) {
@@ -167,12 +217,6 @@ namespace odin{
           }
 
           rx.history_add(raw_prompt);
-
-          if (raw_prompt.starts_with("!exit")) break;
-
-          if(raw_prompt.starts_with("!system")) {
-            system_prompt = raw_prompt.substr(7);
-          }
 
           if(raw_prompt.starts_with("!clear-context")){
             engine.ClearContext();
@@ -188,6 +232,9 @@ namespace odin{
 
           size_t span_size = tokens.size() - last_index;
           std::span<uint32_t> tokens_view(tokens.data() + last_index, span_size);
+          if(appType == AppType::HTTP_SERVER){
+            httpManager.SetPromptTokenCount(span_size);
+          }
 
           uint32_t next_token = engine.Prefill(tokens_view);
           tokens.push_back(next_token);
@@ -195,28 +242,63 @@ namespace odin{
           auto tok = tokeniser.Decode(next_token);
 
           if(tok.has_value()){
-            std::cerr << *tok;
+            switch (appType) {
+              case AppType::CHAT:
+                std::cerr << *tok;
+                break;
+              case AppType::HTTP_SERVER:
+                httpManager.WriteInfered(*tok);
+                break;
+              case AppType::IPC_SERVER:
+                ipcManager.WriteInfered(*tok);
+                break;
+            }
           }
 
-          while (!interupt && (next_token != model.globals.ggmlEosTokenId)) {
+          while (!*interupt && (next_token != model.globals.ggmlEosTokenId)) {
 
             next_token = engine.Infer(tokens.back());
             tokens.push_back(next_token);
 
             if (next_token != model.globals.ggmlEosTokenId) {
-
               auto tok = tokeniser.Decode(next_token);
               if(tok.has_value()){
-                std::cerr << *tok;
+                switch (appType) {
+                  case AppType::CHAT:
+                    std::cerr << *tok;
+                    break;
+                  case AppType::HTTP_SERVER:
+                    httpManager.WriteInfered(*tok);
+                    break;
+                  case AppType::IPC_SERVER:
+                    ipcManager.WriteInfered(*tok);
+                    break;
+                }
               }
+              continue;
             }
+
+            break;
           }
 
-          interupt = false;
+          if(appType == AppType::HTTP_SERVER){
+            httpManager.WriteInfered(httpManager.DONE_TOK);
+          }
+
+          *interupt = false;
+        }
+
+        if(appType == AppType::HTTP_SERVER){
+          httpManager.Stop();
+        }
+
+        if(appType == AppType::IPC_SERVER){
+          ipcManager.Stop();
         }
       }
 
       void Delete(){
+        ipcManager.Delete();
         tokeniser.Delete();
 
         ggml_backend_buffer_free(kvBuffer);

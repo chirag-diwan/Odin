@@ -1,5 +1,5 @@
 #include "../include/config.hpp"
-#include "app.hpp"
+#include "../include/app.hpp"
 
 int main(int argc, char** argv) {
   if (argc < 2) {
@@ -10,7 +10,8 @@ int main(int argc, char** argv) {
 
   odin::App app;
 
-  app.Init(config);
+  app.InitBase(config);
+  app.ConfigureChat();
   app.Run();
   app.Delete();
 
