@@ -2,7 +2,7 @@
 
 #include "./block.hpp"
 #include "./types.hpp"
-#include "../external/ggml/include/ggml.h"
+#include "ggml/include/ggml.h"
 
 ggml_tensor* forward(
     ggml_context* temp_ctx,

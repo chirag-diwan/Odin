@@ -6,7 +6,7 @@
 
 
 template<typename T , size_t init_capacity = 1024>
-class ringbuffer{
+class RingBuffer{
   private:
     static constexpr size_t mask = init_capacity - 1;
   public:
@@ -15,7 +15,7 @@ class ringbuffer{
     std::atomic<size_t> head_;
     std::atomic<size_t> tail_;
 
-    ringbuffer(){
+    RingBuffer(){
       capacity_ = init_capacity;
       data_ = std::make_unique<T[]>(capacity_);
       head_ = 0;
@@ -78,6 +78,6 @@ class ringbuffer{
         return capacity_ - size();
       }
 
-    ringbuffer(const ringbuffer& buffer)noexcept = delete;
-    ringbuffer(ringbuffer&& buffer)noexcept = default;
+    RingBuffer(const RingBuffer& buffer)noexcept = delete;
+    RingBuffer(RingBuffer&& buffer)noexcept = default;
 };

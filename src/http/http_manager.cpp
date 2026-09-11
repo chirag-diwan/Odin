@@ -3,12 +3,12 @@
 #include <optional>
 #include <string_view>
 #include <format>
-#include "../../external/nlohmann/json.hpp"
-#include "../../external/simdjson/simdjson.h"
-#include "../../include/logging.hpp"
+#include "nlohmann/json.hpp"
+#include "simdjson/simdjson.h"
+#include "logging.hpp"
 
 #define CPPHTTPLIB_NO_MULTI_THREAD_SUPPORT
-#include "../../include/http_manager.hpp"
+#include "http_manager.hpp"
 
 void HttpManager::genericHandler(const httplib::Request& request , httplib::Response& response){
   Log(INFO, std::format("[{}] {} from {}", request.method, request.path, request.remote_addr));

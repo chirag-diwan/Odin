@@ -1,5 +1,5 @@
-#include "../../include/ggufparser.hpp"
-#include "../../include/gguf.hpp"
+#include "ggufparser.hpp"
+#include "gguf.hpp"
 
 
 std::string_view GGufParser::parseString(){
@@ -81,8 +81,6 @@ void GGufParser::parseHeader() {
   advanceOffset(sizeof(decltype(header_)));
 }
 
-
-
 void GGufParser::parseAllKeyValues() {
   for (size_t i = 0; i < header_.metadataKvCount; ++i) {
     parseKeyValue();
@@ -90,8 +88,7 @@ void GGufParser::parseAllKeyValues() {
 
   for(const auto& kv : metadata_key_values_){
     if (kv.name == "general.alignment") {
-      this->byteAlignment_ = Extract<uint64_t,GGUF_VALUE_TYPE_UINT32 ,GGUF_VALUE_TYPE_UINT64 >(
-                                                                                                kv.value);
+      this->byteAlignment_ = Extract<uint64_t,GGUF_VALUE_TYPE_UINT32 ,GGUF_VALUE_TYPE_UINT64 >(kv.value);
       return;
     }
   }
@@ -127,14 +124,15 @@ void GGufParser::parseAllTensors() {
     }
 
     const auto block_size = ggml_blck_size(tensor.tensorType);
-    Errorif(byte_size % block_size != 0, "Number of elements in tensor ",
-            tensor.name, " is not a multiple of block size ", block_size);
+    Errorif(byte_size % block_size != 0, "Number of elements in tensor ", tensor.name, " is not a multiple of block size ", block_size);
     byte_size = byte_size * ggml_type_size(tensor.tensorType) / block_size;
     tensor.byteSize = byte_size;
 
     tensors_.push_back(tensor);
   }
+
   dataOffset_ = (currentOffset_ + byteAlignment_ - 1) & ~(byteAlignment_ - 1);
+
   for(auto& tensor : tensors_){
     tensor.fileOffset = tensor.fileOffset + dataOffset_;
     tensor.weightsData = mappedData_ + tensor.fileOffset;

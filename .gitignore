@@ -4,7 +4,6 @@ llama-3.2-model.info
 all-MiniLM-L6.info
 /external/*
 perf.data
-/test/
 /venv/
 /scratch/
 prompt.txt

@@ -1,8 +1,8 @@
 #pragma once
 #include "./types.hpp"
-#include "../external/ggml/include/ggml-alloc.h"
-#include "../external/ggml/include/ggml-backend.h"
-#include "../external/ggml/include/ggml.h"
+#include "ggml/include/ggml-alloc.h"
+#include "ggml/include/ggml-backend.h"
+#include "ggml/include/ggml.h"
 #include <cstdint>
 #include <cstdlib>
 #include <span>
@@ -28,7 +28,7 @@ public:
 
   void ReservePrefillMemory() ;
 
-  uint32_t Prefill(std::span<uint32_t>& tokens) ;
+  uint32_t Prefill(const std::span<uint32_t>& tokens) ;
 
   uint32_t Infer(uint32_t prev_token) ;
 

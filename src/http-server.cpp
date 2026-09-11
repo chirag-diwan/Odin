@@ -1,5 +1,5 @@
-#include "../include/config.hpp"
-#include "../include/app.hpp"
+#include "config.hpp"
+#include "app.hpp"
 
 int main(int argc, char** argv) {
   if (argc < 2) {

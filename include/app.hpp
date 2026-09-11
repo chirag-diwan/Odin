@@ -6,9 +6,9 @@
 #include "types.hpp"
 #include "formatter.hpp"
 #include "http_manager.hpp"
-#include "../external/replxx/include/replxx.hxx"
-#include "../external/ggml/include/ggml.h"
-#include "../external/ggml/include/ggml-alloc.h"
+#include "replxx/include/replxx.hxx"
+#include "ggml/include/ggml.h"
+#include "ggml/include/ggml-alloc.h"
 #include <csignal>
 #include <cstdlib>
 #include <memory>
@@ -74,6 +74,8 @@ namespace odin{
 
       AppType appType;
 
+      std::atomic<bool> pythonBusy;
+
     public:
       void InitBase(const Config& conf);
 
@@ -84,6 +86,8 @@ namespace odin{
       void ConfigureIPCServer();
 
       void Run();
+
+      void Test();
 
       void Delete();
   };

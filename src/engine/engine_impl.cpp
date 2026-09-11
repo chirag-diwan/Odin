@@ -1,6 +1,6 @@
-#include "../../include/engine.hpp"
-#include "../../include/forward.hpp"
-#include "../../include/logging.hpp"
+#include "engine.hpp"
+#include "forward.hpp"
+#include "logging.hpp"
 
 #include <cmath>
 #include <span>
@@ -28,8 +28,7 @@ void Engine::ReserveDecodeMemory() {
 
   ggml_tensor* pos     = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, s);
   ggml_tensor* indices = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, s);
-  ggml_tensor* embeddings =
-    ggml_get_rows(ctx0, model_.globalTensors.tokenEmbdWeights, indices);
+  ggml_tensor* embeddings = ggml_get_rows(ctx0, model_.globalTensors.tokenEmbdWeights, indices);
 
   size_t original_n_past = state_.pastTokenCount;
   state_.pastTokenCount           = model_.globals.contextLength - 1;
@@ -75,7 +74,7 @@ void Engine::ReservePrefillMemory() {
   ggml_free(ctx0);
 }
 
-uint32_t Engine::Prefill(std::span<uint32_t>& tokens) {
+uint32_t Engine::Prefill(const std::span<uint32_t>& tokens) {
   struct ggml_init_params params = {context_arena_size, NULL, true};
   ggml_context*           ctx0   = ggml_init(params);
   ggml_cgraph*            gf     = ggml_new_graph(ctx0);
@@ -121,8 +120,7 @@ uint32_t Engine::Infer(uint32_t prev_token) {
   ggml_tensor* pos     = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, 1);
   ggml_tensor* indices = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, 1);
 
-  ggml_tensor* embeddings =
-    ggml_get_rows(ctx0, model_.globalTensors.tokenEmbdWeights, indices);
+  ggml_tensor* embeddings = ggml_get_rows(ctx0, model_.globalTensors.tokenEmbdWeights, indices);
 
   embeddings = forward(ctx0, gf, embeddings, pos, 1, model_, cache, state_);
 

@@ -20,11 +20,11 @@ class GGufParser {
     uint8_t* mappedData_;
 
   private:
-    __attribute__((always_inline)) inline void* getCurrentPositionPointer() {
+    ODIN_INLINE void* getCurrentPositionPointer() {
       return &mappedData_[currentOffset_];
     }
 
-    __attribute__((always_inline)) inline void advanceOffset(size_t step_size) {
+    ODIN_INLINE void advanceOffset(size_t step_size) {
       Errorif(currentOffset_ + step_size > totalSize_, "Size overflow");
       currentOffset_ += step_size;
     }

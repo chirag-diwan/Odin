@@ -1,4 +1,4 @@
-#include "../../include/gguf.hpp"
+#include "gguf.hpp"
 
 const char * GGufValueName(uint32_t val){
   switch (val) {

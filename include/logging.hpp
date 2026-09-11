@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include "definations.hpp"
 enum LogLevel {
   WARN,
   ERROR,
@@ -15,7 +16,7 @@ namespace ansi {
 }
 
 template<typename... Pack>
-__attribute__((always_inline)) inline void Log(LogLevel l, Pack&&... args) {
+ODIN_INLINE void Log(LogLevel l, Pack&&... args) {
   switch (l) {
     case INFO:
       std::cerr << ansi::bold << ansi::green << "[INFO]  " ;
@@ -34,7 +35,7 @@ __attribute__((always_inline)) inline void Log(LogLevel l, Pack&&... args) {
 
 
 template<typename ...Pack>
-__attribute__((always_inline)) inline void Log(Pack ...args){
+ODIN_INLINE void Log(Pack ...args){
   ((std::cerr << args << ' '), ...);
   std::cerr << '\n';
 }

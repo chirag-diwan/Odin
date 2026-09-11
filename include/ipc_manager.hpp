@@ -11,7 +11,7 @@
 #include <mutex>
 #include <string>
 #include <thread>
-#include "./data_structures/lock_free_ring_buffer.hpp"
+#include "./data_structures/LockFreeRingBuffer.hpp"
 
 class IPCManager {
   private:
@@ -19,8 +19,8 @@ class IPCManager {
 
     std::thread handler_;
 
-    ringbuffer<std::string> prompts_;
-    ringbuffer<std::string> infered_;
+    RingBuffer<std::string> prompts_;
+    RingBuffer<std::string> infered_;
 
     std::condition_variable readCv_;
     std::mutex promptMutex_;

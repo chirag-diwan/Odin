@@ -4,23 +4,22 @@
 #include <optional>
 #include "../logging.hpp"
 
-template <typename key_type , typename obj_value_type>
-class unidirectional_map{
+template <typename key_type , typename val_type>
+class UnidirectionalMap{
   private:
-    template <typename value_t , typename key_t>
-      struct uni_pack_t{
-        key_t key;
-        value_t value;
-        bool occupied;
-      };
+    struct uni_pack_t{
+      key_type key;
+      val_type value;
+      bool occupied;
+    };
 
     class iterator {
       public:
         using iterator_category = std::forward_iterator_tag;
-        using value_type        = uni_pack_t<obj_value_type, key_type>;
+        using value_type        = uni_pack_t;
         using difference_type   = std::ptrdiff_t;
-        using pointer           = uni_pack_t<obj_value_type, key_type>*;
-        using reference         = uni_pack_t<obj_value_type, key_type>&;
+        using pointer           = uni_pack_t*;
+        using reference         = uni_pack_t&;
 
         iterator(pointer ptr) : m_ptr(ptr) {}
 
@@ -38,19 +37,19 @@ class unidirectional_map{
           return tmp; 
         }
 
-        friend bool operator==(const iterator& a, const iterator& b) { 
-          return a.m_ptr == b.m_ptr; 
+        bool operator==(const iterator& b) { 
+          return this->m_ptr == b.m_ptr; 
         }
 
-        friend bool operator!=(const iterator& a, const iterator& b) { 
-          return a.m_ptr != b.m_ptr; 
+        bool operator!=(const iterator& b) { 
+          return this->m_ptr != b.m_ptr; 
         }
 
       private:
         pointer m_ptr;
     };
 
-    std::unique_ptr<uni_pack_t<obj_value_type, key_type>[]> values;
+    std::unique_ptr<uni_pack_t[]> values;
     size_t capacity;
     size_t current_size;
 
@@ -59,18 +58,18 @@ class unidirectional_map{
     }
 
   public:
-    unidirectional_map(){
+    UnidirectionalMap(){
       capacity = 0;
       current_size = 0;
     }
 
-    unidirectional_map(size_t max_size){
+    UnidirectionalMap(size_t max_size){
       if(max_size == 0){
         return;
       }
       capacity = 2*max_size;
       current_size = 0;
-      values = std::make_unique<uni_pack_t<obj_value_type , key_type>[]>(capacity);
+      values = std::make_unique<uni_pack_t[]>(capacity);
     }
 
     void populate(size_t max_size){
@@ -79,29 +78,29 @@ class unidirectional_map{
       }
       capacity = 2*max_size;
       current_size = 0;
-      values = std::make_unique<uni_pack_t<obj_value_type , key_type>[]>(capacity);
+      values = std::make_unique<uni_pack_t[]>(capacity);
     }
 
     [[nodiscard]]
-    bool insert(key_type key , obj_value_type value){
-      if (current_size >= capacity/2) {
-        Log(ERROR ,"Current size greator than capacity/2 (" , current_size , capacity , ")");
-        return false;
+      bool insert(key_type key , val_type value){
+        if (current_size >= capacity/2) {
+          Log(ERROR ,"Current size greator than capacity/2 (" , current_size , capacity , ")");
+          return false;
+        }
+
+        auto index = getIndexOf(key);
+        while(values[index].occupied){
+          index = (index + 1)%capacity;
+        }
+
+        values[index] = uni_pack_t{ .key = key, .value = value, .occupied = true };
+
+        current_size ++;
+
+        return true;
       }
 
-      auto index = getIndexOf(key);
-      while(values[index].occupied){
-        index = (index + 1)%capacity;
-      }
-
-      values[index] = uni_pack_t<obj_value_type, key_type>{ .key = key, .value = value, .occupied = true };
-
-      current_size ++;
-
-      return true;
-    }
-
-    std::optional<obj_value_type> getValueOf(key_type key){
+    ODIN_INLINE std::optional<val_type> getValueOf(key_type key){
       auto key_idx = getIndexOf(key);
       while (values[key_idx].occupied) {
         if (values[key_idx].key == key) {

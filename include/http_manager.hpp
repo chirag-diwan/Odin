@@ -5,12 +5,12 @@
 #include <mutex>
 #include <thread>
 
-#include "./data_structures/unidirectional_map.hpp"
-#include "./data_structures/lock_free_ring_buffer.hpp"
+#include "./data_structures/UnidirectionalMap.hpp"
+#include "./data_structures/LockFreeRingBuffer.hpp"
 
-#include "../external/simdjson/simdjson.h"
+#include "simdjson/simdjson.h"
 #define CPPHTTPLIB_NO_MULTI_THREAD_SUPPORT
-#include "../external/httplib/httplib.h"
+#include "httplib/httplib.h"
 
 
 struct PromptReq{
@@ -28,7 +28,7 @@ class HttpManager{
       "/dist/main.js",
     };
 
-    unidirectional_map<std::string, std::string> fileContent_;
+    UnidirectionalMap<std::string, std::string> fileContent_;
 
     httplib::Server server_;
 
@@ -36,11 +36,11 @@ class HttpManager{
 
     std::thread handler_;
 
-    ringbuffer<std::string> infered_;
+    RingBuffer<std::string> infered_;
     std::condition_variable inferedCv_;
     std::mutex inferedMutex_;
 
-    ringbuffer<PromptReq> prompts_;
+    RingBuffer<PromptReq> prompts_;
     std::condition_variable readCv_;
     std::mutex promptMutex_;
 

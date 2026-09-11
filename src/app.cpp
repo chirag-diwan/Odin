@@ -1,15 +1,17 @@
-#include "../include/app.hpp"
-#include "../include/model_utils.hpp"
-#include "../external/ggml/include/ggml-cpu.h"
-#include "../external/ggml/include/ggml-backend.h"
+#include "app.hpp"
+#include "ggml/include/ggml-cpu.h"
+#include "ggml/include/ggml-backend.h"
+#include "model_utils.hpp"
+#include <atomic>
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <thread>
 
 namespace odin{
   void App::openFileMmap(const std::string& filepath){
     mmapFD = open(filepath.c_str(), O_RDONLY);
-    Errorif(mmapFD == -1, "Not a valid file descriptor for %?", filepath);
+    Errorif(mmapFD == -1, "Not a valid file descriptor for", filepath);
 
     struct stat file_statistics;
     Errorif(fstat(mmapFD, &file_statistics) == -1, "Unable to get file stats for ", filepath);
@@ -64,6 +66,7 @@ namespace odin{
     tokeniser.Open(conf.tokeniserJsonPath);
     tpgenerator.SetDefault(model.globals.generalModelArchitecture);
     formatter.Init(std::string{model.globals.chat_template});
+
   }
 
   void App::ConfigureChat(){
@@ -77,7 +80,10 @@ namespace odin{
       return replxx::Replxx::ACTION_RESULT::CONTINUE;
     });
 
-    rx.bind_key(replxx::Replxx::KEY::control('S'), [](char32_t) {
+    rx.bind_key(replxx::Replxx::KEY::control('S'), [this](char32_t) {
+      if(pythonBusy.load(std::memory_order_acquire)){
+        return replxx::Replxx::ACTION_RESULT::CONTINUE;
+      }
       return replxx::Replxx::ACTION_RESULT::RETURN;
     });
   }
@@ -94,7 +100,7 @@ namespace odin{
 
   void App::Run(){
     std::vector<uint32_t> tokens{};
-    std::string system_prompt = "You are a helpful, accurate, and concise AI assistant. You have to respond in the tool format only when you need to use a tool , respond in plain english without format otherwise";
+    std::string system_prompt = "You are a helpful, accurate, and concise AI assistant.";
 
     std::string raw_prompt;
 
@@ -160,7 +166,7 @@ namespace odin{
       auto prompt = formatter.GetFormattedString(tpgenerator.GetRef());
 
       size_t last_index = tokens.size();
-      tokeniser.Tokenise(prompt, tokens);
+      tokeniser.TokeniseDLL(prompt, tokens);
 
       size_t span_size = tokens.size() - last_index;
       std::span<uint32_t> tokens_view(tokens.data() + last_index, span_size);
@@ -168,12 +174,16 @@ namespace odin{
         httpManager.SetPromptTokenCount(span_size);
       }
 
+      std::string model_output = "";
+
       uint32_t next_token = engine.Prefill(tokens_view);
       tokens.push_back(next_token);
 
       auto tok = tokeniser.Decode(next_token);
 
       if(tok.has_value()){
+        model_output.append(*tok);
+
         switch (appType) {
           case AppType::CHAT:
             std::cerr << *tok;
@@ -190,27 +200,30 @@ namespace odin{
       while (!*interupt && (next_token != model.globals.ggmlEosTokenId)) {
 
         next_token = engine.Infer(tokens.back());
-        tokens.push_back(next_token);
 
-        if (next_token != model.globals.ggmlEosTokenId) {
-          auto tok = tokeniser.Decode(next_token);
-          if(tok.has_value()){
-            switch (appType) {
-              case AppType::CHAT:
-                std::cerr << *tok;
-                break;
-              case AppType::HTTP_SERVER:
-                httpManager.WriteInfered(*tok);
-                break;
-              case AppType::IPC_SERVER:
-                ipcManager.WriteInfered(*tok);
-                break;
-            }
-          }
-          continue;
+
+        tokens.push_back(next_token);
+        if (next_token == model.globals.ggmlEosTokenId) {
+          break;
         }
 
-        break;
+        auto tok = tokeniser.Decode(next_token);
+        if(tok.has_value()){
+
+          model_output.append(*tok);
+
+          switch (appType) {
+            case AppType::CHAT:
+              std::cerr << *tok;
+              break;
+            case AppType::HTTP_SERVER:
+              httpManager.WriteInfered(*tok);
+              break;
+            case AppType::IPC_SERVER:
+              ipcManager.WriteInfered(*tok);
+              break;
+          }
+        }
       }
 
       if(appType == AppType::HTTP_SERVER){

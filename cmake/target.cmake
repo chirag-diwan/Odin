@@ -5,8 +5,6 @@ function(add_odin_target target_name source_file)
 
   target_include_directories(${target_name} PRIVATE
     ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/external/simdjson
-    ${CMAKE_SOURCE_DIR}/external/minja
     ${CMAKE_SOURCE_DIR}/external
     ${PCRE2_INCLUDE_DIRS}
   )
