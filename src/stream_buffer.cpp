@@ -11,7 +11,7 @@
 #include <optional>
 #include <vector>
 
-#include "../include/stream_buffer.hpp"
+#include "stream_buffer.hpp"
 
 void stream_buffer::compact() {
   if (read_head > 0) {

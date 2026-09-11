@@ -1,8 +1,8 @@
 #pragma once
 #include "./block.hpp"
-#include "../external/ggml/include/ggml-alloc.h"
-#include "../external/ggml/include/ggml-backend.h"
-#include "../external/ggml/include/ggml.h"
+#include "ggml/include/ggml-alloc.h"
+#include "ggml/include/ggml-backend.h"
+#include "ggml/include/ggml.h"
 #include <cstdint>
 #include <netinet/in.h>
 #include <string>

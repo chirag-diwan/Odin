@@ -8,9 +8,9 @@
 #include "./data_structures/unidirectional_map.hpp"
 #include "./data_structures/lock_free_ring_buffer.hpp"
 
-#include "../external/simdjson/simdjson.h"
+#include "simdjson/simdjson.h"
 #define CPPHTTPLIB_NO_MULTI_THREAD_SUPPORT
-#include "../external/httplib/httplib.h"
+#include "httplib/httplib.h"
 
 
 struct PromptReq{

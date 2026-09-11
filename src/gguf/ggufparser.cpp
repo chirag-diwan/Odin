@@ -1,5 +1,5 @@
-#include "../../include/ggufparser.hpp"
-#include "../../include/gguf.hpp"
+#include "ggufparser.hpp"
+#include "gguf.hpp"
 
 
 std::string_view GGufParser::parseString(){

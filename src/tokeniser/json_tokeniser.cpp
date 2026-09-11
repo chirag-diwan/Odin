@@ -1,5 +1,4 @@
-#include "../../include/json_tokeniser.hpp"
-#include <iostream>
+#include "json_tokeniser.hpp"
 #include <sys/types.h>
 
 using namespace simdjson;

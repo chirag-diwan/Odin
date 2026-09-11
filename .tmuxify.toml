@@ -11,8 +11,5 @@ name="build"
 cmds=["ls"]
 
 [[window]]
-name="test"
-
-[[window]]
 name="scratch"
 cmds=["cd ~/scratch/"]

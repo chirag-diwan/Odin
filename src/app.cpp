@@ -1,7 +1,7 @@
-#include "../include/app.hpp"
-#include "../include/model_utils.hpp"
-#include "../external/ggml/include/ggml-cpu.h"
-#include "../external/ggml/include/ggml-backend.h"
+#include "app.hpp"
+#include "model_utils.hpp"
+#include "ggml/include/ggml-cpu.h"
+#include "ggml/include/ggml-backend.h"
 #include <cstdint>
 #include <iostream>
 #include <thread>
@@ -192,25 +192,25 @@ namespace odin{
         next_token = engine.Infer(tokens.back());
         tokens.push_back(next_token);
 
-        if (next_token != model.globals.ggmlEosTokenId) {
-          auto tok = tokeniser.Decode(next_token);
-          if(tok.has_value()){
-            switch (appType) {
-              case AppType::CHAT:
-                std::cerr << *tok;
-                break;
-              case AppType::HTTP_SERVER:
-                httpManager.WriteInfered(*tok);
-                break;
-              case AppType::IPC_SERVER:
-                ipcManager.WriteInfered(*tok);
-                break;
-            }
-          }
-          continue;
+        if (next_token == model.globals.ggmlEosTokenId) {
+          break;
         }
 
-        break;
+
+        auto tok = tokeniser.Decode(next_token);
+        if(tok.has_value()){
+          switch (appType) {
+            case AppType::CHAT:
+              std::cerr << *tok;
+              break;
+            case AppType::HTTP_SERVER:
+              httpManager.WriteInfered(*tok);
+              break;
+            case AppType::IPC_SERVER:
+              ipcManager.WriteInfered(*tok);
+              break;
+          }
+        }
       }
 
       if(appType == AppType::HTTP_SERVER){

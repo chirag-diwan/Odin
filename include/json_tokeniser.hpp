@@ -8,7 +8,7 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
 #include <string>
-#include "../external/simdjson/simdjson.h"
+#include "simdjson/simdjson.h"
 #include <string_view>
 
 using namespace simdjson;

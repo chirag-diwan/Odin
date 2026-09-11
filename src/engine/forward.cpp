@@ -1,4 +1,4 @@
-#include "../../include/forward.hpp"
+#include "forward.hpp"
 
 ggml_tensor* forward(
     ggml_context* temp_ctx,

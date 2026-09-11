@@ -1,6 +1,6 @@
-#include "../../include/ipc_manager.hpp"
-#include "../../include/logging.hpp"
-#include "../../include/client.hpp"
+#include "ipc_manager.hpp"
+#include "logging.hpp"
+#include "client.hpp"
 
 
 bool IPCManager::addToEvent(int epoll_fd , epoll_event& ev , int fd){
