@@ -20,9 +20,7 @@ void TemplateParamGenerator::SetDefault(Architecture arch) {
   current["tools_in_user_message"] = false;
 }
 
-void TemplateParamGenerator::SetTools(){
-  current["tools"] = GetTools();
-}
+void TemplateParamGenerator::SetTools(){}
 
 void TemplateParamGenerator::Reset() {
   current = {};
@@ -37,10 +35,6 @@ void TemplateParamGenerator::AddMessage(const std::string& role, const std::stri
     {"role", role},
       {"content", content},
   });
-}
-
-void TemplateParamGenerator::AddTool() {
-
 }
 
 void Formatter::Init(const std::string& templ){

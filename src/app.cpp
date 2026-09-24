@@ -201,8 +201,8 @@ namespace odin{
 
         next_token = engine.Infer(tokens.back());
 
-
         tokens.push_back(next_token);
+
         if (next_token == model.globals.ggmlEosTokenId) {
           break;
         }

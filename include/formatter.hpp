@@ -74,8 +74,6 @@ class TemplateParamGenerator {
     json& GetRef() ;
 
     void AddMessage(const std::string& role, const std::string& content) ;
-
-    void AddTool();
 };
 
 
